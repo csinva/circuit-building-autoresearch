@@ -1,6 +1,6 @@
 # autoresearch — interpretable transformers
 
-This is an experiment to have a coding agent autonomously research how to hand-write the weights of a small transformer (ideally with some human-understandable structure) so that it solves a task (**your task name is `multiplication-five-digits`**).
+This is an experiment to have a coding agent autonomously research how to hand-write the weights of a small transformer (ideally with some human-understandable structure) so that it solves a task (**your task name is `linear-interpolation-two-points`**).
 
 The model is NEVER trained. The agent must write the weights directly into `interpretable_transformer.py`.
 
@@ -13,7 +13,7 @@ The work happens inside a fresh **run folder**. Each run is an isolated copy of 
 
 - `program.md`, `src/` — **symlinks** back to `evolve/` (do not modify these via the symlinks)
 - `interpretable_transformer.py` — **local copy**, this is the file you edit
-- `results/` — empty, populated by your runs
+- `results/` — stores output of your runs
 - `interpretable_transformers_lib/` — empty, for snapshots
 
 1. **`cd` into the run folder** and stay there for the rest of the session: `cd runs/<tag>`. Do not read any of the other folders in the runs directory, only your own run folder.
@@ -84,7 +84,7 @@ LOOP FOREVER:
 3. Read results: `tail -n 10 run.log` and `grep <model_shorthand_name> results/overall_results.csv`
 4. If the run crashed, check `tail -n 50 run.log` for the stack trace and attempt a fix.
 5. Update the row in `results/overall_results.csv` with the appropriate status (`success`, `crash`).
-6. Save a copy of `interpretable_transformer.py` as `interpretable_transformers_lib/<model_shorthand_name>.py`.
+6. Save a snapshot of `interpretable_transformer.py` as `interpretable_transformers_lib/<model_shorthand_name>.py`.
 
 **NEVER STOP**: once the loop has begun, do NOT pause to ask the human if you should continue. Run until manually stopped. Even if you hit 100% accuracy, keep going to see if you can find a simpler solution.
 

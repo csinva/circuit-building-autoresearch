@@ -6,7 +6,7 @@ Usage:
 
 Result:
     Creates  <repo_root>/runs/<tag>/  containing:
-      program.md, src/                                → symlinks to evolve/*
+      src/                                            → symlinks to evolve/*
       interpretable_transformer.py                    → fresh local copy
       results/                                        → empty dir
       interpretable_transformers_lib/                 → empty dir
@@ -23,8 +23,8 @@ import shutil
 import sys
 
 
-SYMLINK_NAMES = ["program.md", "src"]
-COPY_NAMES = ["interpretable_transformer.py", "results"]
+SYMLINK_NAMES = ["src"]
+COPY_NAMES = ["interpretable_transformer.py", "results", "program.md"]
 
 
 def setup_run(tag: str, repo_root: str | None = None) -> str:
