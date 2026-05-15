@@ -1,6 +1,6 @@
 # autoresearch — interpretable transformers
 
-This is an experiment to have a coding agent autonomously research how to hand-write the weights of a small transformer (ideally with some human-understandable structure) so that it solves a task (**your task name is `linear-interpolation-two-points`**).
+This is an experiment to have a coding agent autonomously research how to hand-write the weights of a small transformer (ideally with some human-understandable structure) so that it solves a task (**your task name is `parity-upto10-bits`**).
 
 The model is NEVER trained. The agent must write the weights directly into `interpretable_transformer.py`.
 
@@ -86,7 +86,7 @@ LOOP FOREVER:
 5. Update the row in `results/overall_results.csv` with the appropriate status (`success`, `crash`).
 6. Save a snapshot of `interpretable_transformer.py` as `interpretable_transformers_lib/<model_shorthand_name>.py`.
 
-**NEVER STOP**: once the loop has begun, do NOT pause to ask the human if you should continue. Run until manually stopped. Even if you hit 100% accuracy, keep going to see if you can find a simpler solution. Definitely do not stop after less than 20 iterations.
+**NEVER STOP**: once the loop has begun, do NOT pause to ask the human if you should continue. Run until manually stopped. Even if you hit 100% accuracy, keep going to see if you can find a simpler solution.
 
 **Ideas to try** (not exhaustive — be creative):
 

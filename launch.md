@@ -11,6 +11,4 @@ Autonomous AI research on hand-writing transformer weights to solve tasks.
 
 ## Organization
 
-- `evolve`: all the relevant code
-- `runs` stores each autoresearch run
-- `analyze` contains code to analyze the runs (note that the run is stored in a folder and doesn't use explicit commits)
+- all the relevant code is in the `evolve` folder and `runs` stores each autoresearch run (note that the run is stored in a folder and doesn't use explicit commits)
