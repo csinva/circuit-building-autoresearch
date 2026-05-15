@@ -111,7 +111,7 @@ def plot_accuracy_over_iterations(results_dir: str) -> None:
                 acc = float(row["accuracy"])
             except (TypeError, ValueError):
                 continue
-            rows.append((row.get("model_name", ""), acc))
+            rows.append((row.get("model_shorthand_name", ""), acc))
     if not rows:
         return
 

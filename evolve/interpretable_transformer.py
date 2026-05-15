@@ -36,7 +36,7 @@ from src.task import get_task
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "results")
 OVERALL_CSV = os.path.join(RESULTS_DIR, "overall_results.csv")
-OVERALL_CSV_COLS = ["task", "accuracy", "status", "model_name", "description"]
+OVERALL_CSV_COLS = ["task", "accuracy", "status", "model_shorthand_name", "description"]
 
 
 # ---------------------------------------------------------------------------
@@ -146,7 +146,7 @@ def write_weights(model: SimpleTransformer, task) -> None:
 
 # A unique shorthand name + 1-2 sentence description of what this attempt does.
 # Used as the row identifier in results/overall_results.csv.
-shorthand_unique_name = "RandomInitInterpretable"
+model_shorthand_name = "RandomInitInterpretable"
 model_description = "Default architecture, no weight assignment (random init, expected ~0% accuracy)."
 
 
@@ -157,12 +157,12 @@ model_description = "Default architecture, no weight assignment (random init, ex
 def upsert_overall_results(rows: list[dict], results_dir: str) -> None:
     os.makedirs(results_dir, exist_ok=True)
     path = os.path.join(results_dir, "overall_results.csv")
-    new_keys = {(r["model_name"], r["task"]) for r in rows}
+    new_keys = {(r["model_shorthand_name"], r["task"]) for r in rows}
     existing: list[dict] = []
     if os.path.exists(path):
         with open(path, newline="") as f:
             for row in csv.DictReader(f):
-                if (row.get("model_name"), row.get("task")) not in new_keys:
+                if (row.get("model_shorthand_name"), row.get("task")) not in new_keys:
                     existing.append(row)
     with open(path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=OVERALL_CSV_COLS)
@@ -202,7 +202,7 @@ if __name__ == "__main__":
         "task":        args.task,
         "accuracy":    f"{accuracy:.4f}",
         "status":      "",
-        "model_name":  model_shorthand_name,
+        "model_shorthand_name":  model_shorthand_name,
         "description": model_description,
     }], RESULTS_DIR)
     plot_accuracy_over_iterations(RESULTS_DIR)
