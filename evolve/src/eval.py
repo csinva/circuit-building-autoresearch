@@ -10,6 +10,7 @@ Usage:
 
 from __future__ import annotations
 
+import csv
 import os
 from dataclasses import dataclass
 
@@ -91,3 +92,51 @@ def evaluate(
                 print(f"  {marker}{example.prompt}{pred}  (target {example.answer})")
     accuracy = n_correct / max(1, len(examples))
     return accuracy, details
+
+
+def plot_accuracy_over_iterations(results_dir: str) -> None:
+    """Read overall_results.csv in CSV order and plot accuracy + running max."""
+    csv_path = os.path.join(results_dir, "overall_results.csv")
+    if not os.path.exists(csv_path):
+        return
+
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    rows: list[tuple[str, float]] = []
+    with open(csv_path, newline="") as f:
+        for row in csv.DictReader(f):
+            try:
+                acc = float(row["accuracy"])
+            except (TypeError, ValueError):
+                continue
+            rows.append((row.get("model_name", ""), acc))
+    if not rows:
+        return
+
+    iters = list(range(1, len(rows) + 1))
+    accs = [a for _, a in rows]
+    running_max: list[float] = []
+    best = float("-inf")
+    for a in accs:
+        best = max(best, a)
+        running_max.append(best)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(iters, accs, marker="o", linestyle="-", color="steelblue", label="accuracy")
+    ax.plot(iters, running_max, drawstyle="steps-post", color="crimson",
+            linewidth=2, label="running max")
+    ax.set_xlabel("iteration")
+    ax.set_ylabel("accuracy")
+    ax.set_ylim(-0.02, 1.02)
+    ax.set_title("Accuracy over iterations")
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="lower right")
+    if len(iters) <= 30:
+        ax.set_xticks(iters)
+    fig.tight_layout()
+    out_path = os.path.join(results_dir, "accuracy_over_iterations.png")
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+    print(f"Plot saved → {out_path}")

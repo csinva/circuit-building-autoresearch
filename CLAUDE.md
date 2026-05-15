@@ -28,7 +28,5 @@ Use these commands:
 - Run a Python script with inline metadata (dependencies defined at the top of the file) with: `uv run script.py`
 - You can add or remove dependencies manually from the `dependencies =` section at the top of the script, or
 - Or using uv CLI:
-    - `uv add package-name --script script.py`
-    - `uv remove package-name --script script.py`
-
-
+  - `uv add package-name --script script.py`
+  - `uv remove package-name --script script.py`

@@ -68,8 +68,11 @@ class FiveDigitAdditionTask(Task):
     prompt_len = 12   # 5 + 1 + 5 + 1
     answer_len = 6    # max sum is 199998 -> 6 digits
 
-    def generate_examples(self, n: int, seed: int = 0) -> list[Example]:
-        rng = random.Random(seed)
+    def generate_examples(self, n: int, seed: int = None) -> list[Example]:
+        if seed is not None:
+            rng = random.Random(seed)
+        else:
+            rng = random.Random()
         out = []
         for _ in range(n):
             a = rng.randint(0, 99999)

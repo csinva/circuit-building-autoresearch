@@ -9,7 +9,7 @@ Result:
       program.md, src/                                → symlinks to evolve/*
       interpretable_transformer.py                    → fresh local copy
       results/                                        → empty dir
-      interpretable_transformers_lib/{success,failure}/  → empty dirs
+      interpretable_transformers_lib/                 → empty dir
 
 The agent then `cd`s into the run folder and works only there:
 no git branch, no commits — every change is local to that folder.
@@ -52,8 +52,7 @@ def setup_run(tag: str, repo_root: str | None = None) -> str:
         shutil.copy2(os.path.join(evolve_dir, name), os.path.join(run_dir, name))
 
     os.makedirs(os.path.join(run_dir, "results"))
-    os.makedirs(os.path.join(run_dir, "interpretable_transformers_lib", "success"))
-    os.makedirs(os.path.join(run_dir, "interpretable_transformers_lib", "failure"))
+    os.makedirs(os.path.join(run_dir, "interpretable_transformers_lib"))
 
     return run_dir
 

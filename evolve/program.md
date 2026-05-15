@@ -8,38 +8,20 @@ The model is NEVER trained. The agent must write the weights directly into `inte
 
 The work happens inside a fresh **run folder**. Each run is an isolated copy of `evolve/` under `<repo_root>/runs/evolve-<tag>/`.
 
-1. **Pick a run tag** based on today's date and a counter, e.g. `may15-run1`.
-2. **Create the run folder**:
+1. **Pick a unique run tag** based on today's date and a counter, e.g. `may15-run1`.
+2. **Create the run folder**: `uv run evolve/setup_run.py <tag>`. This creates `runs/evolve-<tag>/` containing:
 
-    ```bash
-    uv run evolve/setup_run.py <tag>
-    ```
+- `program.md`, `src/` — **symlinks** back to `evolve/` (do not modify these via the symlinks)
+- `interpretable_transformer.py` — **local copy**, this is the file you edit
+- `results/` — empty, populated by your runs
+- `interpretable_transformers_lib/` — empty, for snapshots
 
-    This creates `runs/evolve-<tag>/` containing:
-      - `program.md`, `src/` — **symlinks** back to `evolve/` (do not modify these via the symlinks)
-      - `interpretable_transformer.py` — **local copy**, this is the file you edit
-      - `results/` — empty, populated by your runs
-      - `interpretable_transformers_lib/{success,failure}/` — empty, for snapshots
-
-    The repo-level `readme.md` (one level above `evolve/`) describes the overall project; you can read it but should not modify it.
-
-3. **`cd` into the run folder** and stay there for the rest of the session:
-
-    ```bash
-    cd runs/evolve-<tag>
-    ```
-
-4. **Read the in-scope files**: `../../readme.md` (repo-level overview), `interpretable_transformer.py`, `src/task.py`, `src/eval.py`, and `results/overall_results.csv` (empty at first).
+1. **`cd` into the run folder** and stay there for the rest of the session: `cd runs/evolve-<tag>`
+2. **Read the in-scope files**: `interpretable_transformer.py`, `src/task.py`, `src/eval.py`, and `results/overall_results.csv` (only one baseline row at first).
 
 ## Experimentation
 
-Run an experiment (from inside the run folder):
-
-```bash
-uv run interpretable_transformer.py
-```
-
-This builds the `SimpleTransformer`, calls `write_weights(model, task)` to populate its parameters, runs autoregressive evaluation on the task, and updates `results/overall_results.csv`.
+Each experiment runs on a single GPU. You launch it (from inside the run folder) simply as `uv run interpretable_transformer.py`.
 
 **What you CAN do:**
 
@@ -48,46 +30,47 @@ This builds the `SimpleTransformer`, calls `write_weights(model, task)` to popul
   - The `write_weights(model, task)` function — set any parameter tensors directly. Hardcoded constants, NumPy arrays, hand-built attention circuits, lookup tables — anything goes, as long as you do not train.
   - The architecture's hyperparameters (depth, width, heads, ff size).
   - The `model_shorthand_name` and `model_description` strings.
-- Save snapshots of `interpretable_transformer.py` under `interpretable_transformers_lib/{success,failure}/` after each attempt.
+- Save snapshots of `interpretable_transformer.py` under `interpretable_transformers_lib/` after each attempt.
 
 **What you CANNOT do:**
 
 - Run any kind of training, gradient descent, optimizer step, fitting loop, or backprop. The model parameters must be set in closed form.
 - Use python functions / existing libraries to compute the task output. The model must generate the answer autoregressively using a transformer architecture with no external tools.
+- Download or read existing weights from any pre-trained models.
 - Modify anything reached through a symlink: anything in `src/` or `program.md`.
-- Create git branches or commits. The run folder is your workspace; persistence is via files only.
-- Install new packages — only what's in the repo's `pyproject.toml`.
 
-## Goal
+**The goal is simple: maximize `accuracy`**: the fraction of held-out examples where the autoregressively-generated answer string exactly matches the target. With the default 5-digit addition task, an untouched `write_weights` (random init) scores ~0%, and a perfect circuit scores 100%.
 
-Maximize **`accuracy`** on the task: the fraction of held-out examples where the autoregressively-generated answer string exactly matches the target. With the default 5-digit addition task, an untouched `write_weights` (random init) scores ~0%, and a perfect circuit scores 100%.
+**Interpretability criterion**: All else being equal, more interpretable is better. A small improvement that adds ugly complexity is not worth it.
 
 ## Output format
 
 Once the script finishes it prints a summary like this:
 
 ```
+
 ---
 task:          add5
 accuracy:      0.0050  (1/200)
 total_seconds: 1.3s
-```
-
-It also updates `results/overall_results.csv` with a row keyed by `(model_name, task)`.
-
-## Logging results
-
-The CSV has a header row and 5 columns:
 
 ```
+
+It also updates `results/overall_results.csv` which has the following format:
+
+```
+
 task,accuracy,status,model_name,description
+
 ```
 
 1. task name (e.g. `add5`)
 2. accuracy from the script output — empty for crashes
-3. status: `keep`, `discard`, `crash`, or `baseline` (use `baseline` for the first random-init row)
-4. shorthand name of the model attempt — must be unique within the run folder
+3. status: `success`, `crash`, or `baseline` (use `baseline` for the first random-init row)
+4. shorthand unique name of the model attempt
 5. brief text description of what this attempt tried
+
+Always log to this file after each
 
 ## The experiment loop
 
@@ -97,12 +80,10 @@ LOOP FOREVER:
 
 1. Edit `interpretable_transformer.py` with one experimental idea. Update `model_shorthand_name` (must be unique within this run) and `model_description` to reflect it.
 2. Run the experiment: `uv run interpretable_transformer.py > run.log 2>&1`
-3. Read results: `tail -n 10 run.log` and `grep <shorthand_name> results/overall_results.csv`
+3. Read results: `tail -n 10 run.log` and `grep <model_shorthand_name> results/overall_results.csv`
 4. If the run crashed, check `tail -n 50 run.log` for the stack trace and attempt a fix.
-5. Update the row in `results/overall_results.csv` with the appropriate status (`keep`, `discard`, `crash`).
-6. Snapshot `interpretable_transformer.py` as a new file:
-   - `interpretable_transformers_lib/success/transformer_<simple_name>.py` if accuracy improved over the best prior attempt
-   - `interpretable_transformers_lib/failure/transformer_<simple_name>.py` otherwise
+5. Update the row in `results/overall_results.csv` with the appropriate status (`success`, `crash`).
+6. Save a copy of `interpretable_transformer.py` as `interpretable_transformers_lib/<model_shorthand_name>.py`.
 
 **NEVER STOP**: once the loop has begun, do NOT pause to ask the human if you should continue. Run until manually stopped.
 

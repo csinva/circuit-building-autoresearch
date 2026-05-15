@@ -31,7 +31,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 sys.path.insert(0, os.path.dirname(__file__))
-from src.eval import evaluate
+from src.eval import evaluate, plot_accuracy_over_iterations
 from src.task import get_task
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "results")
@@ -146,7 +146,7 @@ def write_weights(model: SimpleTransformer, task) -> None:
 
 # A unique shorthand name + 1-2 sentence description of what this attempt does.
 # Used as the row identifier in results/overall_results.csv.
-model_shorthand_name = "RandomInitInterpretable"
+shorthand_unique_name = "RandomInitInterpretable"
 model_description = "Default architecture, no weight assignment (random init, expected ~0% accuracy)."
 
 
@@ -170,53 +170,6 @@ def upsert_overall_results(rows: list[dict], results_dir: str) -> None:
         writer.writerows(existing + [{k: r.get(k, "") for k in OVERALL_CSV_COLS} for r in rows])
     print(f"Overall results saved → {path}")
 
-
-def plot_accuracy_over_iterations(results_dir: str) -> None:
-    """Read overall_results.csv in CSV order and plot accuracy + running max."""
-    csv_path = os.path.join(results_dir, "overall_results.csv")
-    if not os.path.exists(csv_path):
-        return
-
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    rows: list[tuple[str, float]] = []
-    with open(csv_path, newline="") as f:
-        for row in csv.DictReader(f):
-            try:
-                acc = float(row["accuracy"])
-            except (TypeError, ValueError):
-                continue
-            rows.append((row.get("model_name", ""), acc))
-    if not rows:
-        return
-
-    iters = list(range(1, len(rows) + 1))
-    accs = [a for _, a in rows]
-    running_max: list[float] = []
-    best = float("-inf")
-    for a in accs:
-        best = max(best, a)
-        running_max.append(best)
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(iters, accs, marker="o", linestyle="-", color="steelblue", label="accuracy")
-    ax.plot(iters, running_max, drawstyle="steps-post", color="crimson",
-            linewidth=2, label="running max")
-    ax.set_xlabel("iteration")
-    ax.set_ylabel("accuracy")
-    ax.set_ylim(-0.02, 1.02)
-    ax.set_title("Accuracy over iterations")
-    ax.grid(True, alpha=0.3)
-    ax.legend(loc="lower right")
-    if len(iters) <= 30:
-        ax.set_xticks(iters)
-    fig.tight_layout()
-    out_path = os.path.join(results_dir, "accuracy_over_iterations.png")
-    fig.savefig(out_path, dpi=150)
-    plt.close(fig)
-    print(f"Plot saved → {out_path}")
 
 
 def build_model(task) -> SimpleTransformer:
