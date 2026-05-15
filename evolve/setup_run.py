@@ -5,7 +5,7 @@ Usage:
     uv run evolve/setup_run.py <tag>
 
 Result:
-    Creates  <repo_root>/runs/evolve-<tag>/  containing:
+    Creates  <repo_root>/runs/<tag>/  containing:
       program.md, src/                                → symlinks to evolve/*
       interpretable_transformer.py                    → fresh local copy
       results/                                        → empty dir
@@ -24,7 +24,7 @@ import sys
 
 
 SYMLINK_NAMES = ["program.md", "src"]
-COPY_NAMES = ["interpretable_transformer.py"]
+COPY_NAMES = ["interpretable_transformer.py", "results"]
 
 
 def setup_run(tag: str, repo_root: str | None = None) -> str:
@@ -33,7 +33,7 @@ def setup_run(tag: str, repo_root: str | None = None) -> str:
         repo_root = os.path.dirname(evolve_dir)
 
     runs_dir = os.path.join(repo_root, "runs")
-    run_dir = os.path.join(runs_dir, f"evolve-{tag}")
+    run_dir = os.path.join(runs_dir, f"{tag}")
 
     if os.path.exists(run_dir):
         raise FileExistsError(f"Run folder already exists: {run_dir}")
@@ -49,9 +49,15 @@ def setup_run(tag: str, repo_root: str | None = None) -> str:
         os.symlink(rel, dst_path)
 
     for name in COPY_NAMES:
-        shutil.copy2(os.path.join(evolve_dir, name), os.path.join(run_dir, name))
+        src_path = os.path.join(evolve_dir, name)
+        if not os.path.exists(src_path):
+            raise FileNotFoundError(f"Missing source path: {src_path}")
+        elif os.path.isdir(src_path):
+            dst_path = os.path.join(run_dir, name)
+            shutil.copytree(src_path, dst_path)
+        else:
+            shutil.copy2(src_path, os.path.join(run_dir, name))
 
-    os.makedirs(os.path.join(run_dir, "results"))
     os.makedirs(os.path.join(run_dir, "interpretable_transformers_lib"))
 
     return run_dir

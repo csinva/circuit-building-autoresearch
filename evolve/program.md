@@ -1,27 +1,27 @@
 # autoresearch — interpretable transformers
 
-This is an experiment to have a coding agent autonomously research how to hand-write the weights of a small transformer (ideally with some human-understandable structure) so that it solves a task. The default task is 5-digit addition: prompt `"12345+67890="` → answer `"080235"`.
+This is an experiment to have a coding agent autonomously research how to hand-write the weights of a small transformer (ideally with some human-understandable structure) so that it solves a task (**your task name is `multiplication-five-digits`**).
 
 The model is NEVER trained. The agent must write the weights directly into `interpretable_transformer.py`.
 
 ## Setup
 
-The work happens inside a fresh **run folder**. Each run is an isolated copy of `evolve/` under `<repo_root>/runs/evolve-<tag>/`.
+The work happens inside a fresh **run folder**. Each run is an isolated copy of `evolve/` under `<repo_root>/runs/<tag>/`.
 
-1. **Pick a unique run tag** based on today's date and a counter, e.g. `may15-run1`.
-2. **Create the run folder**: `uv run evolve/setup_run.py <tag>`. This creates `runs/evolve-<tag>/` containing:
+1. **Pick a unique run tag** based on today's date and a counter, e.g. `<your_task_name>-may15-run1`.
+2. **Create the run folder**: `uv run evolve/setup_run.py <tag>`. This creates `runs/<tag>/` containing:
 
 - `program.md`, `src/` — **symlinks** back to `evolve/` (do not modify these via the symlinks)
 - `interpretable_transformer.py` — **local copy**, this is the file you edit
 - `results/` — empty, populated by your runs
 - `interpretable_transformers_lib/` — empty, for snapshots
 
-1. **`cd` into the run folder** and stay there for the rest of the session: `cd runs/evolve-<tag>`. Do not read any of the other folders in the runs directory, only your own run folder.
+1. **`cd` into the run folder** and stay there for the rest of the session: `cd runs/<tag>`. Do not read any of the other folders in the runs directory, only your own run folder.
 2. **Read the in-scope files**: `interpretable_transformer.py`, `src/task.py`, `src/eval.py`, and `results/overall_results.csv` (only one baseline row at first).
 
 ## Experimentation
 
-Each experiment runs on a single GPU. You launch it (from inside the run folder) simply as `uv run interpretable_transformer.py`.
+Each experiment runs on a single GPU. You launch it (from inside the run folder) simply as `uv run interpretable_transformer.py --task <your_task_name>`.
 
 **What you CAN do:**
 
@@ -39,7 +39,7 @@ Each experiment runs on a single GPU. You launch it (from inside the run folder)
 - Download or read existing weights from any pre-trained models.
 - Modify anything reached through a symlink: anything in `src/` or `program.md`.
 
-**The goal is simple: maximize `accuracy`**: the fraction of held-out examples where the autoregressively-generated answer string exactly matches the target. With the default 5-digit addition task, an untouched `write_weights` (random init) scores ~0%, and a perfect circuit scores 100%.
+**The goal is simple: maximize `accuracy`**: the fraction of held-out examples where the autoregressively-generated answer string exactly matches the target (or is within some numerical tolerance).
 
 **Interpretability criterion**: All else being equal, more interpretable is better. A small improvement that adds ugly complexity is not worth it. Number of model parameters can help serve as a proxy for interpretability, but the real criterion is human-understandable structure in the weights.
 
@@ -50,7 +50,7 @@ Once the script finishes it prints a summary like this:
 ```
 
 ---
-task:          add5
+task:          your_task_name
 accuracy:      0.0050  (1/200)
 total_seconds: 1.3s
 
@@ -64,7 +64,7 @@ task,accuracy,status,model_name,n_params,description
 
 ```
 
-1. task name (e.g. `add5`)
+1. task name (e.g. `addition-five-digits`)
 2. accuracy from the script output — empty for crashes
 3. status: `success` or `crash`
 4. shorthand unique name of the model attempt
@@ -75,7 +75,7 @@ Always log to this file after each experiment.
 
 ## The experiment loop
 
-You are always inside the run folder (`runs/evolve-<tag>/`).
+You are always inside the run folder (`runs/<tag>/`).
 
 LOOP FOREVER:
 
@@ -86,14 +86,13 @@ LOOP FOREVER:
 5. Update the row in `results/overall_results.csv` with the appropriate status (`success`, `crash`).
 6. Save a copy of `interpretable_transformer.py` as `interpretable_transformers_lib/<model_shorthand_name>.py`.
 
-**NEVER STOP**: once the loop has begun, do NOT pause to ask the human if you should continue. Run until manually stopped.
+**NEVER STOP**: once the loop has begun, do NOT pause to ask the human if you should continue. Run until manually stopped. Even if you hit 100% accuracy, keep going to see if you can find a simpler solution.
 
 **Ideas to try** (not exhaustive — be creative):
 
-- Read mech-interp papers on grokking / modular arithmetic / addition circuits and translate the proposed circuits into hand-built weights:
+- Read mech-interp papers on grokking / circuits:
   - Nanda et al. 2023 "Progress measures for grokking via mechanistic interpretability" (<https://arxiv.org/abs/2301.05217>)
   - Quirke & Barez 2023 "Understanding addition in transformers" (<https://arxiv.org/abs/2310.13121>)
-- Implement digit-by-digit addition with a head per digit position.
 - Use position embeddings to "select" the right digit pair to add at each output step.
 - Carry propagation via a second attention layer.
 - Use the MLP layers as lookup tables (one-hot in, one-hot out).

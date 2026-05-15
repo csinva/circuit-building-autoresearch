@@ -63,7 +63,7 @@ class FiveDigitAdditionTask(Task):
     Example: "12345+67890=" -> "080235"  (since 12345+67890 = 80235)
     """
 
-    name = "add5"
+    name = "addition-five-digits"
     vocab = list("0123456789+=")
     prompt_len = 12   # 5 + 1 + 5 + 1
     answer_len = 6    # max sum is 199998 -> 6 digits
@@ -83,8 +83,38 @@ class FiveDigitAdditionTask(Task):
         return out
 
 
+class FiveDigitMultiplicationTask(Task):
+    """Multiply two 5-digit non-negative integers.
+
+    prompt: "AAAAA*BBBBB="    (12 tokens; leading zeros allowed)
+    answer: "PPPPPPPPPP"      (10 tokens; left-padded with zeros)
+
+    Example: "12345*67890=" -> "0838102050"  (since 12345*67890 = 838102050)
+    """
+
+    name = "multiplication-five-digits"
+    vocab = list("0123456789*=")
+    prompt_len = 12   # 5 + 1 + 5 + 1
+    answer_len = 10   # max product is 99999*99999 = 9999800001 -> 10 digits
+
+    def generate_examples(self, n: int, seed: int = None) -> list[Example]:
+        if seed is not None:
+            rng = random.Random(seed)
+        else:
+            rng = random.Random()
+        out = []
+        for _ in range(n):
+            a = rng.randint(0, 99999)
+            b = rng.randint(0, 99999)
+            prompt = f"{a:05d}*{b:05d}="
+            answer = f"{a * b:010d}"
+            out.append(Example(prompt=prompt, answer=answer))
+        return out
+
+
 TASK_REGISTRY: dict[str, type[Task]] = {
     FiveDigitAdditionTask.name: FiveDigitAdditionTask,
+    FiveDigitMultiplicationTask.name: FiveDigitMultiplicationTask,
 }
 
 
