@@ -16,7 +16,7 @@ The work happens inside a fresh **run folder**. Each run is an isolated copy of 
 - `results/` — empty, populated by your runs
 - `interpretable_transformers_lib/` — empty, for snapshots
 
-1. **`cd` into the run folder** and stay there for the rest of the session: `cd runs/evolve-<tag>`
+1. **`cd` into the run folder** and stay there for the rest of the session: `cd runs/evolve-<tag>`. Do not read any of the other folders in the runs directory, only your own run folder.
 2. **Read the in-scope files**: `interpretable_transformer.py`, `src/task.py`, `src/eval.py`, and `results/overall_results.csv` (only one baseline row at first).
 
 ## Experimentation
@@ -41,7 +41,7 @@ Each experiment runs on a single GPU. You launch it (from inside the run folder)
 
 **The goal is simple: maximize `accuracy`**: the fraction of held-out examples where the autoregressively-generated answer string exactly matches the target. With the default 5-digit addition task, an untouched `write_weights` (random init) scores ~0%, and a perfect circuit scores 100%.
 
-**Interpretability criterion**: All else being equal, more interpretable is better. A small improvement that adds ugly complexity is not worth it.
+**Interpretability criterion**: All else being equal, more interpretable is better. A small improvement that adds ugly complexity is not worth it. Number of model parameters can help serve as a proxy for interpretability, but the real criterion is human-understandable structure in the weights.
 
 ## Output format
 
@@ -60,17 +60,18 @@ It also updates `results/overall_results.csv` which has the following format:
 
 ```
 
-task,accuracy,status,model_name,description
+task,accuracy,status,model_name,n_params,description
 
 ```
 
 1. task name (e.g. `add5`)
 2. accuracy from the script output — empty for crashes
-3. status: `success`, `crash`, or `baseline` (use `baseline` for the first random-init row)
+3. status: `success` or `crash`
 4. shorthand unique name of the model attempt
-5. brief text description of what this attempt tried
+5. total number of model parameters (`sum(p.numel() for p in model.parameters())`)
+6. brief text description of what this attempt tried
 
-Always log to this file after each
+Always log to this file after each experiment.
 
 ## The experiment loop
 

@@ -36,7 +36,7 @@ from src.task import get_task
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "results")
 OVERALL_CSV = os.path.join(RESULTS_DIR, "overall_results.csv")
-OVERALL_CSV_COLS = ["task", "accuracy", "status", "model_shorthand_name", "description"]
+OVERALL_CSV_COLS = ["task", "accuracy", "status", "model_shorthand_name", "n_params", "description"]
 
 
 # ---------------------------------------------------------------------------
@@ -198,11 +198,14 @@ if __name__ == "__main__":
         device=args.device, verbose=args.verbose,
     )
 
+    n_params = sum(p.numel() for p in model.parameters())
+
     upsert_overall_results([{
         "task":        args.task,
         "accuracy":    f"{accuracy:.4f}",
         "status":      "",
         "model_shorthand_name":  model_shorthand_name,
+        "n_params":    f"{n_params:.2e}",
         "description": model_description,
     }], RESULTS_DIR)
     plot_accuracy_over_iterations(RESULTS_DIR)
