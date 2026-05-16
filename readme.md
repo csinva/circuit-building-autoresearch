@@ -10,7 +10,7 @@ Some options are: ['addition-five-digits', 'multiplication-five-digits', 'sort-f
 
 Slightly harder: ['word-reversal-3x3', 'gcd-three-digits', 'decimal-to-binary-8bit']
 
-Hard: ['sentiment-sst2']
+Real world: sentiment-sst2, paraphrase-mrpc, nli-snli
 
 1. Prompt your agent with: "Read and follow the instructions in evolve/program.md."
 
