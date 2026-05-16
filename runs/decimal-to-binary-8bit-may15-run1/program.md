@@ -1,6 +1,6 @@
 # autoresearch — interpretable transformers
 
-This is an experiment to have a coding agent autonomously research how to hand-write the weights of a small transformer (ideally with some human-understandable structure) so that it solves a task (**your task name is `sentiment-sst2`**).
+This is an experiment to have a coding agent autonomously research how to hand-write the weights of a small transformer (ideally with some human-understandable structure) so that it solves a task (**your task name is `decimal-to-binary-8bit`**).
 
 The model is NEVER trained. The agent must write the weights directly into `interpretable_transformer.py`.
 

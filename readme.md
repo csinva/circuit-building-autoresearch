@@ -4,8 +4,15 @@ Autonomous AI research on hand-writing transformer weights to solve tasks.
 
 ## Running the agent
 
-1. Edit the `evolve/program.md` first line to specify the task name e.g. "(your `task` is `five-digit-addition`)" Some options are: ['addition-five-digits', 'multiplication-five-digits', 'sort-five-digits', 'digit-counting-10', 'parity-upto10-bits', 'boolean-circuit-5-bits', 'linear-interpolation-two-points']
-2. Prompt your agent with: "Read and follow the instructions in evolve/program.md."
+1. Edit the `evolve/program.md` first line to specify the task name e.g. "(your `task` is `five-digit-addition`)"
+
+Some options are: ['addition-five-digits', 'multiplication-five-digits', 'sort-five-digits', 'digit-counting-10', 'parity-upto10-bits', 'boolean-circuit-5-bits', 'linear-interpolation-two-points']
+
+Slightly harder: ['word-reversal-3x3', 'gcd-three-digits', 'decimal-to-binary-8bit']
+
+Hard: ['sentiment-sst2']
+
+1. Prompt your agent with: "Read and follow the instructions in evolve/program.md."
 
 - e.g. `copilot --autopilot --yolo --prompt "Read and follow the instructions in evolve/program.md."`
 
