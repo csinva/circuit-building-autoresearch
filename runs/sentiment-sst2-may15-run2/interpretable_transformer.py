@@ -157,7 +157,8 @@ def write_weights(model: SimpleTransformer, task) -> None:
 
     PREV1_OFF = V
     PREV2_OFF = 2 * V
-    POS_OFF = 3 * V
+    PREV3_OFF = 3 * V
+    POS_OFF = 4 * V
     SENT = D - 1
     CONST_P = D - 3
     CONST_N = D - 2
@@ -168,13 +169,16 @@ def write_weights(model: SimpleTransformer, task) -> None:
     pool = task._load_pool()
     import numpy as np
     from collections import defaultdict
-    alpha = 2.0
+    alpha = 0.3
     UND = task.stoi['_']
     pos_a = torch.full((V, V), alpha); neg_a = torch.full((V, V), alpha)
     pos_s = torch.full((V, V), alpha); neg_s = torch.full((V, V), alpha)
     tri_pos: dict[tuple, int] = defaultdict(int)
     tri_neg: dict[tuple, int] = defaultdict(int)
+    quad_pos: dict[tuple, int] = defaultdict(int)
+    quad_neg: dict[tuple, int] = defaultdict(int)
     for text, label in pool:
+        prev3 = UND
         prev2 = UND
         prev1 = UND
         is_pos = (label == '1')
@@ -184,13 +188,21 @@ def write_weights(model: SimpleTransformer, task) -> None:
                 pos_a[prev1, cur] += 1
                 pos_s[prev2, cur] += 1
                 tri_pos[(prev2, prev1, cur)] += 1
+                quad_pos[(prev3, prev2, prev1, cur)] += 1
             else:
                 neg_a[prev1, cur] += 1
                 neg_s[prev2, cur] += 1
                 tri_neg[(prev2, prev1, cur)] += 1
-            prev2 = prev1; prev1 = cur
+                quad_neg[(prev3, prev2, prev1, cur)] += 1
+            prev3 = prev2; prev2 = prev1; prev1 = cur
     bg_a = torch.log(pos_a / pos_a.sum()) - torch.log(neg_a / neg_a.sum())
     bg_s = torch.log(pos_s / pos_s.sum()) - torch.log(neg_s / neg_s.sum())
+    bg_a = torch.clamp(bg_a, -3.0, 3.0)
+    bg_s = torch.clamp(bg_s, -3.0, 3.0)
+    bg_a = torch.where(bg_a.abs() < 0.15, torch.zeros_like(bg_a), bg_a)
+    bg_s = torch.where(bg_s.abs() < 0.15, torch.zeros_like(bg_s), bg_s)
+    cnt_a = (pos_a + neg_a) - 2 * alpha
+    cnt_s = (pos_s + neg_s) - 2 * alpha
     for ch in SKIP:
         j = task.stoi[ch]
         bg_a[j, :] = 0.0; bg_a[:, j] = 0.0
@@ -198,7 +210,7 @@ def write_weights(model: SimpleTransformer, task) -> None:
 
     # ----- 1b. Pick top-K trigrams by |log-odds| * sqrt(count). -----
     K_TRI = 2048
-    alpha_t = 2.0
+    alpha_t = 1.0
     total_pos_tri = sum(tri_pos.values()) + alpha_t * (V ** 3)
     total_neg_tri = sum(tri_neg.values()) + alpha_t * (V ** 3)
     SKIP_IDS = {task.stoi[c] for c in SKIP}
@@ -220,19 +232,44 @@ def write_weights(model: SimpleTransformer, task) -> None:
     tri_lookup: dict[tuple, float] = {k: lo for _, lo, k in tri_top}
     print(f"[Tri] kept {len(tri_top)} trigrams (of {len(tri_keys)} seen)", flush=True)
 
+    # ----- 1d. Pick top-K quadgrams. -----
+    K_QUAD = 512
+    alpha_q = 0.5
+    total_pos_q = sum(quad_pos.values()) + alpha_q * (V ** 4)
+    total_neg_q = sum(quad_neg.values()) + alpha_q * (V ** 4)
+    q_keys = set(quad_pos) | set(quad_neg)
+    q_scored = []
+    for k in q_keys:
+        if any(c in SKIP_IDS for c in k):
+            continue
+        p = quad_pos.get(k, 0) + alpha_q
+        n = quad_neg.get(k, 0) + alpha_q
+        lo = math.log(p / total_pos_q) - math.log(n / total_neg_q)
+        cnt = quad_pos.get(k, 0) + quad_neg.get(k, 0)
+        if cnt < 10:
+            continue
+        q_scored.append((abs(lo) * math.sqrt(cnt), lo, k))
+    q_scored.sort(reverse=True)
+    q_top = q_scored[:K_QUAD]
+    q_lookup: dict[tuple, float] = {k: lo for _, lo, k in q_top}
+    print(f"[Quad] kept {len(q_top)} quadgrams (of {len(q_keys)} seen)", flush=True)
+
     # ----- 2. Pool calibration on combined adjacent + skip-1 + trigram scores -----
     bg_a_np = bg_a.numpy(); bg_s_np = bg_s.numpy()
     scores = []; labels = []
     for text, label in pool:
         s = 0.0
-        prev2 = task.stoi['_']; prev1 = task.stoi['_']
+        prev3 = task.stoi['_']; prev2 = task.stoi['_']; prev1 = task.stoi['_']
         for ch in text:
             cur_i = task.stoi[ch]
             s += bg_a_np[prev1, cur_i] + bg_s_np[prev2, cur_i]
             t = tri_lookup.get((prev2, prev1, cur_i))
             if t is not None:
                 s += t
-            prev2 = prev1; prev1 = cur_i
+            q = q_lookup.get((prev3, prev2, prev1, cur_i))
+            if q is not None:
+                s += q
+            prev3 = prev2; prev2 = prev1; prev1 = cur_i
         scores.append(s); labels.append(int(label))
     scores = np.asarray(scores); labels = np.asarray(labels)
     order = np.argsort(scores)
@@ -274,27 +311,27 @@ def write_weights(model: SimpleTransformer, task) -> None:
             blk.mlp.fc1.weight.zero_(); blk.mlp.fc1.bias.zero_()
             blk.mlp.fc2.weight.zero_(); blk.mlp.fc2.bias.zero_()
 
-        # Block 0 attention: head 0 = offset 1 (prev1); head 1 = offset 2 (prev2).
+        # Block 0 attention: head 0 = offset 1 (prev1); head 1 = offset 2 (prev2); head 2 = offset 3 (prev3).
         b0 = model.blocks[0]
         M = 50.0
-        for p in range(1, L):
-            b0.attn.W_q.weight[0 * dh + (p - 1), POS_OFF + p] = M
-        for p in range(2, L):
-            b0.attn.W_q.weight[1 * dh + (p - 2), POS_OFF + p] = M
-        for q in range(L):
-            b0.attn.W_k.weight[0 * dh + q, POS_OFF + q] = 1.0
-            b0.attn.W_k.weight[1 * dh + q, POS_OFF + q] = 1.0
-        for c in range(V):
-            b0.attn.W_v.weight[0 * dh + c, c] = 1.0
-            b0.attn.W_v.weight[1 * dh + c, c] = 1.0
-        prev_gain = 0.125
+        for head_idx, off in enumerate([1, 2, 3]):
+            for p in range(off, L):
+                b0.attn.W_q.weight[head_idx * dh + (p - off), POS_OFF + p] = M
+            for q in range(L):
+                b0.attn.W_k.weight[head_idx * dh + q, POS_OFF + q] = 1.0
+            for c in range(V):
+                b0.attn.W_v.weight[head_idx * dh + c, c] = 1.0
+        prev_gain = 0.0806
         for c in range(V):
             b0.attn.W_o.weight[PREV1_OFF + c, 0 * dh + c] = prev_gain
             b0.attn.W_o.weight[PREV2_OFF + c, 1 * dh + c] = prev_gain
+            b0.attn.W_o.weight[PREV3_OFF + c, 2 * dh + c] = prev_gain
 
-        # Block 0 MLP: V*V adjacent-bigram detectors + V*V skip-1 detectors + K trigram detectors.
-        bias_thr = 11.0
-        trig_val = 4.0  # measured roughly when curr+prev both fire
+        # d_model=384 with 4 unit-strength PREV/CURR signals + pos + ±0.5 const.
+        # var = (1+1+1+1+1+0.25+0.25)/384 = 0.01432, std=0.1197, LN per signal = 8.35.
+        # Block 0 MLP: V*V adj-bigram + V*V skip-1 + K trigram + K quadgram detectors.
+        bias_thr = 13.0
+        trig_val = 3.7
         for cp in range(V):
             for cc in range(V):
                 ia = cp * V + cc
@@ -307,17 +344,28 @@ def write_weights(model: SimpleTransformer, task) -> None:
                 b0.mlp.fc1.weight[is_, PREV2_OFF + cp] = 1.0
                 b0.mlp.fc1.bias[is_] = -bias_thr
                 b0.mlp.fc2.weight[SENT, is_] = bg_s[cp, cc].item() / trig_val
-        # Trigram detectors fire when curr + prev1 + prev2 all match.
-        # 3 LN signals each ~7.54 → sum ~22.6; bias 20 → triggered ~2.6.
-        bias_tri = 20.0
-        tri_val = 2.6
+        # Trigram detectors fire when curr + prev1 + prev2 all match. Sum=25, bias=18 → trig=7
+        bias_tri = 19.0
+        tri_val = 6.05
         for k, (_, lo, (cp2, cp1, cc)) in enumerate(tri_top):
             idx = 2 * V * V + k
             b0.mlp.fc1.weight[idx, cc] = 1.0
             b0.mlp.fc1.weight[idx, PREV1_OFF + cp1] = 1.0
             b0.mlp.fc1.weight[idx, PREV2_OFF + cp2] = 1.0
             b0.mlp.fc1.bias[idx] = -bias_tri
-            b0.mlp.fc2.weight[SENT, idx] = lo / tri_val
+            b0.mlp.fc2.weight[SENT, idx] = max(-2.5, min(2.5, lo)) / tri_val
+        # Quadgram detectors fire when 4 inputs all match. Sum=33.4, bias=27 → quad=6.4
+        # Partial 3-of-4 = 25.05 < 27 ✓
+        bias_q = 26.0
+        q_val = 7.4
+        for k, (_, lo, (cp3, cp2, cp1, cc)) in enumerate(q_top):
+            idx = 2 * V * V + K_TRI + k
+            b0.mlp.fc1.weight[idx, cc] = 1.0
+            b0.mlp.fc1.weight[idx, PREV1_OFF + cp1] = 1.0
+            b0.mlp.fc1.weight[idx, PREV2_OFF + cp2] = 1.0
+            b0.mlp.fc1.weight[idx, PREV3_OFF + cp3] = 1.0
+            b0.mlp.fc1.bias[idx] = -bias_q
+            b0.mlp.fc2.weight[SENT, idx] = max(-1.5, min(1.5, lo)) / q_val
 
         # Block 1 attention: uniform causal aggregation of SENT (use head 0 only).
         b1 = model.blocks[1]
@@ -376,9 +424,11 @@ def write_weights(model: SimpleTransformer, task) -> None:
     with torch.no_grad():
         probe = 5.0
         model.pos_emb.weight[last_pos, SENT] += probe
-        sents_b = forward_sents()
-        model.pos_emb.weight[last_pos, SENT] -= probe
-        alpha = float((sents_b - sents_a).mean() / probe)
+        sents_bp = forward_sents()
+        model.pos_emb.weight[last_pos, SENT] -= 2 * probe
+        sents_bm = forward_sents()
+        model.pos_emb.weight[last_pos, SENT] += probe
+        alpha = float(((sents_bp - sents_bm) / (2 * probe)).mean())
         print(f"[Bigram] propagation gain alpha={alpha:.4f}", flush=True)
         delta = -float(best_T) / alpha if abs(alpha) > 1e-6 else 0.0
         model.pos_emb.weight[last_pos, SENT] += delta
@@ -390,8 +440,8 @@ def write_weights(model: SimpleTransformer, task) -> None:
               f"(applied delta={delta:.3f})", flush=True)
 
 
-model_shorthand_name = "DualBigramTri2048"
-model_description = "DualBigramAlpha2 + top-2048 trigram detectors."
+model_shorthand_name = "QBT_a0.3_dz_KT2048"
+model_description = "alpha=0.3 + bigram dead-zone |lo|<0.15 + K_TRI=2048 + alpha_q=0.5 (87.0%)"
 
 
 # ---------------------------------------------------------------------------
@@ -425,7 +475,7 @@ def build_model(task) -> SimpleTransformer:
     #   d_ff = V*V = 1024 (one neuron per bigram in L0 MLP; L1 MLP is zeroed)
     model = SimpleTransformer(
         vocab_size=task.vocab_size, max_seq_len=max_seq_len,
-        d_model=256, n_heads=2, n_layers=2, d_ff=2048 + 2048,
+        d_model=384, n_heads=3, n_layers=2, d_ff=2048 + 2048 + 512,
     )
     write_weights(model, task)
     model.eval()
