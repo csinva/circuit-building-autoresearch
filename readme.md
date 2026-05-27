@@ -21,3 +21,4 @@ Real world: sentiment-sst2, paraphrase-mrpc, nli-snli
 - `evolve`: all the relevant code
 - `runs` stores each autoresearch run
 - `analyze` contains code to analyze the runs (note that the run is stored in a folder and doesn't use explicit commits)
+  - see the results at <https://csinva.io/circuit-building-autoresearch/analyze/report>
