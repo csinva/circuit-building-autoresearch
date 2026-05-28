@@ -19,6 +19,12 @@ import ridge_utils  # noqa: E402,F401
 
 FMRI_DIR = '/home/chansingh/mntv1/deep-fMRI/data'
 HUGE_DIR = join(FMRI_DIR, 'huge_data')
+# named anatomical/functional ROIs: {roi_name: voxel_index_array} into the voxel space
+REGION_IDXS_DIR = '/home/chansingh/mntv1/deep-fMRI/sasc/brain_regions'
+
+# per-story response cache (read-only mntv1 is never modified). Caching avoids
+# re-reading the ~26GB full-subject response file on every iteration of the loop.
+CACHE_DIR = os.path.expanduser('~/.cache/evolve-lang-fmri')
 
 # the training stories shared across the UTS01/UTS02/UTS03 "huge" training sets
 # (intersection of all three), plus the standard held-out test stories. Using the
@@ -65,6 +71,36 @@ def load_wordseqs(stories):
 
 
 def load_responses(stories, subject='UTS03'):
-    """Return {story: (n_trs, n_voxels)} fMRI responses (already trimmed [10:-5])."""
-    resps = joblib.load(join(HUGE_DIR, f'{subject}_responses.jbl'))
-    return {s: resps[s] for s in stories}
+    """Return {story: (n_trs, n_voxels)} fMRI responses (already trimmed [10:-5]).
+
+    Responses are cached per story under CACHE_DIR; the big ~26GB subject file is
+    only read when some requested story is not yet cached.
+    """
+    os.makedirs(CACHE_DIR, exist_ok=True)
+
+    def cache_path(story):
+        return join(CACHE_DIR, f'{subject}_{story}.jbl')
+
+    out = {}
+    missing = [s for s in stories if not os.path.exists(cache_path(s))]
+    if missing:
+        resps = joblib.load(join(HUGE_DIR, f'{subject}_responses.jbl'))
+        for s in missing:
+            joblib.dump(resps[s], cache_path(s))
+        del resps
+    for s in stories:
+        out[s] = joblib.load(cache_path(s))
+    return out
+
+
+def load_rois(subject='UTS03'):
+    """Return {roi_name: voxel_index_array} for a subject (empty dict if none on disk).
+
+    Indices index into the subject's voxel axis (same axis as the responses).
+    Only UTS02/UTS03 have ROI files.
+    """
+    s = subject.replace('UT', '')  # 'UTS03' -> 'S03'
+    path = join(REGION_IDXS_DIR, f'rois_{s}.jbl')
+    if not os.path.exists(path):
+        return {}
+    return {k: np.asarray(v) for k, v in joblib.load(path).items()}

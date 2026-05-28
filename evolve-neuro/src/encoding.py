@@ -92,6 +92,15 @@ def bootstrap_ridge(
     return wt, corrs, alphas_best
 
 
+def _per_voxel_corr(actual, pred, chunk=20000):
+    """Per-voxel correlation between two (T, M) matrices (chunked to bound memory)."""
+    az = _zs(np.nan_to_num(actual))
+    out = np.zeros(actual.shape[1])
+    for i in range(0, actual.shape[1], chunk):
+        out[i:i + chunk] = (az[:, i:i + chunk] * _zs(np.nan_to_num(pred[:, i:i + chunk]))).mean(0)
+    return np.nan_to_num(out)
+
+
 def fit_encoding(stim_train, resp_train, stim_test, resp_test,
                  nboots=5, chunklen=40, nchunks=20):
     """Fit the encoding model and return a results dict of correlation summaries."""
@@ -99,13 +108,20 @@ def fit_encoding(stim_train, resp_train, stim_test, resp_test,
     wt, corrs, alphas_best = bootstrap_ridge(
         stim_train, resp_train, stim_test, resp_test, alphas,
         nboots=nboots, chunklen=chunklen, nchunks=nchunks)
+
+    # in-sample training correlation (predict the train set with the fitted weights)
+    corrs_train = _per_voxel_corr(resp_train, stim_train @ wt)
+
     return {
         'weights': wt,
         'alphas_best': alphas_best,
         'corrs_test': corrs,
+        'corrs_train': corrs_train,
+        'corrs_train_mean': float(np.nanmean(corrs_train)),
         'corrs_test_mean': float(np.nanmean(corrs)),
         'corrs_test_median': float(np.nanmedian(corrs)),
         'corrs_test_frac>0': float(np.nanmean(corrs > 0)),
+        'corrs_test_frac>0.2': float(np.nanmean(corrs > 0.2)),
         'corrs_test_mean_top1_percentile': float(
             np.nanmean(np.sort(corrs)[-len(corrs) // 100:])),
         'corrs_test_mean_top5_percentile': float(

@@ -14,7 +14,15 @@ Real world: sentiment-sst2, paraphrase-mrpc, nli-snli
 
 1. Prompt your agent with: "Read and follow the instructions in evolve/program.md."
 
-- e.g. `copilot --autopilot --yolo --prompt "Read and follow the instructions in evolve/program.md."`
+- e.g. `copilot --autopilot --yolo --prompt "Follow the instructions in evolve/program.md."`
+
+or
+
+copilot --autopilot --yolo
+
+followed by
+
+Follow the instructions in evolve-neuro/program.md.
 
 ## Organization
 
