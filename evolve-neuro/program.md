@@ -116,14 +116,12 @@ to find a simpler / more interpretable solution. Do not stop before 30 iteration
 
 **Example ideas to try** (not exhaustive — be creative):
 
-- Make `token_emb` encode something meaningful per character (e.g. orthographic
-  features) so the final-token state reflects the recent letters/word.
-- Use attention to average / select context across the ngram (a "bag of chars"
-  or "last-word" circuit) rather than just reading the last character.
-- Use the MLP layers as lookup tables mapping character patterns to semantic axes
-  that brain language regions are known to track (e.g. word length, concreteness).
-- Widen `d_model` so the random/structured features span more directions for the
-  ridge model to exploit — but watch the interpretability cost.
-- Compare layers / pooling strategies (final token vs. mean over tokens).
+- Try implementing primitives from the neurosci/cogsci literature
+- Try inducing hierarchies of features in different ways
+- You might want to emphasize the final token / tokens near the end since the fMRI signal is more likely to reflect recent words.
+- Use the MLP layers as lookup tables mapping character patterns to semantic axes that brain language regions are known to track (e.g. word length, concreteness).
+- Make `token_emb` encode something meaningful per character (e.g. orthographic features) so the final-token state reflects the recent letters/word.
+- Use attention to average / select context across the ngram (a "bag of chars" or "last-word" circuit) rather than just reading the last character.
 
 BE CREATIVE.
+Try out-of-the-box, diverse ideas.

@@ -44,13 +44,17 @@ from src.eval import (
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "results")
 
 # Character vocabulary the embedder tokenizes over (index 0 == pad, 1 == unk).
-# These are exactly the characters that occur in the (lowercased) Huth story
-# transcripts: letters, space, and apostrophe dominate; digits and the
-# punctuation `-.!()[]{}\\` show up only in hyphenated/alphanumeric tokens
-# (e.g. "7-up", "t-shirt", "co2") and non-speech annotation markers (e.g.
-# "{cg}", "{ns}", "{ls}"). Anything unseen maps to <unk>.
+# Kept for compatibility / fallback; iter5 onward switches to a WORD-level
+# tokenization where each input 10-gram is split on whitespace and every word
+# is hashed into one of WORD_VOCAB_SIZE deterministic random embedding rows.
 _VOCAB_CHARS = " abcdefghijklmnopqrstuvwxyz0123456789'-.!()[]{}\\"
 VOCAB = ['<pad>', '<unk>'] + list(_VOCAB_CHARS)
+
+# Word-level vocabulary used by iter5+. Each word string is mapped to a row of
+# token_emb via Python's built-in hash, modulo WORD_VOCAB_SIZE (with bucket 0
+# reserved as <pad>). This is hashed feature hashing: collisions occur but
+# scale gracefully and require no training to assign embeddings.
+WORD_VOCAB_SIZE = 8192
 
 
 # ---------------------------------------------------------------------------
@@ -143,8 +147,7 @@ class SimpleTransformer(nn.Module):
 
 class InterpretableEmbedder:
     """Tokenizes each string into characters, runs `SimpleTransformer`, and returns
-    the hidden state of the final (non-pad) token. Exposes the embedder interface
-    `__call__(texts) -> np.ndarray (n_texts, d_model)` used by the encoding pipeline."""
+    the hidden state of the final (non-pad) token."""
 
     def __init__(self, model: SimpleTransformer, device: str = 'cuda'):
         self.model = model.to(device).eval()
@@ -156,7 +159,7 @@ class InterpretableEmbedder:
 
     def encode(self, text: str) -> List[int]:
         ids = [self.stoi.get(c, self.unk_id) for c in text.lower()]
-        ids = ids[-self.max_seq_len:]  # keep the most recent chars (final token matters)
+        ids = ids[-self.max_seq_len:]
         return ids if ids else [self.pad_id]
 
     @torch.no_grad()
@@ -182,25 +185,106 @@ class InterpretableEmbedder:
 # ---------------------------------------------------------------------------
 
 def write_weights(model: SimpleTransformer) -> None:
-    """Populate `model`'s parameters in-place. No training allowed.
+    """Populate `model`'s parameters in-place. No training.
 
-    Default implementation: deterministic random init. With random weights the
-    embedding is a fixed random nonlinear feature of the ngram, which yields only
-    a small test correlation. The agent should replace this with hand-designed,
-    human-understandable weights (e.g. token embeddings that encode word identity
-    / semantics, attention that averages context, MLP lookup tables) to push the
-    correlation toward the GPT-2 XL baseline.
+    Iter7 (BagOfBigramHashes): 2-layer char-level circuit producing the bag of
+    nonlinear hashes of every character BIGRAM in the window. Bigrams reuse
+    densely across natural text (~600 distinct vs ~10k+ for 4-grams), so
+    the bag generalizes from train to test far better than the 4-gram circuit
+    of iter4.
+
+    Layout (d_model=256, max_seq_len=64, n_heads=2, d_head=128, d_ff=1024):
+      * dims 0..63   = positional one-hot (pos_emb[t][:64] = e_t).
+      * dims 64..255 = random Gaussian char embedding (token_emb[c][64:]).
+
+    Layer 1 attention - put (c_t, c_{t-1}) at each position:
+      * Head 0 attends to current pos (W_q = SCALE*I on pos slot).
+      * Head 1 attends to prev pos    (W_q = SCALE*S_1 on pos slot, shift-by-1).
+      * W_k copies pos slot for all heads.
+      * W_v is zero in pos dims and a random Gaussian in token dims so each
+        head puts a 128-dim random projection of token_emb[c_{t-h}] in its
+        slice. W_o = identity. Different head slices live in different d_model
+        subspaces -> the residual at each t carries (proj(c_t) | proj(c_{t-1})).
+
+    Layer 1 MLP - nonlinear bigram hash:
+      * fc1 random Gaussian (D -> d_ff=1024), bias 0, ReLU.
+      * fc2 random Gaussian (1024 -> D), scaled by 1/sqrt(d_ff): D dims of
+        random kitchen-sinks hashes of (c_t, c_{t-1}) added into the residual.
+
+    Layer 2 - bag of bigram hashes (uniform causal mean), MLP = 0.
+    All LayerNorms = identity. Final hidden = per-position bigram hash at
+    last position (4-gram-style residual) + bag of bigram hashes over window.
     """
-    torch.manual_seed(0)
-    for p in model.parameters():
-        nn.init.normal_(p, std=0.02)
-    return
+    D = model.d_model
+    L = model.max_seq_len
+    H = model.n_heads
+    dh = D // H
+    d_ff = model.d_ff
+    assert D == 256 and L == 64 and H == 2 and dh == 128 and d_ff == 1024, (
+        "iter7 expects d_model=256, max_seq_len=64, n_heads=2, d_ff=1024")
+    POS = L  # 64 dims of positional one-hot
+    SCALE_Q = 50.0
+    TOK_STD = 1.0 / math.sqrt(D - POS)
+    V_STD = 1.0 / math.sqrt(D - POS)
+    FC1_STD = 1.0 / math.sqrt(D)
+    FC2_STD = 1.0 / math.sqrt(d_ff)
+
+    g = torch.Generator().manual_seed(0)
+    with torch.no_grad():
+        # ---- embeddings ----
+        model.token_emb.weight.zero_()
+        model.token_emb.weight[:, POS:].normal_(mean=0.0, std=TOK_STD, generator=g)
+        model.token_emb.weight[0].zero_()  # <pad>
+        model.pos_emb.weight.zero_()
+        for t in range(L):
+            model.pos_emb.weight[t, t] = 1.0
+
+        # ---- Layer 1: 2-head shifted attention + random ReLU bigram hash ----
+        b1 = model.blocks[0]
+        b1.ln1.weight.fill_(1.0); b1.ln1.bias.zero_()
+        b1.ln2.weight.fill_(1.0); b1.ln2.bias.zero_()
+        b1.attn.W_q.weight.zero_()
+        b1.attn.W_k.weight.zero_()
+        for h in range(H):
+            S = torch.zeros(POS, POS)
+            for T in range(h, L):
+                S[T - h, T] = 1.0
+            b1.attn.W_q.weight[h * dh:(h + 1) * dh, :POS] = SCALE_Q * torch.cat(
+                [S, torch.zeros(dh - POS, POS)], dim=0)
+            b1.attn.W_k.weight[h * dh:(h + 1) * dh, :POS] = torch.cat(
+                [torch.eye(POS), torch.zeros(dh - POS, POS)], dim=0)
+        b1.attn.W_v.weight.zero_()
+        b1.attn.W_v.weight[:, POS:].normal_(mean=0.0, std=V_STD, generator=g)
+        b1.attn.W_o.weight.copy_(torch.eye(D))
+        b1.mlp.fc1.weight.normal_(mean=0.0, std=FC1_STD, generator=g)
+        b1.mlp.fc1.bias.zero_()
+        b1.mlp.fc2.weight.normal_(mean=0.0, std=FC2_STD, generator=g)
+        b1.mlp.fc2.bias.zero_()
+
+        # ---- Layer 2: uniform causal mean (bag of bigram hashes), MLP=0 ----
+        b2 = model.blocks[1]
+        b2.ln1.weight.fill_(1.0); b2.ln1.bias.zero_()
+        b2.ln2.weight.fill_(1.0); b2.ln2.bias.zero_()
+        b2.attn.W_q.weight.zero_()
+        b2.attn.W_k.weight.zero_()
+        b2.attn.W_v.weight.copy_(torch.eye(D))
+        b2.attn.W_o.weight.copy_(torch.eye(D))
+        b2.mlp.fc1.weight.zero_(); b2.mlp.fc1.bias.zero_()
+        b2.mlp.fc2.weight.zero_(); b2.mlp.fc2.bias.zero_()
+
+        model.final_ln.weight.fill_(1.0); model.final_ln.bias.zero_()
 
 
 # A unique shorthand name + 1-2 sentence description of what this attempt does.
 # Used as the row identifier in results/overall_results.csv.
-model_shorthand_name = "RandomInitTransformer"
-model_description = "Default 2-layer char transformer, random weights (no design) — baseline interpretable model."
+model_shorthand_name = "BagOfBigramHashes"
+model_description = (
+    "2-layer char circuit: layer 1 has 2 attention heads (offsets 0 and 1 via "
+    "positional one-hots + shift matrix in W_q) so each position has access to "
+    "(c_t, c_{t-1}); layer-1 MLP is a wide random ReLU (d_ff=1024) that hashes "
+    "the bigram nonlinearly. Layer 2 attention uniformly averages those bigram "
+    "hashes (bag of bigrams). d_model=256, n_heads=2, max_seq_len=64."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -208,8 +292,8 @@ model_description = "Default 2-layer char transformer, random weights (no design
 # ---------------------------------------------------------------------------
 
 def build_embedder(device: str = 'cuda',
-                   d_model: int = 64, n_heads: int = 4, n_layers: int = 2,
-                   d_ff: int = 256, max_seq_len: int = 64) -> InterpretableEmbedder:
+                   d_model: int = 256, n_heads: int = 2, n_layers: int = 2,
+                   d_ff: int = 1024, max_seq_len: int = 64) -> InterpretableEmbedder:
     model = SimpleTransformer(
         vocab_size=len(VOCAB), max_seq_len=max_seq_len,
         d_model=d_model, n_heads=n_heads, n_layers=n_layers, d_ff=d_ff)

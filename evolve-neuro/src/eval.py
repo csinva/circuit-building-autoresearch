@@ -188,16 +188,37 @@ def plot_corr_over_iterations(results_dir: str) -> None:
         return
 
     iters = list(range(1, len(rows) + 1))
+    names = [n for n, _ in rows]
     corrs = [c for _, c in rows]
-    running_max, best = [], float("-inf")
-    for c in corrs:
+    is_baseline = ["baseline" in n.lower() for n in names]
+
+    # Running max over non-baseline points only.
+    running_iters, running_max, best = [], [], float("-inf")
+    for it, c, base in zip(iters, corrs, is_baseline):
+        if base:
+            continue
         best = max(best, c)
+        running_iters.append(it)
         running_max.append(best)
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(iters, corrs, marker="o", linestyle="-", color="steelblue", label="test_corr")
-    ax.plot(iters, running_max, drawstyle="steps-post", color="crimson",
-            linewidth=2, label="running max")
+    # Non-baseline points: connected line with circle markers.
+    nb_iters = [it for it, base in zip(iters, is_baseline) if not base]
+    nb_corrs = [c for c, base in zip(corrs, is_baseline) if not base]
+    ax.plot(nb_iters, nb_corrs, marker="o", linestyle="-", color="steelblue", label="test_corr")
+    # Baseline points: black squares, not part of the running max.
+    bl_iters = [it for it, base in zip(iters, is_baseline) if base]
+    bl_corrs = [c for c, base in zip(corrs, is_baseline) if base]
+    if bl_iters:
+        ax.scatter(bl_iters, bl_corrs, marker="s", color="black", zorder=5, label="baseline")
+    if running_iters:
+        ax.plot(running_iters, running_max, drawstyle="steps-post", color="crimson",
+                linewidth=2, label="running max")
+    # Annotate each point with its model name, rotated vertically.
+    for it, c, name in zip(iters, corrs, names):
+        ax.annotate(name, (it, c), rotation=90, fontsize=7,
+                    textcoords="offset points", xytext=(0, 5),
+                    ha="center", va="bottom")
     ax.set_xlabel("iteration")
     ax.set_ylabel("mean test correlation")
     ax.set_title("Encoding test correlation over iterations")
