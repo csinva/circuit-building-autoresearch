@@ -22,7 +22,7 @@ copilot --autopilot --yolo
 
 followed by
 
-Follow the instructions in evolve-neuro/program.md.
+Follow the instructions in evolve-neuro/program.md
 
 ## Organization
 

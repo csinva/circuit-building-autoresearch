@@ -26,4 +26,5 @@ dependencies = [
     "weasyprint>=68.1",
     "tabpfn>=7.0.0",
     "pypdf2>=3.0.1",
+    "nltk>=3.9.4",
 ]

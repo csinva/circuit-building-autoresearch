@@ -190,7 +190,7 @@ def plot_corr_over_iterations(results_dir: str) -> None:
     iters = list(range(1, len(rows) + 1))
     names = [n for n, _ in rows]
     corrs = [c for _, c in rows]
-    is_baseline = ["baseline" in n.lower() for n in names]
+    is_baseline = ["gpt" in n.lower() for n in names]
 
     # Running max over non-baseline points only.
     running_iters, running_max, best = [], [], float("-inf")
@@ -201,7 +201,7 @@ def plot_corr_over_iterations(results_dir: str) -> None:
         running_iters.append(it)
         running_max.append(best)
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(16, 5))
     # Non-baseline points: connected line with circle markers.
     nb_iters = [it for it, base in zip(iters, is_baseline) if not base]
     nb_corrs = [c for c, base in zip(corrs, is_baseline) if not base]
@@ -216,7 +216,7 @@ def plot_corr_over_iterations(results_dir: str) -> None:
                 linewidth=2, label="running max")
     # Annotate each point with its model name, rotated vertically.
     for it, c, name in zip(iters, corrs, names):
-        ax.annotate(name, (it, c), rotation=90, fontsize=7,
+        ax.annotate(name, (it, c), rotation=90, fontsize='xx-small',
                     textcoords="offset points", xytext=(0, 5),
                     ha="center", va="bottom")
     ax.set_xlabel("iteration")
@@ -227,7 +227,7 @@ def plot_corr_over_iterations(results_dir: str) -> None:
     if len(iters) <= 30:
         ax.set_xticks(iters)
     fig.tight_layout()
-    out_path = os.path.join(results_dir, "corr_over_iterations.png")
-    fig.savefig(out_path, dpi=150)
+    out_path = os.path.join(results_dir, "corr_over_iterations.pdf")
+    fig.savefig(out_path) #, dpi=150)
     plt.close(fig)
     print(f"Plot saved → {out_path}")

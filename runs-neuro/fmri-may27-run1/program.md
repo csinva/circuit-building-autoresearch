@@ -3,7 +3,7 @@
 This is an experiment to have a coding agent autonomously research how to
 hand-write the weights of a small transformer (ideally with human-understandable
 structure) so that its embeddings predict **fMRI responses to language** as well
-as possible. The reference point is a pretrained **GPT-2 XL** baseline.
+as possible.
 
 The model is NEVER trained. The agent must write the weights directly into
 `interpretable_transformer.py`.
@@ -13,7 +13,7 @@ The model is NEVER trained. The agent must write the weights directly into
 We use the Huth natural-language fMRI dataset. For every word a **10-gram** (the
 word plus the preceding words) is embedded by the model; the final-token hidden
 state is the feature for that word. Features are Lanczos-downsampled to the fMRI
-TR timeline, z-scored, FIR-delayed, and a **ridge** model is fit to predict voxel
+TR timeline, z-scored, FIR-delayed, and a linear model is fit to predict voxel
 responses. The metric is the **mean test-set correlation** (`test_corr`) between
 predicted and held-out actual responses, averaged over all voxels.
 
@@ -118,10 +118,6 @@ to find a simpler / more interpretable solution. Do not stop before 30 iteration
 
 - Try implementing primitives from the neurosci/cogsci literature
 - Try inducing hierarchies of features in different ways
-- Make `token_emb` encode something meaningful per character (e.g. orthographic features) so the final-token state reflects the recent letters/word.
-- Use attention to average / select context across the ngram (a "bag of chars" or "last-word" circuit) rather than just reading the last character.
-- Use the MLP layers as lookup tables mapping character patterns to semantic axes that brain language regions are known to track (e.g. word length, concreteness).
-- Widen `d_model` so the random/structured features span more directions for the ridge model to exploit — but watch the interpretability cost.
-- You might want to emphasize the final token / tokens near the end since the fMRI signal is more likely to reflect recent words.
-
-BE CREATIVE.
+- Try tracking particular ngrams based on their projections onto random/structured directions
+- You probably want to emphasize the final word / words near the end since the fMRI signal is more likely to reflect recent words
+- You might want to switch to word-based tokenization instead of character-based, since the fMRI signal is more likely to reflect word-level processing (but do not download any pretrained tokenizer or embedding, you must implement it yourself in `InterpretableEmbedder` using the `VOCAB` list of words)
