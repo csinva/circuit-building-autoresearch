@@ -1,0 +1,151 @@
+task,accuracy,status,model_shorthand_name,n_params,description
+sentiment-sst2,0.5950,success,AlwaysPositive,1.59e+05,Sanity-check baseline: zero everything; head biased to always emit '1'.
+sentiment-sst2,0.4050,success,CharLogOdds,1.59e+05,Per-char log-odds from SST-2 pool placed in residual dim 0; one uniform-attention block averages them; head reads sentiment channel.
+sentiment-sst2,0.4050,,CharLogOddsCentered,1.59e+05,Per-char log-odds excluding padding; mean-centred over letters so neutral input → 0 sentiment.
+sentiment-sst2,0.6650,success,CharLogOddsCal,1.59e+05,Per-char log-odds (Laplace-smoothed) over SST-2 pool; calibrated via threshold search on pool; uniform causal attention averages sentiment at '=' position.
+sentiment-sst2,0.6600,success,BigramLogOddsCal,8.87e+05,"Bigram log-odds over SST-2 pool. L0 attention (offset 1) loads prev-token one-hot, L0 MLP is a V*V bigram lookup writing sentiment, L1 uniformly averages it at '='."
+sentiment-sst2,0.7250,,BigramSmooth5,8.87e+05,"Bigram log-odds (Laplace alpha=5) with two-stage calibration: (i) calibrated bigram score threshold; (ii) empirical sentiment-output threshold via pool forward pass, stored in pos_emb[80,SENT]."
+sentiment-sst2,0.7400,,BigramSmooth2,8.87e+05,"Bigram log-odds (Laplace alpha=2) with two-stage calibration: (i) calibrated bigram score threshold; (ii) empirical sentiment-output threshold via pool forward pass, stored in pos_emb[80,SENT]."
+sentiment-sst2,0.7300,,BigramPrune5,8.87e+05,"Bigram log-odds with rare-bigram pruning (count<5 -> 0), two-stage calibration: (i) calibrated bigram score threshold; (ii) empirical sentiment-output threshold via pool forward pass, stored in pos_emb[80,SENT]."
+sentiment-sst2,0.7450,,BigramClip,8.87e+05,"Bigram log-odds clipped to +-1.5 (suppresses noisy outliers); two-stage calibration: (i) calibrated bigram score threshold; (ii) empirical sentiment-output threshold via pool forward pass, stored in pos_emb[80,SENT]."
+sentiment-sst2,0.6950,,BigramShrink20,8.87e+05,"Bigram log-odds shrunk by count/(count+20) confidence factor; two-stage calibration: (i) calibrated bigram score threshold; (ii) empirical sentiment-output threshold via pool forward pass, stored in pos_emb[80,SENT]."
+sentiment-sst2,0.7400,,BigramCenter,8.87e+05,"Bigram log-odds with mean-centering over non-special bigrams; two-stage calibration: (i) calibrated bigram score threshold; (ii) empirical sentiment-output threshold via pool forward pass, stored in pos_emb[80,SENT]."
+sentiment-sst2,0.7350,,BigramAlpha05,8.87e+05,"Bigram log-odds with low Laplace smoothing (alpha=0.5), two-stage calibration: (i) calibrated bigram score threshold; (ii) empirical sentiment-output threshold via pool forward pass, stored in pos_emb[80,SENT]."
+sentiment-sst2,0.6800,,TrigramTopK,2.67e+06,Bigram + top-1024 trigram log-odds. L0 has 2 offset-attn heads (offsets 1 and 2); MLP has V*V bigram detectors plus K trigram detectors writing to sentiment; L1 uniformly aggregates; two-stage threshold calibration.
+sentiment-sst2,0.7450,,BigramLogOddsCal2,8.87e+05,"Bigram log-odds with two-stage calibration (best so far): (i) calibrated bigram score threshold; (ii) empirical sentiment-output threshold via pool forward pass, stored in pos_emb[80,SENT]."
+sentiment-sst2,0.7400,,BigramBump,1.54e+06,"Bigram log-odds with bump detector (2 ReLUs per bigram, low+high threshold) for position-invariant triggered value; two-stage calibration."
+sentiment-sst2,0.7450,,BigramBalanced,1.54e+06,Bigram log-odds with bump detector and balanced prev_gain=0.125 (LN curr ~ LN prev); two-stage calibration.
+sentiment-sst2,0.7450,,SkipBigram,1.54e+06,"Skip-1 bigram log-odds (t_{i-2}, t_i): offset-2 attention loads prev2 token; same bump MLP and two-stage calibration."
+sentiment-sst2,0.7600,,DualBigram,2.67e+06,Adjacent + skip-1 bigram log-odds combined. Two attention heads load prev1 (offset 1) and prev2 (offset 2); MLP has 2*V*V neurons (V*V adj + V*V skip-1); two-stage calibration.
+sentiment-sst2,0.7500,,TripleBigram,5.97e+06,Adjacent + skip-1 + skip-2 bigram log-odds combined. Three attention heads load prev1/prev2/prev3; MLP has 3*V*V neurons; two-stage calibration.
+sentiment-sst2,0.7350,,DualBigramAlpha3,2.67e+06,DualBigram (adj + skip-1) with Laplace smoothing alpha=3.
+sentiment-sst2,0.7650,,DualBigramA2Clip2,2.67e+06,DualBigram alpha=2 with log-odds clipped to +/-2.
+sentiment-sst2,0.7650,,DualBigramAlpha15,2.67e+06,DualBigram (adj + skip-1) with Laplace smoothing alpha=1.5.
+sentiment-sst2,0.7650,,DualBigramAlpha2,2.67e+06,DualBigram (adj + skip-1) with Laplace smoothing alpha=2.
+sentiment-sst2,0.7850,,DualBigramTri256,2.93e+06,"DualBigramAlpha2 + top-256 trigram detectors (curr+prev1+prev2 all-match, bias=20)."
+sentiment-sst2,0.7950,,DualBigramTri512,3.19e+06,DualBigramAlpha2 + top-512 trigram detectors.
+sentiment-sst2,0.8200,,DualBigramTri1024,3.72e+06,DualBigramAlpha2 + top-1024 trigram detectors.
+sentiment-sst2,0.8200,,DualBigramTri2048,4.77e+06,DualBigramAlpha2 + top-2048 trigram detectors.
+sentiment-sst2,0.8100,,DualBigramTri2048MC10,4.77e+06,"DualBigramAlpha2 + top-2048 trigrams, min_count=10."
+sentiment-sst2,0.8050,,DualBigramTri2048MC15,4.77e+06,"DualBigramAlpha2 + top-2048 trigrams, min_count=15."
+sentiment-sst2,0.7700,,DualBigramTri2048MC30,4.77e+06,"DualBigramAlpha2 + top-2048 trigrams, min_count=30."
+sentiment-sst2,0.7850,,DualBigramTri1024B16,3.72e+06,"DualBigramTri1024 with bias_tri=16, tri_val=6.6."
+sentiment-sst2,0.8200,,DualBigramTri1024B18b12,3.72e+06,DualBigramTri1024B18 with bigram bias_thr=12 (tighter).
+sentiment-sst2,0.8250,,DualBigramTri1024B18,3.72e+06,"DualBigramTri1024 with bias_tri=18, tri_val=4.6 (safer firing margin)."
+sentiment-sst2,0.6950,,DualBigramTri2048FullPool,4.77e+06,"DualBigramTri2048B18 with full SST-2 train (67k) for n-gram stats, min_count=100."
+sentiment-sst2,0.7950,,TriBigramPlusChar,3.75e+06,DualBigramTri1024B18 + 32 char log-odds detectors as baseline floor.
+sentiment-sst2,0.8200,,TriBigramPrune10,3.72e+06,DualBigramTri1024B18 with bigram log-odds zeroed when count<10.
+sentiment-sst2,0.8250,,TriBigramZScore,3.72e+06,DualBigramTri1024B18 with trigram selection by z-score (|lo|/SE).
+sentiment-sst2,0.7950,,TriBigramZ512,3.19e+06,DualBigramTri512 with z-score trigram selection.
+sentiment-sst2,0.8100,,TriBigram1500MC15,4.20e+06,"DualBigramTri B18 with K=1500 trigrams, min_count=15."
+sentiment-sst2,0.7850,,TriBigramAlpha4,3.72e+06,DualBigramTri1024B18 with bigram alpha=4 smoothing.
+sentiment-sst2,0.8300,,QuadBigramTri1024,7.54e+06,Bigram + 1024 trigram + 1024 quadgram detectors. d_model=384.
+sentiment-sst2,0.7850,,QuadBigramTri512MC15,6.75e+06,Bigram + 1024 trigram + 512 quadgram (min_count=15).
+sentiment-sst2,0.8350,,QuadBigramTri,6.75e+06,"Bigram + trigram + quadgram. d_model=384, 3 heads (offsets 1/2/3), V*V bigram + 1024 trigram + 512 quadgram detectors."
+sentiment-sst2,0.8350,,QuadBigramTriB28,6.75e+06,QuadBigramTri with bias_q=28 (stricter quadgram firing).
+sentiment-sst2,0.8300,,QuadBigramTriB25,6.75e+06,QuadBigramTri with bias_q=25.
+sentiment-sst2,0.8350,,QuadBigramTriB26T17,6.75e+06,QuadBigramTri B26 with bias_tri=17.
+sentiment-sst2,0.8450,,QuadBigramTriB26b11,6.75e+06,QuadBigramTriB26 with bias_thr=11 (bigram).
+sentiment-sst2,0.8250,,QuadBigramTriB26K768,7.15e+06,QuadBigramTriB26 with K_QUAD=768.
+sentiment-sst2,0.8350,,QuadBigramTriB26K1500,7.48e+06,QuadBigramTriB26 with K_TRI=1500 (mc=15) + K_QUAD=512.
+sentiment-sst2,0.8300,,PentQuadBigramTri,1.01e+07,"Bigram + 1024 trigram + 512 quadgram + 256 pentagram. d_model=512, 4 heads."
+sentiment-sst2,0.8300,,PentP36,1.01e+07,Pent with bias_p=36 (stricter).
+sentiment-sst2,0.8250,,PentP36K128,1.01e+07,Pent K=128 bias_p=36.
+sentiment-sst2,0.7950,,QuadBigramTri_d512,1.01e+07,Quadgram champion ported to d_model=512 (no pent).
+sentiment-sst2,0.8450,,QuadBigramTriB26,6.75e+06,QuadBigramTri with bias_q=26 (looser quadgram firing).
+sentiment-sst2,0.8250,,QuadBigramTriQ768,7.15e+06,Champion with K_QUAD=768.
+sentiment-sst2,0.8450,,QuadBigramTri_T2048,8.33e+06,Champion with K_TRI=2048.
+sentiment-sst2,0.8200,,QuadBigramTri_alpha5,6.75e+06,Champion with alpha_t=5 (stronger smoothing for tri/quad).
+sentiment-sst2,0.8600,,QuadBigramTri_alpha1,6.75e+06,Champion with alpha_t=1.
+sentiment-sst2,0.8400,,QuadBigramTri_alpha0.5,6.75e+06,Champion with alpha_t=0.5.
+sentiment-sst2,0.8600,,QuadBigramTri_a1_at1,6.75e+06,"alpha=1, alpha_t=1."
+sentiment-sst2,0.8550,,QBT_at1_bt17,6.75e+06,alpha_t=1 bias_tri=17.
+sentiment-sst2,0.8600,,QBT_at1_bt19,6.75e+06,alpha_t=1 bias_tri=19.
+sentiment-sst2,0.8600,,QBT_at1_bq25,6.75e+06,alpha_t=1 bias_q=25.
+sentiment-sst2,0.8100,,QBT_at1_bq24,6.75e+06,alpha_t=1 bias_q=24.
+sentiment-sst2,0.8550,,QBT_at1_qmin5,6.75e+06,alpha_t=1 quad min_count=5.
+sentiment-sst2,0.8200,,QBT_at1_qmin15,6.75e+06,alpha_t=1 quad min_count=15.
+sentiment-sst2,0.8500,,QBT_at1_tmin10,6.75e+06,alpha_t=1 tri min_count=10.
+sentiment-sst2,0.8050,,QBT_at1_tmin30,6.75e+06,alpha_t=1 tri min_count=30.
+sentiment-sst2,0.8600,,QBT_at1_KT1536,7.54e+06,alpha_t=1 K_TRI=1536.
+sentiment-sst2,0.8600,,QBT_at1_KT768,6.36e+06,alpha_t=1 K_TRI=768.
+sentiment-sst2,0.8650,,QBT_at1_bth13,6.75e+06,alpha_t=1 bias_thr=13.
+sentiment-sst2,0.8600,,QBT_at1_bth14,6.75e+06,alpha_t=1 bias_thr=14.
+sentiment-sst2,0.8400,,QBT_lo2_score,6.75e+06,Score by lo^2 * sqrt(cnt).
+sentiment-sst2,0.8400,,QBT_locnt_score,6.75e+06,Score by |lo| * cnt.
+sentiment-sst2,0.8600,,QBT_bth13_bt17,6.75e+06,bias_thr=13 bias_tri=17.
+sentiment-sst2,0.8650,,QBT_bth13_bt19,6.75e+06,bias_thr=13 bias_tri=19.
+sentiment-sst2,0.8650,,QBT_bth13_bt19_bq27,6.75e+06,bias_thr=13 bias_tri=19 bias_q=27.
+sentiment-sst2,0.8600,,QBT_bth13_bt19_bq28,6.75e+06,bias_thr=13 bias_tri=19 bias_q=28.
+sentiment-sst2,0.7950,,QBT_bth13_KQ256,6.36e+06,bias_thr=13 K_QUAD=256.
+sentiment-sst2,0.8300,,QBT_bth13_KQ1024,7.54e+06,bias_thr=13 K_QUAD=1024.
+sentiment-sst2,0.8650,,Skip2Bigram,6.75e+06,"Add skip-2 bigram channel (prev3, cur)."
+sentiment-sst2,0.8250,,QBT_tv2.5,6.75e+06,trig_val=2.5 (boost bigram gain).
+sentiment-sst2,0.8550,,QBT_tv5.0,6.75e+06,trig_val=5.0.
+sentiment-sst2,0.8550,,QBT_triv4,6.75e+06,tri_val=4 (boost trigram gain).
+sentiment-sst2,0.8550,,QBT_triv9,6.75e+06,tri_val=9 (weaker trigram gain).
+sentiment-sst2,0.8200,,QBT_qv5,6.75e+06,q_val=5 (boost quadgram gain).
+sentiment-sst2,0.8400,,QBT_qv12,6.75e+06,q_val=12 (weaker quadgram gain).
+sentiment-sst2,0.8650,,QBT_KT2048,8.33e+06,K_TRI=2048.
+sentiment-sst2,0.8300,,QBT_KT2048_KQ1024,9.11e+06,K_TRI=2048 K_QUAD=1024.
+sentiment-sst2,0.8600,,QBT_bth10,6.75e+06,bias_thr=10 (very loose bigram firing).
+sentiment-sst2,0.8600,,QBT_bth11,6.75e+06,bias_thr=11.
+sentiment-sst2,0.8550,,QBT_bgmin5,6.75e+06,Zero bigrams with count<5.
+sentiment-sst2,0.8250,,QBT_bgmin2,6.75e+06,Zero bigrams with count<2.
+sentiment-sst2,0.8300,,QBT_shrink10,6.75e+06,"James-Stein shrinkage on bigrams, lam=10."
+sentiment-sst2,0.8450,,QBT_shrink2,6.75e+06,Shrinkage lam=2.
+sentiment-sst2,0.8150,,QBT_bt15,6.75e+06,bias_tri=15 (very loose).
+sentiment-sst2,0.8650,,QBT_alpha0.5,6.75e+06,alpha=0.5.
+sentiment-sst2,0.8500,,QBT_alpha0.2,6.75e+06,alpha=0.2.
+sentiment-sst2,0.8650,,QBT_at1.5,6.75e+06,alpha_t=1.5.
+sentiment-sst2,0.8650,,QBT_at0.8,6.75e+06,alpha_t=0.8.
+sentiment-sst2,0.8650,,QBT_bgclip2,6.75e+06,"Clip bigram lo to [-2, 2]."
+sentiment-sst2,0.8200,,QBT_bgclip1,6.75e+06,"Clip bigram lo to [-1, 1]."
+sentiment-sst2,0.8650,,QBT_bgclip3,6.75e+06,"Clip bigram lo to [-3, 3]."
+sentiment-sst2,0.8650,,QBT_clip3all,6.75e+06,"Clip all lo to [-3, 3]."
+sentiment-sst2,0.8600,,QBT_a1_at1_bth13,6.75e+06,"alpha=1, alpha_t=1, bias_thr=13."
+sentiment-sst2,0.8250,,QBT_a3,6.75e+06,alpha=3.
+sentiment-sst2,0.8200,,QBT_pg085,6.75e+06,prev_gain=0.085.
+sentiment-sst2,0.8550,,QBT_KT4096,1.15e+07,K_TRI=4096 min_count=10.
+sentiment-sst2,0.8100,,QBT_bg_dz0.3,6.75e+06,Bigram dead-zone |lo|<0.3 -> 0.
+sentiment-sst2,0.8450,,QBT_KT512_KQ1536,7.54e+06,K_TRI=512 K_QUAD=1536 - shift to longer ngrams.
+sentiment-sst2,0.8650,,QBT_score_lo2cnt,6.75e+06,Score n-grams by lo^2 * cnt (information gain).
+sentiment-sst2,0.8050,,QBT_tv3.3,6.75e+06,trig_val=3.3 (stronger bigram).
+sentiment-sst2,0.8600,,QBT_tv4.0,6.75e+06,trig_val=4.0.
+sentiment-sst2,0.7650,,QBT_bt18_bq27,6.75e+06,bias_tri=18 bias_q=27.
+sentiment-sst2,0.8600,,QBT_bq28_qv5.4,6.75e+06,bias_q=28 (tight) q_val=5.4 (stronger gain).
+sentiment-sst2,0.8150,,QBT_bth12_analytic,6.75e+06,bias_thr=12 (analytic exact).
+sentiment-sst2,0.8300,,QBT_triv5,6.75e+06,tri_val=5.0 (stronger trigram).
+sentiment-sst2,0.8600,,QBT_triv7,6.75e+06,tri_val=7.0 (weaker trigram).
+sentiment-sst2,0.8200,,QBT_at0.3,6.75e+06,alpha_t=0.3 (low smoothing).
+sentiment-sst2,0.8450,,QBT_at1.2,6.75e+06,alpha_t=1.2.
+sentiment-sst2,0.8250,,QBT_bt20,6.75e+06,bias_tri=20 (very tight).
+sentiment-sst2,0.8650,,QBT_shift60_40,6.75e+06,Calib shift: 60% adj / 40% skip.
+sentiment-sst2,0.8650,,QBT_shift80_20,6.75e+06,Calib shift: 80% adj / 20% skip.
+sentiment-sst2,0.8650,,QBT_shift100_0,6.75e+06,Calib shift: 100% adj / 0% skip.
+sentiment-sst2,0.8200,,QBT_KQ768_mc7,7.15e+06,K_QUAD=768 min_count=7.
+sentiment-sst2,0.8650,,QBT_KT1536_redo,7.54e+06,K_TRI=1536 with current best settings.
+sentiment-sst2,0.8650,,QBT_a05_KT2048,8.33e+06,alpha=0.5 K_TRI=2048.
+sentiment-sst2,0.8350,,QBT_a05_at1.5_KT2048,8.33e+06,alpha=0.5 alpha_t=1.5 KT=2048.
+sentiment-sst2,0.8250,,QBT_qmc5,6.75e+06,quad min_count=5.
+sentiment-sst2,0.8650,,QBT_champ_final,6.75e+06,Champion 86.5%: a=2 a_t=1 KT=1024 KQ=512 bth=13.
+sentiment-sst2,0.8600,,QBT_bth13.5,6.75e+06,bias_thr=13.5 (between 13 and 14).
+sentiment-sst2,0.8650,,QBT_bth12.5,6.75e+06,bias_thr=12.5.
+sentiment-sst2,0.8100,,QBT_no_skip1,6.75e+06,Disable skip-1 bigrams entirely.
+sentiment-sst2,0.8650,,QBT_lennorm,6.75e+06,Length-normalized aggregation in block 1 (attend only non-padding).
+sentiment-sst2,0.8150,,QBT_KQ256_mc25,6.36e+06,K_QUAD=256 with min_count=25 (high precision quads).
+sentiment-sst2,0.8650,,QBT_score_1.2_0.6,6.75e+06,Score |lo|^1.2 * cnt^0.6.
+sentiment-sst2,0.8650,,QBT_score_0.8_0.4,6.75e+06,Score |lo|^0.8 * cnt^0.4.
+sentiment-sst2,0.8400,,QBT_KT512_KQ1024,6.75e+06,K_TRI=512 K_QUAD=1024 (emphasize 4grams).
+sentiment-sst2,0.8250,,QBT_pg082,6.75e+06,prev_gain=0.082.
+sentiment-sst2,0.8200,,QBT_pg079,6.75e+06,prev_gain=0.079.
+sentiment-sst2,0.8600,,QBT_a1_bth14,6.75e+06,alpha=1 bias_thr=14.
+sentiment-sst2,0.8150,,QBT_min_lo0.5,6.75e+06,Require |lo|>=0.5 for tri/quad.
+sentiment-sst2,0.8200,,QBT_clamp25,6.75e+06,Bigram clamp +/-2.5
+sentiment-sst2,0.8200,,QBT_clamp4,6.75e+06,Tri/quad lo clamp +/-4
+sentiment-sst2,0.8150,,QBT_trisq,6.75e+06,Tri lo*|lo| sq weighting
+sentiment-sst2,0.8000,,QBT_uni0.25,6.75e+06,Add unigram log-odds gain=0.25
+sentiment-sst2,0.8250,,QBT_tv3.0,6.75e+06,trig_val=3.0
+sentiment-sst2,0.8650,,QBT_champ,6.75e+06,"86.5% champion: alpha=2, a_t=1, KT=1024 (mc=20), KQ=512 (mc=10), bth=13, tv=3.7, bt=19, biv=6.05, bq=26, qv=7.4, pg=0.0806, score=|lo|*sqrt(cnt)"
+sentiment-sst2,0.8700,,QBT_linscore,8.33e+06,|lo|*cnt score
+sentiment-sst2,0.8700,,QBT_a0.3_dz_KT2048,8.33e+06,alpha=0.3 + bigram dead-zone |lo|<0.15 + K_TRI=2048 + alpha_q=0.5 (87.0%)

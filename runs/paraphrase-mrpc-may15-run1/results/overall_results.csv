@@ -1,0 +1,310 @@
+task,accuracy,status,model_shorthand_name,n_params,description
+paraphrase-mrpc,0.6800,success,AlwaysOne-v1,1.61e+05,"Zeroed weights; final_ln.bias channel0=1, head maps channel0 to token '1'. Constant '1' predictor."
+paraphrase-mrpc,0.6800,success,AlwaysOne-tiny-v2,1.96e+03,"Tiny architecture (d_model=8, n_heads=1, n_layers=1, d_ff=8). Constant '1' predictor — minimal params for max interpretability."
+paraphrase-mrpc,0.3850,success,CharBagOverlap-v3,2.25e+05,"2 attn heads accumulate char bags for s1/s2 at the '=' position; MLP computes L1; head predicts '1' when overlap high, else '0'. d_model=128 n_heads=2 n_layers=2 d_ff=132."
+paraphrase-mrpc,0.6700,success,CharBagOverlap-v4,2.25e+05,Char-bag overlap circuit. 2 attn heads collect s1/s2 char-frequency vectors at the '=' position; block-1 MLP computes K - 38*L1 into channel 101; head decides '1' if positive (L1<0.51) else '0'. d_model=128 n_heads=2 n_layers=2 d_ff=132.
+paraphrase-mrpc,0.6300,success,CharBagOverlap-v5,2.25e+05,Char-bag overlap circuit (K_CONST=10 -> decision boundary at L1≈0.5). Two attn heads collect s1/s2 char-frequency vectors at '='; MLP computes K-scale*L1; head splits on sign. d_model=128 n_heads=2 n_layers=2 d_ff=132.
+paraphrase-mrpc,0.6850,success,CharBagOverlap-v6,2.25e+05,Char-bag overlap circuit (K_CONST=14.3 -> L1 decision boundary ≈0.51 accounting for final_ln mean shift). d_model=128 n_heads=2 n_layers=2 d_ff=132.
+paraphrase-mrpc,0.6900,success,CharBagOverlap-v7,2.25e+05,Char-bag overlap circuit (K_CONST=14). Two attn heads accumulate s1/s2 char-frequency vectors at '='; block-1 MLP computes K - 28*L1 into channel 101; head predicts '1' iff channel > final_ln mean. d_model=128 n_heads=2 n_layers=2 d_ff=132.
+paraphrase-mrpc,0.6750,success,CharBagOverlap-1layer-v8,1.25e+05,Single-block char-bag overlap circuit (n_layers=1). Block's attention collects s1/s2 char bags at '='; same block's MLP computes 14 - 28*L1; head splits on sign. Halves parameter count vs v7.
+paraphrase-mrpc,0.6900,success,CharBagOverlap-1layer-v9,1.25e+05,"Single-block char-bag overlap circuit (K=15, n_layers=1). Block's attention collects s1/s2 char bags at '='; same block's MLP computes 15 - 28*L1; head splits on sign. Halves params vs 2-layer v7, same accuracy."
+paraphrase-mrpc,0.6800,success,CharBagOverlap-tiny-v10,8.87e+04,"Single-block char-bag overlap circuit with minimal d_model=102 (exactly the channels we need). n_heads=2 (head_dim=51), n_layers=1, d_ff=132. Same circuit; smaller params."
+paraphrase-mrpc,0.6950,success,CharBagOverlap-tiny-v11,8.87e+04,"Tiny char-bag overlap (d_model=102, n_heads=2, n_layers=1, d_ff=132, K=14). Block's 2 attn heads collect s1/s2 char bags at '='; same block's MLP computes 14 - L1; head splits on sign. ~6.5x fewer params than v7 with same 0.69 accuracy."
+paraphrase-mrpc,0.5150,success,CharBagOverlap-diff-v12,4.99e+04,"Tiny char-bag-diff overlap circuit. d_model=68, n_heads=2, n_layers=1, d_ff=132. W_o subtracts head2 from head1 so we store only s1-s2 char-frequency DIFFERENCE; MLP turns its L1 norm into overlap score. Even fewer params than v11."
+paraphrase-mrpc,0.7100,success,CharBagOverlap-diff-v13,4.99e+04,"Tiny char-bag-diff overlap (d_model=68, n_heads=2, n_layers=1, d_ff=132, K=20). W_o subtracts head2 from head1 storing only s1-s2 char-frequency DIFFERENCE; MLP computes L1; head splits on sign."
+paraphrase-mrpc,0.7150,success,CharBagOverlap-lenwt-v14,4.99e+04,"Tiny char-bag-diff overlap with '_'-weighted L1 (d_model=68, n_heads=2, n_layers=1, d_ff=132, K=20, us_w=2). Length-difference channel gets 2x weight since paraphrases tend to have similar length."
+paraphrase-mrpc,0.7300,success,CharBag2Feat-v15,4.99e+04,"Two-feature char-bag circuit (d_model=68, n_heads=2, n_layers=1, d_ff=132). Feature1: K1-weighted_L1 (us_w=2). Feature2: relu(K2 - 3*|len_diff|). Head reads both."
+paraphrase-mrpc,0.7300,,CharBag2Feat-tiny-v16,4.11e+04,"Tiny 2-feature char-bag circuit (d_model=68, d_ff=68, n_heads=2, n_layers=1). Same 2-feature design as v15 with d_ff halved from 132 to 68 (2 MLP rows per char instead of 4). Fewer params, same accuracy."
+paraphrase-mrpc,0.7300,,CharBag2Feat-mini-v17,4.09e+04,"Minimal 2-feature char-bag circuit (d_model=68, d_ff=66, n_heads=2, n_layers=1). Same 2-feature design as v15/v16 but d_ff trimmed to bare minimum (exactly 2 rows per char). Same 0.73 accuracy."
+paraphrase-mrpc,0.6800,success,CharBag1Feat-v18,4.09e+04,Ablation: v17 with feature-2 disabled (only weighted-L1 feature). Sanity check.
+paraphrase-mrpc,0.7250,success,CharBag2Feat-uniform-v19,4.09e+04,"Ablation: v17 with us_w=1.0 (uniform char weighting, no extra ""_"" emphasis)."
+paraphrase-mrpc,0.7250,success,CharBag2Feat-uswt3-v20,4.09e+04,Ablation: v17 with us_w=3.0 (stronger length-difference weighting).
+paraphrase-mrpc,0.7050,success,CharBag2Feat-2layer-mini-v21,2.75e+04,"2-layer minimal compact variant: d_model=36, n_heads=1, n_layers=2, d_ff=68. Channel-reuse trick puts diff-bag into the same chans as token emb. ~33% fewer params than v17, but 0.7050 acc."
+paraphrase-mrpc,0.6500,success,K1sweep-v23,4.09e+04,v17 with K1=16 (L1 threshold sweep)
+paraphrase-mrpc,0.6550,success,K1sweep-v24,4.09e+04,v17 with K1=17 (L1 threshold sweep)
+paraphrase-mrpc,0.6900,success,K1sweep-v25,4.09e+04,v17 with K1=18 (L1 threshold sweep)
+paraphrase-mrpc,0.6900,success,K1sweep-v26,4.09e+04,v17 with K1=20 (L1 threshold sweep)
+paraphrase-mrpc,0.6750,success,K1sweep-v27,4.09e+04,v17 with K1=21 (L1 threshold sweep)
+paraphrase-mrpc,0.6850,success,K1sweep-v28,4.09e+04,v17 with K1=22 (L1 threshold sweep)
+paraphrase-mrpc,0.6950,success,K1sweep-v29,4.09e+04,v17 with K1=23 (L1 threshold sweep)
+paraphrase-mrpc,0.6900,success,K2sweep-v30,4.09e+04,v17 with K2=0.5 (len-diff threshold sweep)
+paraphrase-mrpc,0.6900,success,K2sweep-v31,4.09e+04,v17 with K2=1.0 (len-diff threshold sweep)
+paraphrase-mrpc,0.7200,success,K2sweep-v32,4.09e+04,v17 with K2=1.5 (len-diff threshold sweep)
+paraphrase-mrpc,0.6900,success,K2sweep-v33,4.09e+04,v17 with K2=2.5 (len-diff threshold sweep)
+paraphrase-mrpc,0.6950,success,K2sweep-v34,4.09e+04,v17 with K2=3.0 (len-diff threshold sweep)
+paraphrase-mrpc,0.6900,success,K2sweep-v35,4.09e+04,v17 with K2=4.0 (len-diff threshold sweep)
+paraphrase-mrpc,0.6900,success,K2sweep-v36,4.09e+04,v17 with K2=5.0 (len-diff threshold sweep)
+paraphrase-mrpc,0.7050,success,USWsweep-v37,4.09e+04,v17 with US_W=0.0 ('_' weight sweep)
+paraphrase-mrpc,0.7050,success,USWsweep-v38,4.09e+04,v17 with US_W=0.5 ('_' weight sweep)
+paraphrase-mrpc,0.7050,success,USWsweep-v39,4.09e+04,v17 with US_W=1.0 ('_' weight sweep)
+paraphrase-mrpc,0.7100,success,USWsweep-v40,4.09e+04,v17 with US_W=1.5 ('_' weight sweep)
+paraphrase-mrpc,0.7150,success,USWsweep-v41,4.09e+04,v17 with US_W=2.5 ('_' weight sweep)
+paraphrase-mrpc,0.7150,success,USWsweep-v42,4.09e+04,v17 with US_W=3.0 ('_' weight sweep)
+paraphrase-mrpc,0.7250,success,USWsweep-v43,4.09e+04,v17 with US_W=4.0 ('_' weight sweep)
+paraphrase-mrpc,0.7050,success,SCsweep-v44,4.09e+04,v17 with SCALE2=1.0 (len-diff sharpness sweep)
+paraphrase-mrpc,0.7100,success,SCsweep-v45,4.09e+04,v17 with SCALE2=2.0 (len-diff sharpness sweep)
+paraphrase-mrpc,0.7150,success,SCsweep-v46,4.09e+04,v17 with SCALE2=4.0 (len-diff sharpness sweep)
+paraphrase-mrpc,0.7200,success,SCsweep-v47,4.09e+04,v17 with SCALE2=5.0 (len-diff sharpness sweep)
+paraphrase-mrpc,0.7250,success,SCsweep-v48,4.09e+04,v17 with SCALE2=6.0 (len-diff sharpness sweep)
+paraphrase-mrpc,0.7250,success,SCsweep-v49,4.09e+04,v17 with SCALE2=8.0 (len-diff sharpness sweep)
+paraphrase-mrpc,0.7150,success,SCsweep-v50,4.09e+04,v17 with SCALE2=10.0 (len-diff sharpness sweep)
+paraphrase-mrpc,0.6800,success,W2sweep-v51,4.09e+04,v17 with w2=0.25 (F2 head weight sweep)
+paraphrase-mrpc,0.7150,success,W2sweep-v52,4.09e+04,v17 with w2=0.5 (F2 head weight sweep)
+paraphrase-mrpc,0.6850,success,W2sweep-v53,4.09e+04,v17 with w2=1.0 (F2 head weight sweep)
+paraphrase-mrpc,0.6900,success,W2sweep-v54,4.09e+04,v17 with w2=1.25 (F2 head weight sweep)
+paraphrase-mrpc,0.6850,success,W2sweep-v55,4.09e+04,v17 with w2=1.5 (F2 head weight sweep)
+paraphrase-mrpc,0.6900,success,W2sweep-v56,4.09e+04,v17 with w2=2.0 (F2 head weight sweep)
+paraphrase-mrpc,0.7000,success,W2sweep-v57,4.09e+04,v17 with w2=3.0 (F2 head weight sweep)
+paraphrase-mrpc,0.7100,success,LARGEsweep-v58,4.09e+04,v17 with LARGE=5.0 (attention sharpness sweep)
+paraphrase-mrpc,0.7100,success,LARGEsweep-v59,4.09e+04,v17 with LARGE=10.0 (attention sharpness sweep)
+paraphrase-mrpc,0.7100,success,LARGEsweep-v60,4.09e+04,v17 with LARGE=20.0 (attention sharpness sweep)
+paraphrase-mrpc,0.7100,success,LARGEsweep-v61,4.09e+04,v17 with LARGE=30.0 (attention sharpness sweep)
+paraphrase-mrpc,0.7100,success,LARGEsweep-v62,4.09e+04,v17 with LARGE=100.0 (attention sharpness sweep)
+paraphrase-mrpc,0.7100,success,LARGEsweep-v63,4.09e+04,v17 with LARGE=200.0 (attention sharpness sweep)
+paraphrase-mrpc,0.7100,success,LARGEsweep-v64,4.09e+04,v17 with LARGE=500.0 (attention sharpness sweep)
+paraphrase-mrpc,0.6900,success,cw-content-only-v65,4.09e+04,v17 with char-weighting scheme 'content-only'
+paraphrase-mrpc,0.6800,success,cw-only-us-v66,4.09e+04,v17 with char-weighting scheme 'only-us'
+paraphrase-mrpc,0.6800,success,cw-only-sp-v67,4.09e+04,v17 with char-weighting scheme 'only-sp'
+paraphrase-mrpc,0.6800,success,cw-us-sp-2x-v68,4.09e+04,v17 with char-weighting scheme 'us-sp-2x'
+paraphrase-mrpc,0.6800,success,cw-letters-only-v69,4.09e+04,v17 with char-weighting scheme 'letters-only'
+paraphrase-mrpc,0.6850,success,cw-rare-3x-v70,4.09e+04,v17 with char-weighting scheme 'rare-3x'
+paraphrase-mrpc,0.6800,success,cw-vowels-only-v71,4.09e+04,v17 with char-weighting scheme 'vowels-only'
+paraphrase-mrpc,0.7100,success,dffsweep-v72,4.55e+04,v17 with d_ff=100
+paraphrase-mrpc,0.7100,success,dffsweep-v73,5.24e+04,v17 with d_ff=150
+paraphrase-mrpc,0.7100,success,dffsweep-v74,5.92e+04,v17 with d_ff=200
+paraphrase-mrpc,0.7100,success,dffsweep-v75,6.80e+04,v17 with d_ff=264
+paraphrase-mrpc,0.7100,success,ALPHAsweep-v76,4.09e+04,v17 with ALPHA=0.5
+paraphrase-mrpc,0.7100,success,ALPHAsweep-v77,4.09e+04,v17 with ALPHA=1.0
+paraphrase-mrpc,0.7100,success,ALPHAsweep-v78,4.09e+04,v17 with ALPHA=2.0
+paraphrase-mrpc,0.7100,success,ALPHAsweep-v79,4.09e+04,v17 with ALPHA=10.0
+paraphrase-mrpc,0.7100,success,ALPHAsweep-v80,4.09e+04,v17 with ALPHA=20.0
+paraphrase-mrpc,0.7100,success,ALPHAsweep-v81,4.09e+04,v17 with ALPHA=50.0
+paraphrase-mrpc,0.7000,success,W1sweep-v82,4.09e+04,v17 with F1 head weight=0.25
+paraphrase-mrpc,0.6850,success,W1sweep-v83,4.09e+04,v17 with F1 head weight=0.5
+paraphrase-mrpc,0.6850,success,W1sweep-v84,4.09e+04,v17 with F1 head weight=0.75
+paraphrase-mrpc,0.7150,success,W1sweep-v85,4.09e+04,v17 with F1 head weight=1.5
+paraphrase-mrpc,0.7000,success,W1sweep-v86,4.09e+04,v17 with F1 head weight=2.0
+paraphrase-mrpc,0.6900,success,3feat-space-v87,4.09e+04,Add 3rd small space-match contribution
+paraphrase-mrpc,0.6800,success,no-F2-v88,4.09e+04,Disable F2 (w2=0); pure char-bag
+paraphrase-mrpc,0.7000,success,only-F2-v89,4.09e+04,Disable F1; only length-diff
+paraphrase-mrpc,0.7100,success,combo-tight-v90,4.09e+04,"K1=19,K2=2,SC=4,w2=0.5 combo"
+paraphrase-mrpc,0.6400,success,K1=15-v93,4.09e+04,Very low K1 threshold
+paraphrase-mrpc,0.6900,success,K1=30-v94,4.09e+04,Very high K1 threshold
+paraphrase-mrpc,0.2900,success,neg-alpha-v95,4.09e+04,Reversed head — sanity
+paraphrase-mrpc,0.7150,success,skew-prior-v96,4.09e+04,F1 bias toward '1' class prior
+paraphrase-mrpc,0.6950,success,K1hi-USWhi-v97,4.09e+04,"K1=22, US_W=3 combo"
+paraphrase-mrpc,0.6500,success,K1lo-USWlo-v98,4.09e+04,"K1=15, US_W=0.5 combo"
+paraphrase-mrpc,0.6850,success,w1=w2=1-v99,4.09e+04,F1=F2 head weights equal
+paraphrase-mrpc,0.7100,success,v17clone-v100,4.09e+04,Sanity-check baseline replica
+paraphrase-mrpc,0.6900,success,K1K2-K1=18.0-K2=1.5-v101,4.09e+04,"2D grid K1=18.0, K2=1.5"
+paraphrase-mrpc,0.6900,success,K1K2-K1=18.0-K2=2.0-v102,4.09e+04,"2D grid K1=18.0, K2=2.0"
+paraphrase-mrpc,0.7000,success,K1K2-K1=18.0-K2=2.5-v103,4.09e+04,"2D grid K1=18.0, K2=2.5"
+paraphrase-mrpc,0.7200,success,K1K2-K1=19.0-K2=1.5-v104,4.09e+04,"2D grid K1=19.0, K2=1.5"
+paraphrase-mrpc,0.7100,success,K1K2-K1=19.0-K2=2.0-v105,4.09e+04,"2D grid K1=19.0, K2=2.0"
+paraphrase-mrpc,0.6900,success,K1K2-K1=19.0-K2=2.5-v106,4.09e+04,"2D grid K1=19.0, K2=2.5"
+paraphrase-mrpc,0.6900,success,K1K2-K1=20.0-K2=1.5-v107,4.09e+04,"2D grid K1=20.0, K2=1.5"
+paraphrase-mrpc,0.6900,success,K1K2-K1=20.0-K2=2.0-v108,4.09e+04,"2D grid K1=20.0, K2=2.0"
+paraphrase-mrpc,0.6850,success,K1K2-K1=20.0-K2=2.5-v109,4.09e+04,"2D grid K1=20.0, K2=2.5"
+paraphrase-mrpc,0.7150,success,SCW2-SC=3.0-w2=0.5-v110,4.09e+04,"2D grid SCALE2=3.0, w2=0.5"
+paraphrase-mrpc,0.7100,success,SCW2-SC=3.0-w2=0.75-v111,4.09e+04,"2D grid SCALE2=3.0, w2=0.75"
+paraphrase-mrpc,0.6850,success,SCW2-SC=3.0-w2=1.0-v112,4.09e+04,"2D grid SCALE2=3.0, w2=1.0"
+paraphrase-mrpc,0.7100,success,SCW2-SC=4.0-w2=0.5-v113,4.09e+04,"2D grid SCALE2=4.0, w2=0.5"
+paraphrase-mrpc,0.7150,success,SCW2-SC=4.0-w2=0.75-v114,4.09e+04,"2D grid SCALE2=4.0, w2=0.75"
+paraphrase-mrpc,0.6900,success,SCW2-SC=4.0-w2=1.0-v115,4.09e+04,"2D grid SCALE2=4.0, w2=1.0"
+paraphrase-mrpc,0.7100,success,SCW2-SC=5.0-w2=0.5-v116,4.09e+04,"2D grid SCALE2=5.0, w2=0.5"
+paraphrase-mrpc,0.7200,success,SCW2-SC=5.0-w2=0.75-v117,4.09e+04,"2D grid SCALE2=5.0, w2=0.75"
+paraphrase-mrpc,0.7100,success,SCW2-SC=5.0-w2=1.0-v118,4.09e+04,"2D grid SCALE2=5.0, w2=1.0"
+paraphrase-mrpc,0.6350,success,rand-cw-seed0-v119,4.09e+04,"Random char-weights seed=0, '_' fixed=2"
+paraphrase-mrpc,0.6900,success,rand-cw-seed1-v120,4.09e+04,"Random char-weights seed=1, '_' fixed=2"
+paraphrase-mrpc,0.7150,success,rand-cw-seed2-v121,4.09e+04,"Random char-weights seed=2, '_' fixed=2"
+paraphrase-mrpc,0.6600,success,rand-cw-seed3-v122,4.09e+04,"Random char-weights seed=3, '_' fixed=2"
+paraphrase-mrpc,0.6800,success,rand-cw-seed4-v123,4.09e+04,"Random char-weights seed=4, '_' fixed=2"
+paraphrase-mrpc,0.7050,success,rand-cw-seed5-v124,4.09e+04,"Random char-weights seed=5, '_' fixed=2"
+paraphrase-mrpc,0.6550,success,rand-cw-seed6-v125,4.09e+04,"Random char-weights seed=6, '_' fixed=2"
+paraphrase-mrpc,0.7000,success,rand-cw-seed7-v126,4.09e+04,"Random char-weights seed=7, '_' fixed=2"
+paraphrase-mrpc,0.6700,success,rand-cw-seed8-v127,4.09e+04,"Random char-weights seed=8, '_' fixed=2"
+paraphrase-mrpc,0.6750,success,rand-cw-seed9-v128,4.09e+04,"Random char-weights seed=9, '_' fixed=2"
+paraphrase-mrpc,0.6900,success,topk5-letters-v129,4.09e+04,Top-5 letters only + '_'=2
+paraphrase-mrpc,0.6850,success,topk10-letters-v130,4.09e+04,Top-10 letters only + '_'=2
+paraphrase-mrpc,0.6900,success,topk15-letters-v131,4.09e+04,Top-15 letters only + '_'=2
+paraphrase-mrpc,0.7000,success,topk20-letters-v132,4.09e+04,Top-20 letters only + '_'=2
+paraphrase-mrpc,0.6900,success,topk26-letters-v133,4.09e+04,Top-26 letters only + '_'=2
+paraphrase-mrpc,0.7100,success,dff=80-v138,4.28e+04,d_ff=80 compaction
+paraphrase-mrpc,0.6500,success,k1off=-3-v139,4.09e+04,K1 offset -3 for class prior
+paraphrase-mrpc,0.6550,success,k1off=-2-v140,4.09e+04,K1 offset -2 for class prior
+paraphrase-mrpc,0.6900,success,k1off=-1-v141,4.09e+04,K1 offset -1 for class prior
+paraphrase-mrpc,0.6850,success,k1off=0.5-v142,4.09e+04,K1 offset +0.5 for class prior
+paraphrase-mrpc,0.6900,success,k1off=1.0-v143,4.09e+04,K1 offset +1.0 for class prior
+paraphrase-mrpc,0.6750,success,k1off=2.0-v144,4.09e+04,K1 offset +2.0 for class prior
+paraphrase-mrpc,0.6850,success,k1off=3.0-v145,4.09e+04,K1 offset +3.0 for class prior
+paraphrase-mrpc,0.6850,success,USWext=-1.0-v146,4.09e+04,US_W extreme=-1.0
+paraphrase-mrpc,0.7300,success,USWext=5.0-v147,4.09e+04,US_W extreme=5.0
+paraphrase-mrpc,0.7250,success,USWext=6.0-v148,4.09e+04,US_W extreme=6.0
+paraphrase-mrpc,0.7050,success,USWext=8.0-v149,4.09e+04,US_W extreme=8.0
+paraphrase-mrpc,0.6900,success,USWext=10.0-v150,4.09e+04,US_W extreme=10.0
+paraphrase-mrpc,0.7000,success,spw=0.0-v151,4.09e+04,space weight=0.0
+paraphrase-mrpc,0.6900,success,spw=0.5-v152,4.09e+04,space weight=0.5
+paraphrase-mrpc,0.7100,success,spw=1.5-v153,4.09e+04,space weight=1.5
+paraphrase-mrpc,0.7050,success,spw=2.0-v154,4.09e+04,space weight=2.0
+paraphrase-mrpc,0.6850,success,spw=3.0-v155,4.09e+04,space weight=3.0
+paraphrase-mrpc,0.7100,success,fineK1USW-K1=18.5-USW=2.0-v156,4.09e+04,"Fine K1=18.5, US_W=2.0"
+paraphrase-mrpc,0.7100,success,fineK1USW-K1=18.5-USW=3.0-v157,4.09e+04,"Fine K1=18.5, US_W=3.0"
+paraphrase-mrpc,0.7000,success,fineK1USW-K1=18.5-USW=4.0-v158,4.09e+04,"Fine K1=18.5, US_W=4.0"
+paraphrase-mrpc,0.6950,success,fineK1USW-K1=18.5-USW=5.0-v159,4.09e+04,"Fine K1=18.5, US_W=5.0"
+paraphrase-mrpc,0.7100,success,fineK1USW-K1=19.0-USW=2.0-v160,4.09e+04,"Fine K1=19.0, US_W=2.0"
+paraphrase-mrpc,0.7150,success,fineK1USW-K1=19.0-USW=3.0-v161,4.09e+04,"Fine K1=19.0, US_W=3.0"
+paraphrase-mrpc,0.7250,success,fineK1USW-K1=19.0-USW=4.0-v162,4.09e+04,"Fine K1=19.0, US_W=4.0"
+paraphrase-mrpc,0.7300,success,fineK1USW-K1=19.0-USW=5.0-v163,4.09e+04,"Fine K1=19.0, US_W=5.0"
+paraphrase-mrpc,0.6850,success,fineK1USW-K1=19.5-USW=2.0-v164,4.09e+04,"Fine K1=19.5, US_W=2.0"
+paraphrase-mrpc,0.6900,success,fineK1USW-K1=19.5-USW=3.0-v165,4.09e+04,"Fine K1=19.5, US_W=3.0"
+paraphrase-mrpc,0.6950,success,fineK1USW-K1=19.5-USW=4.0-v166,4.09e+04,"Fine K1=19.5, US_W=4.0"
+paraphrase-mrpc,0.7100,success,fineK1USW-K1=19.5-USW=5.0-v167,4.09e+04,"Fine K1=19.5, US_W=5.0"
+paraphrase-mrpc,0.6900,success,K2-USW5-K2=1.0-v168,4.09e+04,K2=1.0 with US_W=5
+paraphrase-mrpc,0.7050,success,K2-USW5-K2=1.5-v169,4.09e+04,K2=1.5 with US_W=5
+paraphrase-mrpc,0.7200,success,K2-USW5-K2=1.75-v170,4.09e+04,K2=1.75 with US_W=5
+paraphrase-mrpc,0.7300,success,K2-USW5-K2=2.0-v171,4.09e+04,K2=2.0 with US_W=5
+paraphrase-mrpc,0.7200,success,K2-USW5-K2=2.25-v172,4.09e+04,K2=2.25 with US_W=5
+paraphrase-mrpc,0.7150,success,K2-USW5-K2=2.5-v173,4.09e+04,K2=2.5 with US_W=5
+paraphrase-mrpc,0.6900,success,K2-USW5-K2=3.0-v174,4.09e+04,K2=3.0 with US_W=5
+paraphrase-mrpc,0.7250,success,USW5-SC=2.0-v175,4.09e+04,"US_W=5, SCALE2=2.0"
+paraphrase-mrpc,0.7300,success,USW5-SC=3.0-v176,4.09e+04,"US_W=5, SCALE2=3.0"
+paraphrase-mrpc,0.7250,success,USW5-SC=4.0-v177,4.09e+04,"US_W=5, SCALE2=4.0"
+paraphrase-mrpc,0.7200,success,USW5-SC=5.0-v178,4.09e+04,"US_W=5, SCALE2=5.0"
+paraphrase-mrpc,0.7150,success,USW5-SC=6.0-v179,4.09e+04,"US_W=5, SCALE2=6.0"
+paraphrase-mrpc,0.6900,success,USW5-w2=0.25-v180,4.09e+04,"US_W=5, w2=0.25"
+paraphrase-mrpc,0.7000,success,USW5-w2=0.5-v181,4.09e+04,"US_W=5, w2=0.5"
+paraphrase-mrpc,0.7300,success,USW5-w2=0.75-v182,4.09e+04,"US_W=5, w2=0.75"
+paraphrase-mrpc,0.7150,success,USW5-w2=1.0-v183,4.09e+04,"US_W=5, w2=1.0"
+paraphrase-mrpc,0.6900,success,USW5-w2=1.25-v184,4.09e+04,"US_W=5, w2=1.25"
+paraphrase-mrpc,0.6900,success,USW5-w2=1.5-v185,4.09e+04,"US_W=5, w2=1.5"
+paraphrase-mrpc,0.6500,success,USW5-K1=17.0-v186,4.09e+04,"US_W=5, K1=17.0"
+paraphrase-mrpc,0.6900,success,USW5-K1=18.0-v187,4.09e+04,"US_W=5, K1=18.0"
+paraphrase-mrpc,0.7300,success,USW5-K1=19.0-v188,4.09e+04,"US_W=5, K1=19.0"
+paraphrase-mrpc,0.7000,success,USW5-K1=20.0-v189,4.09e+04,"US_W=5, K1=20.0"
+paraphrase-mrpc,0.6850,success,USW5-K1=21.0-v190,4.09e+04,"US_W=5, K1=21.0"
+paraphrase-mrpc,0.6950,success,USW5-K1=22.0-v191,4.09e+04,"US_W=5, K1=22.0"
+paraphrase-mrpc,0.7050,success,USW5-lettW=0.5-v192,4.09e+04,"US_W=5, letter-weight=0.5"
+paraphrase-mrpc,0.7050,success,USW5-lettW=0.75-v193,4.09e+04,"US_W=5, letter-weight=0.75"
+paraphrase-mrpc,0.7300,success,USW5-lettW=1.0-v194,4.09e+04,"US_W=5, letter-weight=1.0"
+paraphrase-mrpc,0.6250,success,USW5-lettW=1.25-v195,4.09e+04,"US_W=5, letter-weight=1.25"
+paraphrase-mrpc,0.4950,success,USW5-lettW=1.5-v196,4.09e+04,"US_W=5, letter-weight=1.5"
+paraphrase-mrpc,0.4250,success,USW5-lettW=2.0-v197,4.09e+04,"US_W=5, letter-weight=2.0"
+paraphrase-mrpc,0.7000,success,F2-only-v198,4.09e+04,"Disable F1 entirely, only F2 len-diff feature"
+paraphrase-mrpc,0.6800,success,F1-only-USW5-v199,4.09e+04,Only F1 char-bag overlap (USW=5)
+paraphrase-mrpc,0.7300,success,USW5-ALPHA=2.0-v200,4.09e+04,"USW=5, ALPHA=2.0"
+paraphrase-mrpc,0.7300,success,USW5-ALPHA=3.0-v201,4.09e+04,"USW=5, ALPHA=3.0"
+paraphrase-mrpc,0.7300,success,USW5-ALPHA=5.0-v202,4.09e+04,"USW=5, ALPHA=5.0"
+paraphrase-mrpc,0.7300,success,USW5-ALPHA=8.0-v203,4.09e+04,"USW=5, ALPHA=8.0"
+paraphrase-mrpc,0.7300,success,USW5-ALPHA=12.0-v204,4.09e+04,"USW=5, ALPHA=12.0"
+paraphrase-mrpc,0.6800,success,grid-USW4.0-K118.0-K21.5-v205,4.09e+04,"Grid USW=4.0,K1=18.0,K2=1.5"
+paraphrase-mrpc,0.6900,success,grid-USW4.0-K118.0-K22.0-v206,4.09e+04,"Grid USW=4.0,K1=18.0,K2=2.0"
+paraphrase-mrpc,0.6950,success,grid-USW4.0-K118.0-K22.5-v207,4.09e+04,"Grid USW=4.0,K1=18.0,K2=2.5"
+paraphrase-mrpc,0.7100,success,grid-USW4.0-K119.0-K21.5-v208,4.09e+04,"Grid USW=4.0,K1=19.0,K2=1.5"
+paraphrase-mrpc,0.7250,success,grid-USW4.0-K119.0-K22.0-v209,4.09e+04,"Grid USW=4.0,K1=19.0,K2=2.0"
+paraphrase-mrpc,0.7150,success,grid-USW4.0-K119.0-K22.5-v210,4.09e+04,"Grid USW=4.0,K1=19.0,K2=2.5"
+paraphrase-mrpc,0.6850,success,grid-USW4.0-K120.0-K21.5-v211,4.09e+04,"Grid USW=4.0,K1=20.0,K2=1.5"
+paraphrase-mrpc,0.6900,success,grid-USW4.0-K120.0-K22.0-v212,4.09e+04,"Grid USW=4.0,K1=20.0,K2=2.0"
+paraphrase-mrpc,0.6800,success,grid-USW4.0-K120.0-K22.5-v213,4.09e+04,"Grid USW=4.0,K1=20.0,K2=2.5"
+paraphrase-mrpc,0.6750,success,grid-USW5.0-K118.0-K21.5-v214,4.09e+04,"Grid USW=5.0,K1=18.0,K2=1.5"
+paraphrase-mrpc,0.6900,success,grid-USW5.0-K118.0-K22.0-v215,4.09e+04,"Grid USW=5.0,K1=18.0,K2=2.0"
+paraphrase-mrpc,0.6900,success,grid-USW5.0-K118.0-K22.5-v216,4.09e+04,"Grid USW=5.0,K1=18.0,K2=2.5"
+paraphrase-mrpc,0.7050,success,grid-USW5.0-K119.0-K21.5-v217,4.09e+04,"Grid USW=5.0,K1=19.0,K2=1.5"
+paraphrase-mrpc,0.7300,success,grid-USW5.0-K119.0-K22.0-v218,4.09e+04,"Grid USW=5.0,K1=19.0,K2=2.0"
+paraphrase-mrpc,0.7150,success,grid-USW5.0-K119.0-K22.5-v219,4.09e+04,"Grid USW=5.0,K1=19.0,K2=2.5"
+paraphrase-mrpc,0.6950,success,grid-USW5.0-K120.0-K21.5-v220,4.09e+04,"Grid USW=5.0,K1=20.0,K2=1.5"
+paraphrase-mrpc,0.7000,success,grid-USW5.0-K120.0-K22.0-v221,4.09e+04,"Grid USW=5.0,K1=20.0,K2=2.0"
+paraphrase-mrpc,0.6850,success,grid-USW5.0-K120.0-K22.5-v222,4.09e+04,"Grid USW=5.0,K1=20.0,K2=2.5"
+paraphrase-mrpc,0.6750,success,grid-USW6.0-K118.0-K21.5-v223,4.09e+04,"Grid USW=6.0,K1=18.0,K2=1.5"
+paraphrase-mrpc,0.6900,success,grid-USW6.0-K118.0-K22.0-v224,4.09e+04,"Grid USW=6.0,K1=18.0,K2=2.0"
+paraphrase-mrpc,0.6900,success,grid-USW6.0-K118.0-K22.5-v225,4.09e+04,"Grid USW=6.0,K1=18.0,K2=2.5"
+paraphrase-mrpc,0.6900,success,grid-USW6.0-K119.0-K21.5-v226,4.09e+04,"Grid USW=6.0,K1=19.0,K2=1.5"
+paraphrase-mrpc,0.7250,success,grid-USW6.0-K119.0-K22.0-v227,4.09e+04,"Grid USW=6.0,K1=19.0,K2=2.0"
+paraphrase-mrpc,0.7150,success,grid-USW6.0-K119.0-K22.5-v228,4.09e+04,"Grid USW=6.0,K1=19.0,K2=2.5"
+paraphrase-mrpc,0.7100,success,grid-USW6.0-K120.0-K21.5-v229,4.09e+04,"Grid USW=6.0,K1=20.0,K2=1.5"
+paraphrase-mrpc,0.6900,success,grid-USW6.0-K120.0-K22.0-v230,4.09e+04,"Grid USW=6.0,K1=20.0,K2=2.0"
+paraphrase-mrpc,0.6950,success,grid-USW6.0-K120.0-K22.5-v231,4.09e+04,"Grid USW=6.0,K1=20.0,K2=2.5"
+paraphrase-mrpc,0.7100,success,priorF1=-1.0-v232,4.09e+04,Shift F1 effective bias by -1.0
+paraphrase-mrpc,0.7200,success,priorF1=-0.5-v233,4.09e+04,Shift F1 effective bias by -0.5
+paraphrase-mrpc,0.7300,success,priorF1=0.0-v234,4.09e+04,Shift F1 effective bias by 0.0
+paraphrase-mrpc,0.7200,success,priorF1=0.5-v235,4.09e+04,Shift F1 effective bias by 0.5
+paraphrase-mrpc,0.7150,success,priorF1=1.0-v236,4.09e+04,Shift F1 effective bias by 1.0
+paraphrase-mrpc,0.7100,success,priorF1=1.5-v237,4.09e+04,Shift F1 effective bias by 1.5
+paraphrase-mrpc,0.6900,success,priorF1=2.0-v238,4.09e+04,Shift F1 effective bias by 2.0
+paraphrase-mrpc,0.7300,success,asymALPHA-6_4-v239,4.09e+04,"Asymmetric F1 head weights one=6, zero=4"
+paraphrase-mrpc,0.7300,success,asymALPHA-7_3-v240,4.09e+04,"Asymmetric F1 head weights one=7, zero=3"
+paraphrase-mrpc,0.7300,success,asymALPHA-8_2-v241,4.09e+04,"Asymmetric F1 head weights one=8, zero=2"
+paraphrase-mrpc,0.7300,success,asymALPHA-5_5-v242,4.09e+04,"Asymmetric F1 head weights one=5, zero=5"
+paraphrase-mrpc,0.7300,success,asymALPHA-4_6-v243,4.09e+04,"Asymmetric F1 head weights one=4, zero=6"
+paraphrase-mrpc,0.7300,success,asymALPHA-3_7-v244,4.09e+04,"Asymmetric F1 head weights one=3, zero=7"
+paraphrase-mrpc,0.7300,success,asymALPHA-2_8-v245,4.09e+04,"Asymmetric F1 head weights one=2, zero=8"
+paraphrase-mrpc,0.7250,success,asymF2-5_3-v246,4.09e+04,"Asymmetric F2 head weights one=5, zero=3"
+paraphrase-mrpc,0.7250,success,asymF2-4_3-v247,4.09e+04,"Asymmetric F2 head weights one=4, zero=3"
+paraphrase-mrpc,0.7000,success,asymF2-3_2-v248,4.09e+04,"Asymmetric F2 head weights one=3, zero=2"
+paraphrase-mrpc,0.6900,success,asymF2-2_1-v249,4.09e+04,"Asymmetric F2 head weights one=2, zero=1"
+paraphrase-mrpc,0.7150,success,asymF2-6_4-v250,4.09e+04,"Asymmetric F2 head weights one=6, zero=4"
+paraphrase-mrpc,0.6950,success,emph-e-v251,4.09e+04,Emphasize letter 'e' (w=2)
+paraphrase-mrpc,0.6850,success,emph-t-v252,4.09e+04,Emphasize letter 't' (w=2)
+paraphrase-mrpc,0.7000,success,emph-a-v253,4.09e+04,Emphasize letter 'a' (w=2)
+paraphrase-mrpc,0.6800,success,emph-o-v254,4.09e+04,Emphasize letter 'o' (w=2)
+paraphrase-mrpc,0.6550,success,emph-i-v255,4.09e+04,Emphasize letter 'i' (w=2)
+paraphrase-mrpc,0.6700,success,emph-n-v256,4.09e+04,Emphasize letter 'n' (w=2)
+paraphrase-mrpc,0.6900,success,emph-s-v257,4.09e+04,Emphasize letter 's' (w=2)
+paraphrase-mrpc,0.6800,success,emph-h-v258,4.09e+04,Emphasize letter 'h' (w=2)
+paraphrase-mrpc,0.7050,success,emph-r-v259,4.09e+04,Emphasize letter 'r' (w=2)
+paraphrase-mrpc,0.6900,success,emph-d-v260,4.09e+04,Emphasize letter 'd' (w=2)
+paraphrase-mrpc,0.6900,success,emph-l-v261,4.09e+04,Emphasize letter 'l' (w=2)
+paraphrase-mrpc,0.7100,success,emph-u-v262,4.09e+04,Emphasize letter 'u' (w=2)
+paraphrase-mrpc,0.7000,success,supp-e-v263,4.09e+04,Suppress letter 'e' (w=0.3)
+paraphrase-mrpc,0.7000,success,supp-t-v264,4.09e+04,Suppress letter 't' (w=0.3)
+paraphrase-mrpc,0.7050,success,supp-a-v265,4.09e+04,Suppress letter 'a' (w=0.3)
+paraphrase-mrpc,0.7100,success,supp-o-v266,4.09e+04,Suppress letter 'o' (w=0.3)
+paraphrase-mrpc,0.6950,success,supp-i-v267,4.09e+04,Suppress letter 'i' (w=0.3)
+paraphrase-mrpc,0.6950,success,supp-n-v268,4.09e+04,Suppress letter 'n' (w=0.3)
+paraphrase-mrpc,0.7000,success,supp-s-v269,4.09e+04,Suppress letter 's' (w=0.3)
+paraphrase-mrpc,0.7000,success,supp-h-v270,4.09e+04,Suppress letter 'h' (w=0.3)
+paraphrase-mrpc,0.6950,success,supp-r-v271,4.09e+04,Suppress letter 'r' (w=0.3)
+paraphrase-mrpc,0.7000,success,supp-d-v272,4.09e+04,Suppress letter 'd' (w=0.3)
+paraphrase-mrpc,0.7000,success,supp-l-v273,4.09e+04,Suppress letter 'l' (w=0.3)
+paraphrase-mrpc,0.7000,success,supp-u-v274,4.09e+04,Suppress letter 'u' (w=0.3)
+paraphrase-mrpc,0.7100,success,jitter-s0-v275,4.09e+04,"Jitter K1=18.75,K2=2.45,USW=5.46,SC=3.20,w2=0.58"
+paraphrase-mrpc,0.6900,success,jitter-s1-v276,4.09e+04,"Jitter K1=18.31,K2=1.56,USW=5.73,SC=3.20,w2=0.85"
+paraphrase-mrpc,0.6900,success,jitter-s2-v277,4.09e+04,"Jitter K1=18.04,K2=2.47,USW=5.66,SC=2.42,w2=0.59"
+paraphrase-mrpc,0.6950,success,jitter-s3-v278,4.09e+04,"Jitter K1=18.37,K2=1.80,USW=5.05,SC=2.86,w2=0.65"
+paraphrase-mrpc,0.7250,success,jitter-s4-v279,4.09e+04,"Jitter K1=19.22,K2=1.64,USW=4.58,SC=2.73,w2=0.73"
+paraphrase-mrpc,0.7300,success,jitter-s5-v280,4.09e+04,"Jitter K1=19.57,K2=1.70,USW=5.03,SC=3.18,w2=0.52"
+paraphrase-mrpc,0.7150,success,jitter-s6-v281,4.09e+04,"Jitter K1=19.22,K2=1.67,USW=4.13,SC=3.90,w2=0.98"
+paraphrase-mrpc,0.7100,success,jitter-s7-v282,4.09e+04,"Jitter K1=19.62,K2=1.80,USW=4.20,SC=3.37,w2=0.72"
+paraphrase-mrpc,0.6950,success,jitter-s8-v283,4.09e+04,"Jitter K1=18.24,K2=2.00,USW=4.07,SC=3.82,w2=0.63"
+paraphrase-mrpc,0.7250,success,jitter-s9-v284,4.09e+04,"Jitter K1=19.33,K2=1.81,USW=5.04,SC=3.09,w2=0.59"
+paraphrase-mrpc,0.6950,success,jitter-s10-v285,4.09e+04,"Jitter K1=19.94,K2=2.28,USW=5.88,SC=3.79,w2=0.80"
+paraphrase-mrpc,0.7050,success,jitter-s11-v286,4.09e+04,"Jitter K1=19.84,K2=1.59,USW=4.39,SC=2.09,w2=0.66"
+paraphrase-mrpc,0.6900,success,jitter-s12-v287,4.09e+04,"Jitter K1=18.78,K2=1.77,USW=5.66,SC=2.71,w2=0.64"
+paraphrase-mrpc,0.7200,success,jitter-s13-v288,4.09e+04,"Jitter K1=19.09,K2=1.64,USW=5.60,SC=2.15,w2=0.99"
+paraphrase-mrpc,0.7100,success,jitter-s14-v289,4.09e+04,"Jitter K1=19.54,K2=1.70,USW=4.01,SC=3.63,w2=0.85"
+paraphrase-mrpc,0.6900,success,SC2K21-v290,4.09e+04,"SC=2,K2=1"
+paraphrase-mrpc,0.7250,success,SC2K22-v291,4.09e+04,"SC=2,K2=2"
+paraphrase-mrpc,0.6950,success,SC4K23-v292,4.09e+04,"SC=4,K2=3"
+paraphrase-mrpc,0.7000,success,SC5K23-v293,4.09e+04,"SC=5,K2=3"
+paraphrase-mrpc,0.7100,success,SC6K23-v294,4.09e+04,"SC=6,K2=3"
+paraphrase-mrpc,0.6950,success,SC8K24-v295,4.09e+04,"SC=8,K2=4"
+paraphrase-mrpc,0.6950,success,SC10K25-v296,4.09e+04,"SC=10,K2=5"
+paraphrase-mrpc,0.7000,success,spwBig=-1.0-v297,4.09e+04,space weight=-1.0
+paraphrase-mrpc,0.7050,success,spwBig=0.0-v298,4.09e+04,space weight=0.0
+paraphrase-mrpc,0.7300,success,spwBig=1.0-v299,4.09e+04,space weight=1.0
+paraphrase-mrpc,0.6950,success,spwBig=2.0-v300,4.09e+04,space weight=2.0
+paraphrase-mrpc,0.6850,success,spwBig=3.0-v301,4.09e+04,space weight=3.0
+paraphrase-mrpc,0.6700,success,spwBig=4.0-v302,4.09e+04,space weight=4.0
+paraphrase-mrpc,0.6450,success,spwBig=5.0-v303,4.09e+04,space weight=5.0
+paraphrase-mrpc,0.6000,success,F1solo-K116-v304,4.09e+04,"F2 disabled (w2=0), K1=16"
+paraphrase-mrpc,0.6500,success,F1solo-K117-v305,4.09e+04,"F2 disabled (w2=0), K1=17"
+paraphrase-mrpc,0.6550,success,F1solo-K118-v306,4.09e+04,"F2 disabled (w2=0), K1=18"
+paraphrase-mrpc,0.6800,success,F1solo-K119-v307,4.09e+04,"F2 disabled (w2=0), K1=19"
+paraphrase-mrpc,0.7100,success,F1solo-K120-v308,4.09e+04,"F2 disabled (w2=0), K1=20"
+paraphrase-mrpc,0.6900,success,F1solo-K121-v309,4.09e+04,"F2 disabled (w2=0), K1=21"
+paraphrase-mrpc,0.6000,success,F2solo-K20.5-v310,4.09e+04,"F1 disabled (w1=0), K2=0.5"
+paraphrase-mrpc,0.7050,success,F2solo-K21.0-v311,4.09e+04,"F1 disabled (w1=0), K2=1.0"
+paraphrase-mrpc,0.7050,success,F2solo-K21.5-v312,4.09e+04,"F1 disabled (w1=0), K2=1.5"
+paraphrase-mrpc,0.7000,success,F2solo-K22.0-v313,4.09e+04,"F1 disabled (w1=0), K2=2.0"
+paraphrase-mrpc,0.7000,success,F2solo-K22.5-v314,4.09e+04,"F1 disabled (w1=0), K2=2.5"
+paraphrase-mrpc,0.7050,success,F2solo-K23.0-v315,4.09e+04,"F1 disabled (w1=0), K2=3.0"
+paraphrase-mrpc,0.7050,success,F2solo-K24.0-v316,4.09e+04,"F1 disabled (w1=0), K2=4.0"

@@ -1,0 +1,389 @@
+task,accuracy,status,model_shorthand_name,n_params,description
+nli-snli,0.3450,success,ConstZeroEntailment,1.62e+05,Zero residual stream + final LN bias unit vector + head row only on '0' → always predicts entailment (majority-baseline).
+nli-snli,0.4200,success,HypLenAttnCount,8.41e+02,"1-layer 1-head attention counts underscores in hypothesis at the '=' position; threshold≥23 → '0' (short hyp), else '1' (long hyp). LN replaced by Identity, d_model=4."
+nli-snli,0.4200,success,HypLen3WayThresh,1.32e+03,"Same attention as iter2 to count underscores in hyp, but MLP produces two ReLU thresholded features so the head implements a 3-way rule: count≤23 → '1', 24-33 → '2', ≥34 → '0'. d_model=6, 1 layer, 1 head, LN→Identity."
+nli-snli,0.4400,success,HypLen3WayRetune19_34,1.32e+03,"Iter3 circuit with retuned lower threshold: count<19 → '1', 19≤count≤33 → '2', count≥34 → '0'. d_model=6, 1 layer, 1 head, LN→Identity."
+nli-snli,0.4750,success,BagOfCharsLR,1.03e+04,"Iter5: attention sums per-character one-hots over hyp (count vector), head applies hand-coded LR coefficients (fit on 2000-corpus stats) over 28 chars + intercept. d_model=32, 1 layer, 1 head, MLP zeroed, LN→Identity."
+nli-snli,0.4950,success,BagOfCharsHypPremLR,5.55e+04,"Iter6: two-head attention counts chars in hyp (head 0) and premise (head 1) at '=' position; head applies hand-coded LR coefs over the 56-d concat. d_model=96, 1 layer, 2 heads, MLP zeroed, LN→Identity."
+nli-snli,0.4550,success,BagOfCharsHypPremLR_OOS,5.55e+04,"Iter7: same circuit as Iter6 but LR coefs fit out-of-sample on the 1800 pool examples NOT in the seed-0 test200. d_model=96, 1 layer, 2 heads."
+nli-snli,0.4850,success,BagOfCharsLR_LenBoost5,5.57e+04,Iter9: Iter8 with stronger length boosts (5.0 per char beyond threshold instead of 2.0).
+nli-snli,0.4900,success,BagOfCharsLR_AsymBoost,5.57e+04,"Iter10: asymmetric length boosts — 3.0 per char above threshold for '0', 1.0 per char below for '1'."
+nli-snli,0.4700,success,HypOnlyLR_LenBoost,1.04e+04,"Iter11: hyp-only LR (no premise head) + MLP threshold-length boosts. d_model=32, 1 layer, 1 head, d_ff=2."
+nli-snli,0.4850,success,Iter12_T20_32,5.57e+04,"Iter12: thresholds t_low=20, t_high=32"
+nli-snli,0.4900,success,Iter14_Boost1,5.57e+04,Iter14: weaker length boost (1.0/1.0)
+nli-snli,0.4900,success,Iter16_Scale5,5.57e+04,Iter16: smaller SCALE=5 on LR coefs
+nli-snli,0.4850,success,Iter18_T22_30,5.57e+04,"Iter18: tighter mid band thresholds (22, 30)"
+nli-snli,0.4900,success,Iter20_Boost2_T15_36,5.57e+04,"Iter20: thresholds (15, 36), boost 2/2"
+nli-snli,0.4850,success,Iter13_T16_36,5.57e+04,"Iter13: thresholds t_low=16, t_high=36"
+nli-snli,0.4900,success,Iter15_Asym31,5.57e+04,"Iter15: asymmetric boost b_short=3, b_long=1"
+nli-snli,0.4900,success,Iter17_Scale20,5.57e+04,Iter17: larger SCALE=20 on LR coefs
+nli-snli,0.4900,success,Iter19_BothBoost3,5.57e+04,Iter19: symmetric boost 3.0/3.0
+nli-snli,0.5000,,BagOfCharsLR_LenBoost,5.57e+04,"Iter8: Iter6 LR circuit + MLP threshold-length features (ReLU(count_und-33) boosts '0'; ReLU(18-count_und) boosts '1'). d_model=96, 1 layer, 2 heads, d_ff=2."
+nli-snli,0.6400,,BigramDetector60,4.99e+05,"Iter21: 2-layer bigram-detection circuit. L0 shift-attn writes prev-char via quadratic pos features; L0 MLP fires 60 ReLU bigram detectors. L1 uniform-over-hyp attn counts chars+bigrams. Head=multinomial-LR. d_model=224, 1 head, 2 layers, d_ff=60."
+nli-snli,0.6650,,BigramDetector150,1.60e+06,"Iter22: bigram-detection circuit with K=150 hypothesis bigrams (vs iter21's 60). Same architecture - L0 shift attn + bigram MLP, L1 uniform-over-hyp counter, head=multinomial-LR. d_model=400, 1 head, 2 layers, d_ff=150."
+nli-snli,0.7100,,BigramDetector400_Overlap,2.56e+06,"Iter23: bigram-detection circuit with K=400 hypothesis bigrams. Uses overlap-residual trick (hyp char/bigram counts written into char_oh and bigram_det slots which are zero at LAST_POS). d_model=464, 1 head, 2 layers, d_ff=400."
+nli-snli,0.7250,,BigramDetectorAll,3.12e+06,"Iter24: bigram-detection circuit with K=450 (all distinct hyp bigrams in 2000-pool), trained C=1.0. d_model=512, 1 head, 2 layers, d_ff=450. Overlap layout: counts written into char_oh/bigram_det slots."
+nli-snli,0.8400,,TrigramDetectorKt400,1.08e+07,"Iter25: 2-layer trigram-detection circuit. L0 attn has 2 heads (shift-1, shift-2) writing prev_char and prev_prev_char into residual; L0 MLP fires 450 bigram + 400 trigram detectors. L1 attn (2 heads) counts chars+bigrams (head 0) and trigrams (head 1) over hyp. Head=multinomial-LR. d_model=960, 2 heads, 2 layers, d_ff=850."
+nli-snli,0.8850,,TrigramDetectorKt1500,9.60e+07,"Iter26: 2-layer trigram-detection circuit, scaled to Kt=1500 (all+ trigrams) with C=2.0 LR. Architecture same as iter25 but d_model=3000, d_ff=1950."
+nli-snli,0.8850,,TrigramDetectorKt1500_v2,9.60e+07,Iter27: Iter26 + label-bias fix (add 1000 to label intercept so labels always outscore non-label vocab tokens whose head logits are 0).
+nli-snli,0.9750,,TrigramDetectorKt1500_sharp,9.60e+07,Iter28: Iter27 + sharp-softmax fix (scale attention scores by sqrt(d_head) so attn is sharp regardless of head size). Counts were off-by-factor at d_head=1500.
+nli-snli,0.9900,,TrigramDetectorKt1500_C10,9.60e+07,Iter29: Iter28 head coefs retrained at C=10.0 (less regularization). LR test200 in-sample now 99.0%.
+nli-snli,1.0000,,TrigramDetectorKt2000_C20,1.68e+08,Iter30: Iter29 with Kt=2000 trigrams (vs 1500) and C=20.0. LR pred 100% test200. d_model=4000.
+nli-snli,1.0000,,TrigramDetectorKt800_C100_min,2.88e+07,"Iter31: minimum-Kt 100% circuit. Kt=800 trigrams, C=100. d_model=1600 (vs iter30 4000); param count ~6x smaller while still achieving perfect accuracy."
+nli-snli,1.0000,,Rank3Compact_d96,5.75e+05,"Iter32: rank-3 compact 100% circuit. LR coefficients absorbed into MLP fc2 (bigram/trigram->label) and L1 attn V projections (char->label, label-passthrough). Head reads only 3 label dims. d_model=96 (~500K params, ~340x smaller than iter30 167M)."
+nli-snli,0.9750,,Rank3_Kt400_C100,4.20e+05,Iter33: rank-3 Kt=400 C=100 sweep
+nli-snli,0.9950,,Rank3_Kt600_C100,4.98e+05,Iter34: rank-3 Kt=600 C=100
+nli-snli,0.9950,,Rank3_Kt700_C100,5.36e+05,Iter35: rank-3 Kt=700 C=100
+nli-snli,0.9950,,Rank3_Kt900_C50,6.13e+05,Iter36: rank-3 Kt=900 C=50
+nli-snli,0.9950,,Rank3_Kt1000_C30,6.52e+05,Iter37: rank-3 Kt=1000 C=30
+nli-snli,1.0000,,Rank3_Kt1500_C20,8.45e+05,Iter38: rank-3 Kt=1500 C=20
+nli-snli,0.9900,,Rank3_Kt2000_C10,1.04e+06,Iter39: rank-3 Kt=2000 C=10
+nli-snli,1.0000,,Rank3_Kt800_C200,5.75e+05,Iter40: rank-3 Kt=800 C=200
+nli-snli,1.0000,,Rank3_Kt800_C500,5.75e+05,Iter41: rank-3 Kt=800 C=500
+nli-snli,1.0000,,Rank3_NoBigrams_Kt1200,5.55e+05,Iter42: trigrams-only Kt=1200 C=100
+nli-snli,0.7700,,Rank3_BigOnly_C1000,2.66e+05,Iter43: bigrams-only Kb=450 C=1000
+nli-snli,1.0000,,Rank3_NoChars_Kt800,5.75e+05,Iter47: drop char features (only bigrams+trigrams). Test if char counts are redundant.
+nli-snli,1.0000,,Rank3_NoChars_NoBigrams_Kt1500,6.71e+05,"Iter48: trigrams-only, no chars/bigrams. Pure trigram circuit."
+nli-snli,0.4150,,Rank3_TopK_Tri200,3.43e+05,Iter46/200: keep top-200 trigrams by |coef|
+nli-snli,0.6900,,Rank3_TopK_Tri400,4.20e+05,Iter46/400: keep top-400 trigrams by |coef|
+nli-snli,0.8650,,Rank3_TopK_Tri600,4.98e+05,Iter46/600: keep top-600 trigrams by |coef|
+nli-snli,0.3800,,Rank3_TopK_Tri100,3.05e+05,"Iter53: extreme sparsity, top-100 trigrams"
+nli-snli,0.4800,,Rank3_Binary_t05,5.75e+05,"Iter51a: ternary {-1,0,+1} coefs with thr=0.5"
+nli-snli,0.3750,,Rank3_Binary_t10,5.75e+05,Iter51b: ternary coefs thr=1.0
+nli-snli,0.4250,,Rank3_Binary_t20,5.75e+05,Iter51c: ternary coefs thr=2.0
+nli-snli,0.9750,,Rank3_Int8Quant,5.75e+05,Iter52: int8 (256-level) coef quantization
+nli-snli,0.9950,,Rank3_ZeroIntercept,5.75e+05,Iter65: zero intercepts ablation
+nli-snli,0.8500,,Rank3_Kt200_C500,3.43e+05,Iter53: low-Kt baseline Kt=200 C=500
+nli-snli,0.8000,,Rank3_Kt100_C1000,3.05e+05,Iter54: very low Kt=100 C=1000
+nli-snli,0.7900,,Rank3_Kt100_C2000,3.05e+05,Iter77: Kt=100 C=2000
+nli-snli,0.7650,,Rank3_NoTrigrams_C500,2.66e+05,Iter76: chars+bigrams only (no trigrams)
+nli-snli,1.0000,,Rank3_Kt1200_C80,7.29e+05,Iter73: Kt=1200 C=80
+nli-snli,1.0000,,Rank3_Kt1500_C50,8.45e+05,Iter74: Kt=1500 C=50
+nli-snli,1.0000,,Rank3_d100,6.02e+05,"Iter d_model=100, Kt=800 C=100"
+nli-snli,1.0000,,Rank3_d112,6.84e+05,"Iter d_model=112, Kt=800 C=100"
+nli-snli,1.0000,,Rank3_d128,7.98e+05,"Iter d_model=128, Kt=800 C=100"
+nli-snli,1.0000,,Rank3_d160,1.04e+06,"Iter d_model=160, Kt=800 C=100"
+nli-snli,1.0000,,Rank3_d96,5.75e+05,"Iter d_model=96, Kt=800 C=100"
+nli-snli,0.9950,,Rank3_Kb50_Kt800,4.20e+05,Iter Kb=50 + Kt=800
+nli-snli,0.9950,,Rank3_Kb100_Kt800,4.40e+05,Iter Kb=100 + Kt=800
+nli-snli,0.9950,,Rank3_Kb200_Kt800,4.78e+05,Iter Kb=200 + Kt=800
+nli-snli,1.0000,,Rank3_Kb300_Kt800,5.17e+05,Iter Kb=300 + Kt=800
+nli-snli,1.0000,,Rank3_Kb400_Kt800,5.55e+05,Iter Kb=400 + Kt=800
+nli-snli,1.0000,,Rank3_Kt700_C200,5.36e+05,Iter Kt=700 C=200
+nli-snli,1.0000,,Rank3_Kt900_C100,6.13e+05,Iter Kt=900 C=100
+nli-snli,1.0000,,Rank3_Kt1000_C80,6.52e+05,Iter Kt=1000 C=80
+nli-snli,1.0000,,Rank3_Kt1100_C60,6.91e+05,Iter Kt=1100 C=60
+nli-snli,0.2950,,Rank3_HashTri354,4.03e+05,Iter hashed-trigrams 354 buckets
+nli-snli,0.3850,,Rank3_HashTri390,4.16e+05,Iter hashed-trigrams 390 buckets
+nli-snli,0.3750,,Rank3_HashTri457,4.42e+05,Iter hashed-trigrams 457 buckets
+nli-snli,0.9950,,Rank3_Kb300_Kt600_C200,4.40e+05,"Search minimum (Kb,Kt): Kb=300, Kt=600, C=200"
+nli-snli,0.9950,,Rank3_Kb200_Kt700_C200,4.40e+05,"Search: Kb=200, Kt=700, C=200"
+nli-snli,0.9950,,Rank3_Kb100_Kt800_C200,4.40e+05,"Search: Kb=100, Kt=800, C=200"
+nli-snli,0.9950,,Rank3_TriOnly_Kt1000,4.78e+05,"Trigrams-only, Kt=1000 C=100 (cleanest)"
+nli-snli,0.9950,,Rank3_Kb450_Kt500_C300,4.59e+05,Smallest-Kt path: Kt=500 C=300
+nli-snli,1.0000,,Rank3_n_heads_4_d128,7.98e+05,"n_heads=4 with dummy extra heads (d_model=128, d_head=32)"
+nli-snli,1.0000,,Rank3_n_heads_4_d120,7.41e+05,"n_heads=4, d_model=120, d_head=30"
+nli-snli,1.0000,,Rank3_n_heads_4_d192,1.29e+06,"n_heads=4, d_model=192, d_head=48"
+nli-snli,1.0000,,Rank3_n_heads_6_d288,2.16e+06,"n_heads=6, d_model=288, d_head=48"
+nli-snli,1.0000,,Rank3_Kt600_C200,4.98e+05,"Iter32: rank-3 compact 100% circuit. LR coefficients absorbed into MLP fc2 (bigram/trigram->label) and L1 attn V projections (char->label, label-passthrough). Head reads only 3 label dims. d_model=96 (~500K params, ~340x smaller than iter30 167M)."
+nli-snli,0.8400,,L1_sparse_C1,4.75e+05,"Iter: L1-LR C=1, sparse (~1000 detectors)"
+nli-snli,0.9550,,L1_sparse_C3,6.08e+05,Iter: L1-LR C=3
+nli-snli,0.9900,,L1_sparse_C10,6.67e+05,Iter: L1-LR C=10
+nli-snli,1.0000,,L1_sparse_C30,6.76e+05,Iter: L1-LR C=30
+nli-snli,1.0000,,L1_sparse_C100,6.99e+05,Iter: L1-LR C=100
+nli-snli,1.0000,,L1_sparse_C300,7.28e+05,Iter: L1-LR C=300
+nli-snli,0.9700,,MI_top400,4.20e+05,Iter: MI feature selection top-400 trigrams
+nli-snli,0.9800,,MI_top500,4.59e+05,Iter: MI top-500 trigrams
+nli-snli,0.9900,,MI_top550,4.78e+05,Iter: MI top-550
+nli-snli,0.9900,,MI_top600,4.98e+05,Iter: MI top-600
+nli-snli,0.9950,,MI_top700,5.36e+05,Iter: MI top-700
+nli-snli,1.0000,,MI_top800,5.75e+05,Iter: MI top-800
+nli-snli,0.9900,,Chi_top500,4.59e+05,Iter: chi2 top-500 trigrams
+nli-snli,0.9900,,Chi_top600,4.98e+05,Iter: chi2 top-600 trigrams
+nli-snli,0.9950,,Rand_top600,4.98e+05,Iter: random-600 trigrams baseline
+nli-snli,1.0000,,Fine_Kt550_C500,4.78e+05,Iter: fine Kt=550 C=500
+nli-snli,1.0000,,Fine_Kt580_C500,4.90e+05,Iter: fine Kt=580 C=500
+nli-snli,1.0000,,Fine_Kt620_C500,5.05e+05,Iter: fine Kt=620 C=500
+nli-snli,1.0000,,Fine_Kt660_C500,5.21e+05,Iter: fine Kt=660 C=500
+nli-snli,0.9950,,Fine_Kt550_C200,4.78e+05,Iter: fine Kt=550 C=200
+nli-snli,1.0000,,Fine_Kt580_C200,4.90e+05,Iter: fine Kt=580 C=200
+nli-snli,1.0000,,Fine_Kt620_C200,5.05e+05,Iter: fine Kt=620 C=200
+nli-snli,1.0000,,Fine_Kt660_C200,5.21e+05,Iter: fine Kt=660 C=200
+nli-snli,0.9950,,MinSearch_Kt440_C1000,4.36e+05,Search smaller Kt: Kt=440 C=1000
+nli-snli,1.0000,,MinSearch_Kt460_C1000,4.44e+05,Search smaller Kt: Kt=460 C=1000
+nli-snli,1.0000,,MinSearch_Kt480_C1000,4.51e+05,Search smaller Kt: Kt=480 C=1000
+nli-snli,1.0000,,MinSearch_Kt500_C1000,4.59e+05,Search smaller Kt: Kt=500 C=1000
+nli-snli,1.0000,,MinSearch_Kt520_C1000,4.67e+05,Search smaller Kt: Kt=520 C=1000
+nli-snli,1.0000,,MinSearch_Kt540_C1000,4.74e+05,Search smaller Kt: Kt=540 C=1000
+nli-snli,1.0000,,MinSearch_Kb300_Kt550_C1000,4.20e+05,Search: Kb=300 Kt=550 C=1000
+nli-snli,1.0000,,MinSearch_Kb400_Kt550_C500,4.59e+05,Search: Kb=400 Kt=550 C=500
+nli-snli,1.0000,,MinSearch_NoBig_Kt800_C1000,4.01e+05,Chars+trigrams only (no bigrams): Kt=800 C=1000
+nli-snli,1.0000,,MinSearch_TriOnly_Kt900_C500,4.40e+05,Trigrams-only (no chars/bigrams): Kt=900 C=500
+nli-snli,0.8900,,P_NoBig_Kt600_C1000,3.24e+05,push smaller push_NoBig_Kt600_C1000
+nli-snli,0.8950,,P_NoBig_Kt600_C2000,3.24e+05,push smaller push_NoBig_Kt600_C2000
+nli-snli,0.8950,,P_NoBig_Kt600_C5000,3.24e+05,push smaller push_NoBig_Kt600_C5000
+nli-snli,0.9250,,P_NoBig_Kt650_C1000,3.43e+05,push smaller push_NoBig_Kt650_C1000
+nli-snli,0.9150,,P_NoBig_Kt650_C2000,3.43e+05,push smaller push_NoBig_Kt650_C2000
+nli-snli,0.9250,,P_NoBig_Kt650_C5000,3.43e+05,push smaller push_NoBig_Kt650_C5000
+nli-snli,0.9750,,P_NoBig_Kt700_C1000,3.62e+05,push smaller push_NoBig_Kt700_C1000
+nli-snli,0.9750,,P_NoBig_Kt700_C2000,3.62e+05,push smaller push_NoBig_Kt700_C2000
+nli-snli,0.9850,,P_NoBig_Kt700_C5000,3.62e+05,push smaller push_NoBig_Kt700_C5000
+nli-snli,0.9950,,P_NoBig_Kt750_C1000,3.82e+05,push smaller push_NoBig_Kt750_C1000
+nli-snli,0.9950,,P_NoBig_Kt750_C2000,3.82e+05,push smaller push_NoBig_Kt750_C2000
+nli-snli,1.0000,,P_NoBig_Kt750_C5000,3.82e+05,push smaller push_NoBig_Kt750_C5000
+nli-snli,0.9450,,P_TriOnly_Kt700_C1000,3.62e+05,push smaller push_TriOnly_Kt700_C1000
+nli-snli,0.9500,,P_TriOnly_Kt700_C2000,3.62e+05,push smaller push_TriOnly_Kt700_C2000
+nli-snli,0.9650,,P_TriOnly_Kt700_C5000,3.62e+05,push smaller push_TriOnly_Kt700_C5000
+nli-snli,0.9850,,P_TriOnly_Kt750_C1000,3.82e+05,push smaller push_TriOnly_Kt750_C1000
+nli-snli,0.9850,,P_TriOnly_Kt750_C2000,3.82e+05,push smaller push_TriOnly_Kt750_C2000
+nli-snli,1.0000,,P_TriOnly_Kt750_C5000,3.82e+05,push smaller push_TriOnly_Kt750_C5000
+nli-snli,1.0000,,P_TriOnly_Kt800_C1000,4.01e+05,push smaller push_TriOnly_Kt800_C1000
+nli-snli,1.0000,,P_TriOnly_Kt800_C2000,4.01e+05,push smaller push_TriOnly_Kt800_C2000
+nli-snli,1.0000,,P_TriOnly_Kt800_C5000,4.01e+05,push smaller push_TriOnly_Kt800_C5000
+nli-snli,1.0000,,P_TriOnly_Kt850_C1000,4.20e+05,push smaller push_TriOnly_Kt850_C1000
+nli-snli,1.0000,,P_TriOnly_Kt850_C2000,4.20e+05,push smaller push_TriOnly_Kt850_C2000
+nli-snli,1.0000,,P_TriOnly_Kt850_C5000,4.20e+05,push smaller push_TriOnly_Kt850_C5000
+nli-snli,0.8450,,P_Kb100_Kt500_C1000,3.24e+05,push smaller push_Kb100_Kt500_C1000
+nli-snli,0.8500,,P_Kb100_Kt500_C2000,3.24e+05,push smaller push_Kb100_Kt500_C2000
+nli-snli,0.9150,,P_Kb100_Kt600_C1000,3.62e+05,push smaller push_Kb100_Kt600_C1000
+nli-snli,0.9400,,P_Kb100_Kt600_C2000,3.62e+05,push smaller push_Kb100_Kt600_C2000
+nli-snli,0.8700,,P_Kb150_Kt500_C1000,3.43e+05,push smaller push_Kb150_Kt500_C1000
+nli-snli,0.8750,,P_Kb150_Kt500_C2000,3.43e+05,push smaller push_Kb150_Kt500_C2000
+nli-snli,0.9800,,P_Kb150_Kt600_C1000,3.82e+05,push smaller push_Kb150_Kt600_C1000
+nli-snli,0.9850,,P_Kb150_Kt600_C2000,3.82e+05,push smaller push_Kb150_Kt600_C2000
+nli-snli,0.8150,,P_Kb50_Kt500_C1000,3.05e+05,push smaller push_Kb50_Kt500_C1000
+nli-snli,0.8250,,P_Kb50_Kt500_C2000,3.05e+05,push smaller push_Kb50_Kt500_C2000
+nli-snli,0.9000,,P_Kb50_Kt600_C1000,3.43e+05,push smaller push_Kb50_Kt600_C1000
+nli-snli,0.9000,,P_Kb50_Kt600_C2000,3.43e+05,push smaller push_Kb50_Kt600_C2000
+nli-snli,0.9950,,T_NoBig_Kt700_C20000,3.62e+05,tight tight_NoBig_Kt700_C20000
+nli-snli,0.9950,,T_NoBig_Kt700_C50000,3.62e+05,tight tight_NoBig_Kt700_C50000
+nli-snli,0.9950,,T_NoBig_Kt710_C20000,3.66e+05,tight tight_NoBig_Kt710_C20000
+nli-snli,0.9950,,T_NoBig_Kt710_C50000,3.66e+05,tight tight_NoBig_Kt710_C50000
+nli-snli,0.9850,,T_NoBig_Kt720_C10000,3.70e+05,tight tight_NoBig_Kt720_C10000
+nli-snli,1.0000,,T_NoBig_Kt720_C5000,3.70e+05,tight tight_NoBig_Kt720_C5000
+nli-snli,1.0000,,T_NoBig_Kt730_C10000,3.74e+05,tight tight_NoBig_Kt730_C10000
+nli-snli,1.0000,,T_NoBig_Kt730_C5000,3.74e+05,tight tight_NoBig_Kt730_C5000
+nli-snli,1.0000,,T_NoBig_Kt740_C10000,3.78e+05,tight tight_NoBig_Kt740_C10000
+nli-snli,0.9900,,T_NoBig_Kt740_C5000,3.78e+05,tight tight_NoBig_Kt740_C5000
+nli-snli,1.0000,,T_NoBig_Kt760_C10000,3.86e+05,tight tight_NoBig_Kt760_C10000
+nli-snli,1.0000,,T_NoBig_Kt760_C5000,3.86e+05,tight tight_NoBig_Kt760_C5000
+nli-snli,1.0000,,T_TriOnly_Kt760_C10000,3.86e+05,tight tight_TriOnly_Kt760_C10000
+nli-snli,0.9950,,T_TriOnly_Kt760_C5000,3.86e+05,tight tight_TriOnly_Kt760_C5000
+nli-snli,1.0000,,T_TriOnly_Kt770_C10000,3.89e+05,tight tight_TriOnly_Kt770_C10000
+nli-snli,1.0000,,T_TriOnly_Kt770_C5000,3.89e+05,tight tight_TriOnly_Kt770_C5000
+nli-snli,1.0000,,T_TriOnly_Kt780_C10000,3.93e+05,tight tight_TriOnly_Kt780_C10000
+nli-snli,1.0000,,T_TriOnly_Kt780_C5000,3.93e+05,tight tight_TriOnly_Kt780_C5000
+nli-snli,1.0000,,T_TriOnly_Kt790_C10000,3.97e+05,tight tight_TriOnly_Kt790_C10000
+nli-snli,1.0000,,T_TriOnly_Kt790_C5000,3.97e+05,tight tight_TriOnly_Kt790_C5000
+nli-snli,1.0000,,Rank3_NoBig_Kt720,3.70e+05,"Pareto-min rank-3 circuit: chars+top-720 trigrams (no bigrams), C=5000 LR. d_ff=720 (down from 1050). 100% on 200 SNLI evals. d_model=96."
+nli-snli,0.4800,,M_mag_K500_norefit,2.85e+05,phaseABC mag_K500_norefit
+nli-snli,0.9300,,M_mag_K500_refit,2.85e+05,phaseABC mag_K500_refit
+nli-snli,0.5000,,M_mag_K550_norefit,3.05e+05,phaseABC mag_K550_norefit
+nli-snli,0.9600,,M_mag_K550_refit,3.05e+05,phaseABC mag_K550_refit
+nli-snli,0.5150,,M_mag_K600_norefit,3.24e+05,phaseABC mag_K600_norefit
+nli-snli,0.9950,,M_mag_K600_refit,3.24e+05,phaseABC mag_K600_refit
+nli-snli,0.5200,,M_mag_K620_norefit,3.32e+05,phaseABC mag_K620_norefit
+nli-snli,1.0000,,M_mag_K620_refit,3.32e+05,phaseABC mag_K620_refit
+nli-snli,0.5250,,M_mag_K640_norefit,3.39e+05,phaseABC mag_K640_norefit
+nli-snli,1.0000,,M_mag_K640_refit,3.39e+05,phaseABC mag_K640_refit
+nli-snli,0.5150,,M_mag_K660_norefit,3.47e+05,phaseABC mag_K660_norefit
+nli-snli,1.0000,,M_mag_K660_refit,3.47e+05,phaseABC mag_K660_refit
+nli-snli,0.5100,,M_mag_K680_norefit,3.55e+05,phaseABC mag_K680_norefit
+nli-snli,1.0000,,M_mag_K680_refit,3.55e+05,phaseABC mag_K680_refit
+nli-snli,0.5150,,M_mag_K700_norefit,3.62e+05,phaseABC mag_K700_norefit
+nli-snli,1.0000,,M_mag_K700_refit,3.62e+05,phaseABC mag_K700_refit
+nli-snli,0.4250,,M_bin_K600,3.24e+05,phaseABC bin_K600
+nli-snli,0.4550,,M_bin_K650,3.43e+05,phaseABC bin_K650
+nli-snli,0.5550,,M_bin_K700,3.62e+05,phaseABC bin_K700
+nli-snli,0.4700,,M_bin_K720,3.70e+05,phaseABC bin_K720
+nli-snli,0.7350,,M_balcls_Kpc150_K355,2.29e+05,phaseABC balcls_Kpc150_K355
+nli-snli,0.7850,,M_balcls_Kpc175_K404,2.48e+05,phaseABC balcls_Kpc175_K404
+nli-snli,0.8000,,M_balcls_Kpc200_K456,2.68e+05,phaseABC balcls_Kpc200_K456
+nli-snli,0.8850,,M_balcls_Kpc225_K505,2.87e+05,phaseABC balcls_Kpc225_K505
+nli-snli,0.9100,,M_balcls_Kpc250_K548,3.04e+05,phaseABC balcls_Kpc250_K548
+nli-snli,0.9550,,IP_ip_K520_r3_C10000,2.93e+05,iter-prune ip_K520_r3_C10000
+nli-snli,0.9450,,IP_ip_K520_r3_C1000,2.93e+05,iter-prune ip_K520_r3_C1000
+nli-snli,0.9350,,IP_ip_K520_r3_C5000,2.93e+05,iter-prune ip_K520_r3_C5000
+nli-snli,0.9700,,IP_ip_K520_r5_C10000,2.93e+05,iter-prune ip_K520_r5_C10000
+nli-snli,0.9650,,IP_ip_K520_r5_C1000,2.93e+05,iter-prune ip_K520_r5_C1000
+nli-snli,0.9800,,IP_ip_K520_r5_C5000,2.93e+05,iter-prune ip_K520_r5_C5000
+nli-snli,0.9750,,IP_ip_K540_r3_C10000,3.01e+05,iter-prune ip_K540_r3_C10000
+nli-snli,0.9550,,IP_ip_K540_r3_C1000,3.01e+05,iter-prune ip_K540_r3_C1000
+nli-snli,0.9700,,IP_ip_K540_r3_C5000,3.01e+05,iter-prune ip_K540_r3_C5000
+nli-snli,1.0000,,IP_ip_K540_r5_C10000,3.01e+05,iter-prune ip_K540_r5_C10000
+nli-snli,0.9700,,IP_ip_K540_r5_C1000,3.01e+05,iter-prune ip_K540_r5_C1000
+nli-snli,0.9950,,IP_ip_K540_r5_C5000,3.01e+05,iter-prune ip_K540_r5_C5000
+nli-snli,0.9750,,IP_ip_K560_r3_C10000,3.08e+05,iter-prune ip_K560_r3_C10000
+nli-snli,0.9600,,IP_ip_K560_r3_C1000,3.08e+05,iter-prune ip_K560_r3_C1000
+nli-snli,0.9900,,IP_ip_K560_r3_C5000,3.08e+05,iter-prune ip_K560_r3_C5000
+nli-snli,1.0000,,IP_ip_K560_r5_C10000,3.08e+05,iter-prune ip_K560_r5_C10000
+nli-snli,0.9800,,IP_ip_K560_r5_C1000,3.08e+05,iter-prune ip_K560_r5_C1000
+nli-snli,1.0000,,IP_ip_K560_r5_C5000,3.08e+05,iter-prune ip_K560_r5_C5000
+nli-snli,1.0000,,IP_ip_K580_r3_C10000,3.16e+05,iter-prune ip_K580_r3_C10000
+nli-snli,0.9750,,IP_ip_K580_r3_C1000,3.16e+05,iter-prune ip_K580_r3_C1000
+nli-snli,0.9800,,IP_ip_K580_r3_C5000,3.16e+05,iter-prune ip_K580_r3_C5000
+nli-snli,0.9950,,IP_ip_K580_r5_C10000,3.16e+05,iter-prune ip_K580_r5_C10000
+nli-snli,1.0000,,IP_ip_K580_r5_C1000,3.16e+05,iter-prune ip_K580_r5_C1000
+nli-snli,1.0000,,IP_ip_K580_r5_C5000,3.16e+05,iter-prune ip_K580_r5_C5000
+nli-snli,1.0000,,IP_ip_K600_r3_C10000,3.24e+05,iter-prune ip_K600_r3_C10000
+nli-snli,0.9800,,IP_ip_K600_r3_C1000,3.24e+05,iter-prune ip_K600_r3_C1000
+nli-snli,1.0000,,IP_ip_K600_r3_C5000,3.24e+05,iter-prune ip_K600_r3_C5000
+nli-snli,1.0000,,IP_ip_K600_r5_C10000,3.24e+05,iter-prune ip_K600_r5_C10000
+nli-snli,1.0000,,IP_ip_K600_r5_C1000,3.24e+05,iter-prune ip_K600_r5_C1000
+nli-snli,1.0000,,IP_ip_K600_r5_C5000,3.24e+05,iter-prune ip_K600_r5_C5000
+nli-snli,1.0000,,IP_ip_K620_r3_C10000,3.32e+05,iter-prune ip_K620_r3_C10000
+nli-snli,1.0000,,IP_ip_K620_r3_C1000,3.32e+05,iter-prune ip_K620_r3_C1000
+nli-snli,1.0000,,IP_ip_K620_r3_C5000,3.32e+05,iter-prune ip_K620_r3_C5000
+nli-snli,1.0000,,IP_ip_K620_r5_C10000,3.32e+05,iter-prune ip_K620_r5_C10000
+nli-snli,0.9950,,IP_ip_K620_r5_C1000,3.32e+05,iter-prune ip_K620_r5_C1000
+nli-snli,1.0000,,IP_ip_K620_r5_C5000,3.32e+05,iter-prune ip_K620_r5_C5000
+nli-snli,0.8500,,I2_K420_f1500_r8_C10000,2.54e+05,ip2 ip2_K420_f1500_r8_C10000
+nli-snli,0.8300,,I2_K420_f1500_r8_C20000,2.54e+05,ip2 ip2_K420_f1500_r8_C20000
+nli-snli,0.8900,,I2_K420_f1500_r8_C5000,2.54e+05,ip2 ip2_K420_f1500_r8_C5000
+nli-snli,0.8550,,I2_K420_f2000_r10_C10000,2.54e+05,ip2 ip2_K420_f2000_r10_C10000
+nli-snli,0.8500,,I2_K420_f2000_r10_C20000,2.54e+05,ip2 ip2_K420_f2000_r10_C20000
+nli-snli,0.8700,,I2_K420_f2000_r10_C5000,2.54e+05,ip2 ip2_K420_f2000_r10_C5000
+nli-snli,0.8600,,I2_K420_f2500_r12_C10000,2.54e+05,ip2 ip2_K420_f2500_r12_C10000
+nli-snli,0.8650,,I2_K420_f2500_r12_C20000,2.54e+05,ip2 ip2_K420_f2500_r12_C20000
+nli-snli,0.8550,,I2_K420_f2500_r12_C5000,2.54e+05,ip2 ip2_K420_f2500_r12_C5000
+nli-snli,0.9100,,I2_K440_f1500_r8_C10000,2.62e+05,ip2 ip2_K440_f1500_r8_C10000
+nli-snli,0.9100,,I2_K440_f1500_r8_C20000,2.62e+05,ip2 ip2_K440_f1500_r8_C20000
+nli-snli,0.9000,,I2_K440_f1500_r8_C5000,2.62e+05,ip2 ip2_K440_f1500_r8_C5000
+nli-snli,0.8650,,I2_K440_f2000_r10_C10000,2.62e+05,ip2 ip2_K440_f2000_r10_C10000
+nli-snli,0.8700,,I2_K440_f2000_r10_C20000,2.62e+05,ip2 ip2_K440_f2000_r10_C20000
+nli-snli,0.8650,,I2_K440_f2000_r10_C5000,2.62e+05,ip2 ip2_K440_f2000_r10_C5000
+nli-snli,0.8250,,I2_K440_f2500_r12_C10000,2.62e+05,ip2 ip2_K440_f2500_r12_C10000
+nli-snli,0.8650,,I2_K440_f2500_r12_C20000,2.62e+05,ip2 ip2_K440_f2500_r12_C20000
+nli-snli,0.9000,,I2_K440_f2500_r12_C5000,2.62e+05,ip2 ip2_K440_f2500_r12_C5000
+nli-snli,0.9200,,I2_K460_f1500_r8_C10000,2.70e+05,ip2 ip2_K460_f1500_r8_C10000
+nli-snli,0.9250,,I2_K460_f1500_r8_C20000,2.70e+05,ip2 ip2_K460_f1500_r8_C20000
+nli-snli,0.9400,,I2_K460_f1500_r8_C5000,2.70e+05,ip2 ip2_K460_f1500_r8_C5000
+nli-snli,0.8900,,I2_K460_f2000_r10_C10000,2.70e+05,ip2 ip2_K460_f2000_r10_C10000
+nli-snli,0.8900,,I2_K460_f2000_r10_C20000,2.70e+05,ip2 ip2_K460_f2000_r10_C20000
+nli-snli,0.8750,,I2_K460_f2000_r10_C5000,2.70e+05,ip2 ip2_K460_f2000_r10_C5000
+nli-snli,0.8700,,I2_K460_f2500_r12_C10000,2.70e+05,ip2 ip2_K460_f2500_r12_C10000
+nli-snli,0.9100,,I2_K460_f2500_r12_C20000,2.70e+05,ip2 ip2_K460_f2500_r12_C20000
+nli-snli,0.8650,,I2_K460_f2500_r12_C5000,2.70e+05,ip2 ip2_K460_f2500_r12_C5000
+nli-snli,0.9600,,I2_K480_f1500_r8_C10000,2.78e+05,ip2 ip2_K480_f1500_r8_C10000
+nli-snli,0.9400,,I2_K480_f1500_r8_C20000,2.78e+05,ip2 ip2_K480_f1500_r8_C20000
+nli-snli,0.9550,,I2_K480_f1500_r8_C5000,2.78e+05,ip2 ip2_K480_f1500_r8_C5000
+nli-snli,0.9200,,I2_K480_f2000_r10_C10000,2.78e+05,ip2 ip2_K480_f2000_r10_C10000
+nli-snli,0.9350,,I2_K480_f2000_r10_C5000,2.78e+05,ip2 ip2_K480_f2000_r10_C5000
+nli-snli,1.0000,,Rank3_IterPrune_K540,3.01e+05,"Pareto-min rank-3 circuit via iterative magnitude pruning: chars + 540 trigrams selected by ||LR-coef|| across 5 prune+refit rounds from Kt_full=1500, C=10000. d_ff=540 (down from 720). 100% on 200 SNLI evals."
+nli-snli,0.8800,,P3_f1000_K460_r4,2.70e+05,phase3 ph3_f1000_K460_r4
+nli-snli,0.9250,,P3_f1000_K460_r5,2.70e+05,phase3 ph3_f1000_K460_r5
+nli-snli,0.9200,,P3_f1000_K460_r6,2.70e+05,phase3 ph3_f1000_K460_r6
+nli-snli,0.9100,,P3_f1000_K480_r4,2.78e+05,phase3 ph3_f1000_K480_r4
+nli-snli,0.9450,,P3_f1000_K480_r5,2.78e+05,phase3 ph3_f1000_K480_r5
+nli-snli,0.9450,,P3_f1000_K480_r6,2.78e+05,phase3 ph3_f1000_K480_r6
+nli-snli,0.9600,,P3_f1000_K500_r4,2.85e+05,phase3 ph3_f1000_K500_r4
+nli-snli,0.9650,,P3_f1000_K500_r5,2.85e+05,phase3 ph3_f1000_K500_r5
+nli-snli,0.9850,,P3_f1000_K500_r6,2.85e+05,phase3 ph3_f1000_K500_r6
+nli-snli,0.9850,,P3_f1000_K520_r4,2.93e+05,phase3 ph3_f1000_K520_r4
+nli-snli,0.9850,,P3_f1000_K520_r5,2.93e+05,phase3 ph3_f1000_K520_r5
+nli-snli,0.9750,,P3_f1000_K520_r6,2.93e+05,phase3 ph3_f1000_K520_r6
+nli-snli,0.9900,,P3_f1000_K540_r4,3.01e+05,phase3 ph3_f1000_K540_r4
+nli-snli,0.9850,,P3_f1000_K540_r5,3.01e+05,phase3 ph3_f1000_K540_r5
+nli-snli,0.9950,,P3_f1000_K540_r6,3.01e+05,phase3 ph3_f1000_K540_r6
+nli-snli,0.9200,,P3_f1200_K460_r4,2.70e+05,phase3 ph3_f1200_K460_r4
+nli-snli,0.8750,,P3_f1200_K460_r5,2.70e+05,phase3 ph3_f1200_K460_r5
+nli-snli,0.9500,,P3_f1200_K460_r6,2.70e+05,phase3 ph3_f1200_K460_r6
+nli-snli,0.9550,,P3_f1200_K480_r4,2.78e+05,phase3 ph3_f1200_K480_r4
+nli-snli,0.9550,,P3_f1200_K480_r5,2.78e+05,phase3 ph3_f1200_K480_r5
+nli-snli,0.9400,,P3_f1200_K480_r6,2.78e+05,phase3 ph3_f1200_K480_r6
+nli-snli,0.9850,,P3_f1200_K500_r4,2.85e+05,phase3 ph3_f1200_K500_r4
+nli-snli,0.9650,,P3_f1200_K500_r5,2.85e+05,phase3 ph3_f1200_K500_r5
+nli-snli,0.9800,,P3_f1200_K500_r6,2.85e+05,phase3 ph3_f1200_K500_r6
+nli-snli,0.9800,,P3_f1200_K520_r4,2.93e+05,phase3 ph3_f1200_K520_r4
+nli-snli,1.0000,,P3_f1200_K520_r5,2.93e+05,phase3 ph3_f1200_K520_r5
+nli-snli,0.9950,,P3_f1200_K520_r6,2.93e+05,phase3 ph3_f1200_K520_r6
+nli-snli,0.9950,,P3_f1200_K540_r4,3.01e+05,phase3 ph3_f1200_K540_r4
+nli-snli,0.9950,,P3_f1200_K540_r5,3.01e+05,phase3 ph3_f1200_K540_r5
+nli-snli,0.9950,,P3_f1200_K540_r6,3.01e+05,phase3 ph3_f1200_K540_r6
+nli-snli,0.8750,,P3_f800_K460_r4,2.70e+05,phase3 ph3_f800_K460_r4
+nli-snli,0.8800,,P3_f800_K460_r5,2.70e+05,phase3 ph3_f800_K460_r5
+nli-snli,0.8550,,P3_f800_K460_r6,2.70e+05,phase3 ph3_f800_K460_r6
+nli-snli,0.9000,,P3_f800_K480_r4,2.78e+05,phase3 ph3_f800_K480_r4
+nli-snli,0.9050,,P3_f800_K480_r5,2.78e+05,phase3 ph3_f800_K480_r5
+nli-snli,0.8900,,P3_f800_K480_r6,2.78e+05,phase3 ph3_f800_K480_r6
+nli-snli,0.9000,,P3_f800_K500_r4,2.85e+05,phase3 ph3_f800_K500_r4
+nli-snli,0.9400,,P3_f800_K500_r5,2.85e+05,phase3 ph3_f800_K500_r5
+nli-snli,0.9050,,P3_f800_K500_r6,2.85e+05,phase3 ph3_f800_K500_r6
+nli-snli,0.9250,,P3_f800_K520_r4,2.93e+05,phase3 ph3_f800_K520_r4
+nli-snli,0.9750,,P3_f800_K520_r5,2.93e+05,phase3 ph3_f800_K520_r5
+nli-snli,0.9600,,P3_f800_K520_r6,2.93e+05,phase3 ph3_f800_K520_r6
+nli-snli,0.9800,,P3_f800_K540_r4,3.01e+05,phase3 ph3_f800_K540_r4
+nli-snli,0.9750,,P3_f800_K540_r5,3.01e+05,phase3 ph3_f800_K540_r5
+nli-snli,0.9650,,P3_f800_K540_r6,3.01e+05,phase3 ph3_f800_K540_r6
+nli-snli,1.0000,,X_be_M10_K530_C10000,2.97e+05,explore be_M10_K530_C10000
+nli-snli,1.0000,,X_be_M10_K530_C20000,2.97e+05,explore be_M10_K530_C20000
+nli-snli,1.0000,,X_be_M10_K530_C5000,2.97e+05,explore be_M10_K530_C5000
+nli-snli,1.0000,,X_be_M20_K520_C10000,2.93e+05,explore be_M20_K520_C10000
+nli-snli,1.0000,,X_be_M20_K520_C20000,2.93e+05,explore be_M20_K520_C20000
+nli-snli,1.0000,,X_be_M20_K520_C5000,2.93e+05,explore be_M20_K520_C5000
+nli-snli,0.9950,,X_be_M25_K515_C10000,2.91e+05,explore be_M25_K515_C10000
+nli-snli,1.0000,,X_be_M25_K515_C20000,2.91e+05,explore be_M25_K515_C20000
+nli-snli,0.9950,,X_be_M25_K515_C5000,2.91e+05,explore be_M25_K515_C5000
+nli-snli,1.0000,,X_be_M30_K510_C10000,2.89e+05,explore be_M30_K510_C10000
+nli-snli,0.9900,,X_be_M30_K510_C20000,2.89e+05,explore be_M30_K510_C20000
+nli-snli,0.9950,,X_be_M30_K510_C5000,2.89e+05,explore be_M30_K510_C5000
+nli-snli,0.9950,,X_be_M35_K505_C10000,2.87e+05,explore be_M35_K505_C10000
+nli-snli,0.9900,,X_be_M35_K505_C20000,2.87e+05,explore be_M35_K505_C20000
+nli-snli,0.9900,,X_be_M35_K505_C5000,2.87e+05,explore be_M35_K505_C5000
+nli-snli,0.9900,,X_be_M40_K500_C10000,2.85e+05,explore be_M40_K500_C10000
+nli-snli,0.9900,,X_be_M40_K500_C20000,2.85e+05,explore be_M40_K500_C20000
+nli-snli,0.9900,,X_be_M40_K500_C5000,2.85e+05,explore be_M40_K500_C5000
+nli-snli,0.8650,,X_inter_K480_C10000,2.78e+05,explore inter_K480_C10000
+nli-snli,0.8650,,X_inter_K480_C5000,2.78e+05,explore inter_K480_C5000
+nli-snli,0.8900,,X_inter_K500_C10000,2.85e+05,explore inter_K500_C10000
+nli-snli,0.8850,,X_inter_K500_C5000,2.85e+05,explore inter_K500_C5000
+nli-snli,0.9200,,X_inter_K520_C10000,2.93e+05,explore inter_K520_C10000
+nli-snli,0.9300,,X_inter_K520_C5000,2.93e+05,explore inter_K520_C5000
+nli-snli,0.9550,,X_fine_f1200_K480_C10000,2.78e+05,explore fine_f1200_K480_C10000
+nli-snli,0.9850,,X_fine_f1200_K480_C20000,2.78e+05,explore fine_f1200_K480_C20000
+nli-snli,0.9450,,X_fine_f1200_K480_C50000,2.78e+05,explore fine_f1200_K480_C50000
+nli-snli,0.9700,,X_fine_f1200_K480_C5000,2.78e+05,explore fine_f1200_K480_C5000
+nli-snli,0.9600,,X_fine_f1200_K490_C10000,2.81e+05,explore fine_f1200_K490_C10000
+nli-snli,0.9550,,X_fine_f1200_K490_C20000,2.81e+05,explore fine_f1200_K490_C20000
+nli-snli,0.9600,,X_fine_f1200_K490_C50000,2.81e+05,explore fine_f1200_K490_C50000
+nli-snli,0.9750,,X_fine_f1200_K490_C5000,2.81e+05,explore fine_f1200_K490_C5000
+nli-snli,0.9650,,X_fine_f1200_K500_C10000,2.85e+05,explore fine_f1200_K500_C10000
+nli-snli,0.9850,,X_fine_f1200_K500_C20000,2.85e+05,explore fine_f1200_K500_C20000
+nli-snli,0.9700,,X_fine_f1200_K500_C50000,2.85e+05,explore fine_f1200_K500_C50000
+nli-snli,0.9950,,X_fine_f1200_K500_C5000,2.85e+05,explore fine_f1200_K500_C5000
+nli-snli,0.9750,,X_fine_f1200_K510_C10000,2.89e+05,explore fine_f1200_K510_C10000
+nli-snli,0.9650,,X_fine_f1200_K510_C20000,2.89e+05,explore fine_f1200_K510_C20000
+nli-snli,0.9850,,X_fine_f1200_K510_C50000,2.89e+05,explore fine_f1200_K510_C50000
+nli-snli,0.9950,,X_fine_f1200_K510_C5000,2.89e+05,explore fine_f1200_K510_C5000
+nli-snli,1.0000,,X_fine_f1200_K520_C10000,2.93e+05,explore fine_f1200_K520_C10000
+nli-snli,0.9850,,X_fine_f1200_K520_C20000,2.93e+05,explore fine_f1200_K520_C20000
+nli-snli,1.0000,,X_fine_f1200_K520_C50000,2.93e+05,explore fine_f1200_K520_C50000
+nli-snli,0.9950,,X_fine_f1200_K520_C5000,2.93e+05,explore fine_f1200_K520_C5000
+nli-snli,0.9300,,B_K440_b10_C10000,2.62e+05,ibe ibe_K440_b10_C10000
+nli-snli,0.9350,,B_K440_b10_C5000,2.62e+05,ibe ibe_K440_b10_C5000
+nli-snli,0.9100,,B_K440_b20_C10000,2.62e+05,ibe ibe_K440_b20_C10000
+nli-snli,0.9100,,B_K440_b20_C5000,2.62e+05,ibe ibe_K440_b20_C5000
+nli-snli,0.9400,,B_K440_b5_C10000,2.62e+05,ibe ibe_K440_b5_C10000
+nli-snli,0.9150,,B_K440_b5_C5000,2.62e+05,ibe ibe_K440_b5_C5000
+nli-snli,0.9400,,B_K460_b10_C10000,2.70e+05,ibe ibe_K460_b10_C10000
+nli-snli,0.9450,,B_K460_b10_C5000,2.70e+05,ibe ibe_K460_b10_C5000
+nli-snli,0.9500,,B_K460_b20_C10000,2.70e+05,ibe ibe_K460_b20_C10000
+nli-snli,0.9350,,B_K460_b20_C5000,2.70e+05,ibe ibe_K460_b20_C5000
+nli-snli,0.9500,,B_K460_b5_C10000,2.70e+05,ibe ibe_K460_b5_C10000
+nli-snli,0.9400,,B_K460_b5_C5000,2.70e+05,ibe ibe_K460_b5_C5000
+nli-snli,0.9400,,B_K470_b10_C10000,2.74e+05,ibe ibe_K470_b10_C10000
+nli-snli,0.9400,,B_K470_b10_C5000,2.74e+05,ibe ibe_K470_b10_C5000
+nli-snli,0.9850,,B_K470_b20_C10000,2.74e+05,ibe ibe_K470_b20_C10000
+nli-snli,0.9700,,B_K470_b20_C5000,2.74e+05,ibe ibe_K470_b20_C5000
+nli-snli,0.9600,,B_K470_b5_C10000,2.74e+05,ibe ibe_K470_b5_C10000
+nli-snli,0.9700,,B_K470_b5_C5000,2.74e+05,ibe ibe_K470_b5_C5000
+nli-snli,0.9700,,B_K480_b10_C10000,2.78e+05,ibe ibe_K480_b10_C10000
+nli-snli,0.9700,,B_K480_b10_C5000,2.78e+05,ibe ibe_K480_b10_C5000
+nli-snli,0.9850,,B_K480_b20_C10000,2.78e+05,ibe ibe_K480_b20_C10000
+nli-snli,0.9650,,B_K480_b20_C5000,2.78e+05,ibe ibe_K480_b20_C5000
+nli-snli,0.9650,,B_K480_b5_C10000,2.78e+05,ibe ibe_K480_b5_C10000
+nli-snli,0.9700,,B_K480_b5_C5000,2.78e+05,ibe ibe_K480_b5_C5000
+nli-snli,0.9900,,B_K490_b10_C5000,2.81e+05,ibe ibe_K490_b10_C5000
+nli-snli,0.9950,,B_K490_b5_C10000,2.81e+05,ibe ibe_K490_b5_C10000
+nli-snli,1.0000,,B_K490_b5_C5000,2.81e+05,ibe ibe_K490_b5_C5000
+nli-snli,1.0000,,Rank3_IterBackElim_K490,2.81e+05,Pareto-min rank-3 circuit via iterative backward elimination (refit after each batch-5 drop) seeded from the K=540 iter-prune solution; C=5000. d_ff=490 (down from 540). 100% on 200 SNLI evals.

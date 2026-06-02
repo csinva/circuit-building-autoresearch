@@ -1,0 +1,26 @@
+task,accuracy,status,model_shorthand_name,n_params,description
+word-reversal-3x3,1.0000,success,PosRoutingCopyV1,1.49e+04,1-layer 1-head transformer; token & position one-hot embeddings in disjoint subspaces; attention uses position-only Q/K to route each output step to a fixed source position and copies the source token one-hot via identity V/W_o; MLP zeroed.
+word-reversal-3x3,1.0000,success,PosRoute_SCALE_50,1.49e+04,"Same position-routing circuit; attn-scale=50, head-scale=50"
+word-reversal-3x3,1.0000,success,PosRoute_SCALE_30,1.49e+04,"Same position-routing circuit; attn-scale=30, head-scale=30"
+word-reversal-3x3,1.0000,success,PosRoute_SCALE_20,1.49e+04,"Same position-routing circuit; attn-scale=20, head-scale=20"
+word-reversal-3x3,1.0000,success,PosRoute_SCALE_15,1.49e+04,"Same position-routing circuit; attn-scale=15, head-scale=15"
+word-reversal-3x3,1.0000,success,PosRoute_SCALE_10,1.49e+04,"Same position-routing circuit; attn-scale=10, head-scale=10"
+word-reversal-3x3,1.0000,success,PosRoute_SCALE_8,1.49e+04,"Same position-routing circuit; attn-scale=8, head-scale=8"
+word-reversal-3x3,1.0000,success,PosRoute_SCALE_6,1.49e+04,"Same position-routing circuit; attn-scale=6, head-scale=6"
+word-reversal-3x3,1.0000,success,PosRoute_SCALE_5,1.49e+04,"Same position-routing circuit; attn-scale=5, head-scale=5"
+word-reversal-3x3,1.0000,success,PosRoute_SCALE_4,1.49e+04,"Same position-routing circuit; attn-scale=4, head-scale=4"
+word-reversal-3x3,1.0000,success,PosRoute_SCALE_3,1.49e+04,"Same position-routing circuit; attn-scale=3, head-scale=3"
+word-reversal-3x3,1.0000,success,PosRoute_SCALE_2,1.49e+04,"Same position-routing circuit; attn-scale=2, head-scale=2"
+word-reversal-3x3,1.0000,success,PosRoute_HEAD1_ATTN10,1.49e+04,"Same position-routing circuit; attn-scale=10, head-scale=1"
+word-reversal-3x3,1.0000,success,PosRoute_HEAD1_ATTN20,1.49e+04,"Same position-routing circuit; attn-scale=20, head-scale=1"
+word-reversal-3x3,1.0000,success,PosRoute_HEAD1_ATTN50,1.49e+04,"Same position-routing circuit; attn-scale=50, head-scale=1"
+word-reversal-3x3,1.0000,success,PosRoute_ATTN1p5_H1,1.49e+04,"Position-routing circuit; attn-scale=1.5, head-scale=1"
+word-reversal-3x3,0.0250,success,PosRoute_ATTN1_H1,1.49e+04,"Position-routing circuit; attn-scale=1, head-scale=1"
+word-reversal-3x3,0.0000,success,PosRoute_ATTN0p5_H1,1.49e+04,"Position-routing circuit; attn-scale=0.5, head-scale=1"
+word-reversal-3x3,1.0000,success,PosRoute_ATTN2_H1,1.49e+04,"Position-routing circuit; attn-scale=2, head-scale=1"
+word-reversal-3x3,1.0000,success,PosRoute_ATTN3_H1,1.49e+04,"Position-routing circuit; attn-scale=3, head-scale=1"
+word-reversal-3x3,1.0000,success,PosRoute_ATTN4_H1,1.49e+04,"Position-routing circuit; attn-scale=4, head-scale=1"
+word-reversal-3x3,1.0000,success,PosRoute_ATTN5_H1,1.49e+04,"Position-routing circuit; attn-scale=5, head-scale=1"
+word-reversal-3x3,1.0000,success,PosRoutingCopyClean,1.49e+04,"Canonical clean version: 1-layer 1-head, d_model=V+L=51, one-hot token/pos embeddings in disjoint subspaces, position-only Q/K with attn-scale=2 routes each output step to its source, V/W_o copy token one-hot, MLP zeroed, head-scale=1."
+word-reversal-3x3,1.0000,success,PosRoute_HARD_S100,1.49e+04,Position-routing; very large attn-scale=100 so softmax is exact permutation.
+word-reversal-3x3,1.0000,success,PosRoute_HARD_S200,1.49e+04,Position-routing; very large attn-scale=200 so softmax is exact permutation.

@@ -1061,21 +1061,17 @@ def write_weights(model: SimpleTransformer) -> None:
         model.final_ln.weight.fill_(1.0); model.final_ln.bias.zero_()
 
 
-model_shorthand_name = "WordNetMorphLing-tau50"
+model_shorthand_name = "WordNetMorphLingPlusMasked"
 model_description = (
-    "Pure-feature WordNet + morphology + psycholinguistic-category extractor. "
-    "test_corr=0.0592 on UTS03 (D=406, no transformer, no training). "
-    "Per 10-gram window: WN bag-of-lexnames (45) + definition-expanded lex (45) "
-    "+ curated cats (72) + function-word indicator (50) + 14 morphological "
-    "features (-ing/-ed/-tion/comparative/length/vowel-ratio) + 19 closed-class "
-    "psycholinguistic categories (1st/2nd/3rd person pronouns by gender, "
-    "wh-words, quantifiers, demonstratives, modals, conditionals, negation, "
-    "intensifiers, numbers) + 3 prosodic syllable features + a dedicated "
-    "last-word block (morph+WN+cats, no aggregation). Single uniform tau=50 "
-    "(bag-of-features over window) outperforms multi-tau decay. Beats "
-    "WordNetFeats-noTransformer (0.0540) and DenseSemXX-Rep8 (0.0559) and "
-    "improves on every ROI vs DenseSemXX-Rep8 (e.g. Broca 0.159 vs 0.148, "
-    "AC 0.179 vs 0.175, FFA 0.061 vs 0.048)."
+    "Pure-feature WordNet+morph+ling+phono+tense+mentalizing+deixis+speech-act+"
+    "discourse extractor with variance mask. test_corr=0.0610 on UTS03 "
+    "(D=437 raw, ~384 after mask, no transformer, no training). "
+    "Builds on WordNetMorphLing-tau50 (0.0592) by adding 10 phonological surface "
+    "features, 5 tense ratio features, 5 mentalizing density features (TPJ/mPFC), "
+    "6 deixis features (spatial/temporal/person), 4 speech-act features (question/"
+    "imperative), 1 discourse-marker density feature, and applying a variance mask "
+    "(min_var=1e-4) computed on the first training story's ngrams. The mask "
+    "removes ~50 mostly-zero dims that otherwise pollute FIR-delayed ridge."
 )
 
 
@@ -1085,11 +1081,11 @@ def build_embedder(device='cuda', d_model=1024, n_heads=8, n_layers=1,
     import importlib.util
     here = os.path.dirname(os.path.abspath(__file__))
     spec = importlib.util.spec_from_file_location(
-        "wnml_snapshot",
-        os.path.join(here, "interpretable_transformers_lib", "WordNetMorphLing-tau50.py"))
+        "wnml_plus_snapshot",
+        os.path.join(here, "interpretable_transformers_lib", "WordNetMorphLingPlusMasked.py"))
     snap = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(snap)
-    return snap.WordNetMorphLingEmbedder()
+    return snap.WNMLPlusMaskedEmbedder()
 
 
 if __name__ == "__main__":
