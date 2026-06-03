@@ -65,6 +65,8 @@ class EncodingConfig:
     nboots: int = 5
     chunklen: int = 40
     nchunks: int = 20
+    trim_edges: bool = True  # drop first/last 30 TRs of every story
+    edge_trim_trs: int = 30
 
 
 def run_encoding(embedder, cfg: EncodingConfig, verbose: bool = True) -> dict:
@@ -85,12 +87,20 @@ def run_encoding(embedder, cfg: EncodingConfig, verbose: bool = True) -> dict:
     wordseqs = data.load_wordseqs(all_stories)
     resps = data.load_responses(all_stories, subject=cfg.subject)
 
+    extra_trim = cfg.edge_trim_trs if cfg.trim_edges else 0
+    if verbose and extra_trim:
+        print(f'trimming first/last {extra_trim} TRs of every story')
+
     if verbose:
         print('extracting features...')
     stim_train = features.get_features(
-        wordseqs, train_stories, embedder, ngram_size=cfg.ngram_size, ndelays=cfg.ndelays)
+        wordseqs, train_stories, embedder, ngram_size=cfg.ngram_size,
+        ndelays=cfg.ndelays, extra_trim=extra_trim)
     stim_test = features.get_features(
-        wordseqs, test_stories, embedder, ngram_size=cfg.ngram_size, ndelays=cfg.ndelays)
+        wordseqs, test_stories, embedder, ngram_size=cfg.ngram_size,
+        ndelays=cfg.ndelays, extra_trim=extra_trim)
+    if extra_trim:
+        resps = {s: r[extra_trim:-extra_trim] for s, r in resps.items()}
     resp_train = np.vstack([resps[s] for s in train_stories])
     resp_test = np.vstack([resps[s] for s in test_stories])
     if verbose:

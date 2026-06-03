@@ -1,0 +1,1 @@
+- fmri-may27-run1 was conducted without trimming story ends, after that all runs trimmed 30 TRs off each end

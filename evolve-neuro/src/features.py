@@ -48,9 +48,15 @@ def _zscore(v):
     return (v - v.mean(0)) / s
 
 
-def trim_and_zscore(downsampled: Dict[str, np.ndarray], trim=5):
-    """Trim [5+trim : -trim] per story, z-score, then stack. Matches response trim."""
-    feats = [_zscore(downsampled[s][5 + trim: -trim]) for s in downsampled]
+def trim_and_zscore(downsampled: Dict[str, np.ndarray], trim=5, extra_trim=0):
+    """Trim [5+trim+extra_trim : -trim-extra_trim] per story, z-score, then stack.
+
+    `extra_trim` drops additional TRs from the start and end of every story
+    (applied identically to responses). Matches response trim.
+    """
+    lo = 5 + trim + extra_trim
+    hi = trim + extra_trim
+    feats = [_zscore(downsampled[s][lo: -hi]) for s in downsampled]
     return np.vstack(feats)
 
 
@@ -66,8 +72,12 @@ def make_delayed(stim, ndelays=4):
 
 
 # ----------------------------- top-level -----------------------------
-def get_features(wordseqs, stories, embedder, ngram_size=10, ndelays=4):
-    """Return delayed feature matrix (sum_of_trimmed_trs, ndelays * hidden_dim)."""
+def get_features(wordseqs, stories, embedder, ngram_size=10, ndelays=4, extra_trim=0):
+    """Return delayed feature matrix (sum_of_trimmed_trs, ndelays * hidden_dim).
+
+    `extra_trim` drops additional TRs from each story's start and end (must
+    match the same trim applied to responses).
+    """
     downsampled = {}
     for story in stories:
         ws = wordseqs[story]
@@ -76,5 +86,5 @@ def get_features(wordseqs, stories, embedder, ngram_size=10, ndelays=4):
         downsampled[story] = lanczos_downsample(
             word_vectors, oldtime=ws.data_times, newtime=ws.tr_times
         )
-    feats = trim_and_zscore(downsampled)
+    feats = trim_and_zscore(downsampled, extra_trim=extra_trim)
     return make_delayed(feats, ndelays=ndelays)
