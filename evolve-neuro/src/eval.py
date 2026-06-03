@@ -194,12 +194,16 @@ def plot_corr_over_iterations(results_dir: str) -> None:
 
     # Running max over non-baseline points only.
     running_iters, running_max, best = [], [], float("-inf")
+    increases_max = []  # True for points that strictly increase the running max.
     for it, c, base in zip(iters, corrs, is_baseline):
         if base:
+            increases_max.append(False)
             continue
+        is_new_max = c > best
         best = max(best, c)
         running_iters.append(it)
         running_max.append(best)
+        increases_max.append(is_new_max)
 
     fig, ax = plt.subplots(figsize=(16, 5))
     # Non-baseline points: connected line with circle markers.
@@ -214,8 +218,10 @@ def plot_corr_over_iterations(results_dir: str) -> None:
     if running_iters:
         ax.plot(running_iters, running_max, drawstyle="steps-post", color="crimson",
                 linewidth=2, label="running max")
-    # Annotate each point with its model name, rotated vertically.
-    for it, c, name in zip(iters, corrs, names):
+    # Annotate only points that increase the running max, rotated vertically.
+    for it, c, name, inc in zip(iters, corrs, names, increases_max):
+        if not inc:
+            continue
         ax.annotate(name, (it, c), rotation=90, fontsize='xx-small',
                     textcoords="offset points", xytext=(0, 5),
                     ha="center", va="bottom")

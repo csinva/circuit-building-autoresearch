@@ -27,3 +27,4 @@ paper-imodels-agentic
 **.log
 **.claude
 **.venv*
+**.code-workspace
