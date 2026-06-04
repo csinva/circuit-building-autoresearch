@@ -1,0 +1,15 @@
+{
+  "run": "fmri-jun03-run3",
+  "label": "Jun 03 \u00b7 run 3",
+  "model": "Gemini 3.1 Pro",
+  "effort": "high",
+  "trimmed_trs": 30,
+  "untrimmed": false,
+  "model_id": "gemini-3.1-pro-preview",
+  "reasoning_effort": "high",
+  "source_logs": [
+    "~/.copilot/logs/process-1780521809734-3715175.log"
+  ],
+  "subject": "UTS03",
+  "notes": ""
+}

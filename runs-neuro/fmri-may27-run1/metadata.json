@@ -1,0 +1,16 @@
+{
+  "run": "fmri-may27-run1",
+  "label": "May 27 \u00b7 run 1",
+  "model": "Claude Opus 4.7",
+  "effort": "xhigh",
+  "trimmed_trs": 0,
+  "untrimmed": true,
+  "model_id": "claude-opus-4.7-xhigh",
+  "reasoning_effort": "xhigh",
+  "source_logs": [
+    "~/.copilot/logs/process-1779936569954-3560877.log",
+    "~/.copilot/logs/process-1780518660271-3673033.log"
+  ],
+  "subject": "UTS03",
+  "notes": "Did NOT trim story ends; all other runs trim 30 TRs off each end. Numbers (and its GPT-2 XL baseline) are systematically higher and not directly comparable to the trimmed runs."
+}

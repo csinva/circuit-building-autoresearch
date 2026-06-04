@@ -1,0 +1,15 @@
+{
+  "run": "fmri-jun03-run4",
+  "label": "Jun 03 \u00b7 run 4",
+  "model": "Claude Opus 4.7",
+  "effort": "xhigh",
+  "trimmed_trs": 30,
+  "untrimmed": false,
+  "model_id": "claude-opus-4.7-xhigh",
+  "reasoning_effort": "xhigh",
+  "source_logs": [
+    "~/.copilot/logs/process-1780545557301-4033512.log"
+  ],
+  "subject": "UTS03",
+  "notes": ""
+}

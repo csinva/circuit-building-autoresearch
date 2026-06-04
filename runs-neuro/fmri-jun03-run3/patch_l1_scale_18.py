@@ -1,0 +1,32 @@
+import argparse
+import sys
+import os
+import re
+
+filepath = "runs-neuro/fmri-jun03-run3/interpretable_transformer.py"
+
+# Restore to 0.0399 Master
+os.system("python3 runs-neuro/fmri-jun03-run3/patch_3way_l1_scale_15_80.py")
+
+with open(filepath, "r") as f:
+    content = f.read()
+
+# 1.5 and 2.0 both got exactly 0.0404!
+# Let's try 1.8, and maybe 1.2.
+# 1.8 might be the absolute peak.
+
+replacement = """            for i in range(28):
+                l1_attn.W_v.weight[h_start + i, d_start + i] = 1.0
+                l1_attn.W_o.weight[d_start + 30 + i, h_start + i] = S * 1.8"""
+
+content = content.replace(
+    "            for i in range(28):\n                l1_attn.W_v.weight[h_start + i, d_start + i] = 1.0\n                l1_attn.W_o.weight[d_start + 30 + i, h_start + i] = S * 1.0",
+    replacement
+)
+
+content = content.replace("Deep_Ensemble_Staggered_Asymmetric_UltraTune_3Way_L1_Scale_15_80", "Deep_Ensemble_L1_Output_Scale_1_8")
+content = content.replace("with L1 decay scale set to 15-80 instead of 10-80.", "with L1 output attention projection scaled by 1.8.")
+
+with open(filepath, "w") as f:
+    f.write(content)
+print("Updated successfully")

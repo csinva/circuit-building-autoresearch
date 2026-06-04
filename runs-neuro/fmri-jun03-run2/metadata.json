@@ -1,0 +1,15 @@
+{
+  "run": "fmri-jun03-run2",
+  "label": "Jun 03 \u00b7 run 2",
+  "model": "GPT-5.5",
+  "effort": "xhigh",
+  "trimmed_trs": 30,
+  "untrimmed": false,
+  "model_id": "gpt-5.5",
+  "reasoning_effort": "xhigh",
+  "source_logs": [
+    "~/.copilot/logs/process-1780521767898-3714195.log"
+  ],
+  "subject": "UTS03",
+  "notes": ""
+}
