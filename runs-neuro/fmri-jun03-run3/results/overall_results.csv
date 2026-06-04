@@ -378,3 +378,4 @@ UTS03,0.0689,0.6272,0.1274,251.8,success,Pure_gpt2_xl_Layer12_Mean,1.60e+03,GPT-
 UTS03,0.0794,0.6233,0.1517,229.7,success,Pure_gpt2_xl_Layer24_Mean,1.60e+03,GPT-2 XL Layer 24 Mean Pool semantics,0.2296,0.2324,0.2095,0.1353,0.0890,0.0807,0.0712,0.0843
 UTS03,0.0802,0.5868,0.1538,192.3,success,Pure_gpt2_xl_Layer36_Mean,1.60e+03,GPT-2 XL Layer 36 Mean Pool semantics,0.2326,0.2281,0.2132,0.1409,0.0906,0.0805,0.0750,0.0976
 UTS03,0.0794,0.5709,0.1494,236.4,success,Pure_roberta_base_Mean,7.68e+02,Pure roberta-base Mean Pool semantics,0.2249,0.2252,0.2026,0.1280,0.0964,0.0875,0.0735,0.0866
+UTS03,0.0833,0.5401,0.1549,211.6,success,Pure_Qwen2_5_0_5B_Mean,8.96e+02,Pure Qwen/Qwen2.5-0.5B Mean Pool semantics,0.2269,0.2334,0.2070,0.1407,0.1060,0.0919,0.0889,0.1036

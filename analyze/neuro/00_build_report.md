@@ -6,6 +6,8 @@ The `fmri-may27-run1` did not trim the story ends (all other runs trimmed 30 TRs
 
 Make it so that the user can interactively see what methods were tried, and give a writeup based on the overall_results.csv descriptions on what methods were tried, and which worked / didn't.
 
+Flag any iterations that used any training on data, as this is explicitly disallowed.
+
 Style everything including the code as a white-background, clean design.
 
 At the bottom (after scrolling down), show a summary plot that has all the datasets in one plot. The points for each run should be connected as a line.

@@ -53,7 +53,7 @@ MAX_WORD_CHARS = 16
 MAX_WORDS = 12
 USE_COMMON_WORD_AXES = True
 COMMON_WORD_LIMIT = 6
-CUSTOM_COMMON_WORDS = ('and', 'to', 'of', 'said', 'was', 'had', 'not', 'so', 'think', 'went', 'maybe', 'old', 'love', 'little', 'saw')
+CUSTOM_COMMON_WORDS = ('and', 'to', 'of', 'said', 'was', 'had', 'not', 'so', 'think', 'went', 'maybe', 'old', 'love', 'little', 'before')
 SUMMARY_MODE = 'tail_only'
 RECENCY_DECAYS = (0.60, 0.80, 0.95)
 INCLUDE_TAIL = True
@@ -705,8 +705,8 @@ def write_weights(model: SimpleTransformer) -> None:
 
 # A unique shorthand name + 1-2 sentence description of what this attempt does.
 # Used as the row identifier in results/overall_results.csv.
-model_shorthand_name = 'semantic_bestlex_focus_dropthe_maybe_old_love_little_saw_ctx12_tailall_v5030'
-model_description = 'Never-stop focused follow-up to the current best: drop the, keep maybe, old, love, and little, and add saw (ctx12_tailall).'
+model_shorthand_name = 'semantic_bestlex_focus_dropthe_maybe_old_love_little_before_ctx12_tailall_v5032'
+model_description = 'Never-stop focused follow-up to the current best: drop the, keep maybe, old, love, and little, and add before (ctx12_tailall).'
 
 
 # ---------------------------------------------------------------------------

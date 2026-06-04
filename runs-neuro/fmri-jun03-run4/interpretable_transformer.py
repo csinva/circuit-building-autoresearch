@@ -349,11 +349,8 @@ def word_features(w: str) -> List[str]:
         feats.append("CONC_LOW")
     if w in _ANIMATE:
         feats.append("ANIMATE")
-    if w in _SELF_REF:
-        feats.append("SELF_REF")
-    if w in _OTHER_REF:
-        feats.append("OTHER_REF")
-    # v82: AROUSAL_HIGH dropped — overlaps heavily with VAL_NEG/VAL_NEG_INT.
+    # v84: SELF_REF/OTHER_REF dropped — overlap with FUNC_PRON which already
+    # marks all pronouns. Pronoun identity may not add signal beyond PRON.
     if w in _VAL_POS:
         feats.append("VAL_POS")
     if w in _VAL_NEG:
@@ -376,8 +373,7 @@ def _build_feature_names() -> List[str]:
     names += ["CONC_HIGH", "CONC_LOW", "ANIMATE",
               "FREQ_TOP", "FREQ_HIGH", "FREQ_MID", "FREQ_RARE",
               "VAL_POS", "VAL_NEG",
-              "NEG_SCOPE", "SPATIAL_PREP",
-              "SELF_REF", "OTHER_REF"]
+              "NEG_SCOPE", "SPATIAL_PREP"]
     return names
 
 
@@ -772,10 +768,11 @@ def write_weights(model: SimpleTransformer) -> None:
 # Identity + description
 # ---------------------------------------------------------------------------
 
-model_shorthand_name = "FeatBag_v83_DropValInt"
+model_shorthand_name = "FeatBag_v84_DropSelfOther"
 model_description = (
-    "From v82, drop VAL_POS_INT/VAL_NEG_INT (subsets of VAL_POS/NEG). "
-    "Tests whether intensity buckets primarily add multicollinearity."
+    "From v83, drop SELF_REF/OTHER_REF (1st vs 3rd person pronoun "
+    "indicators). FUNC_PRON already marks all pronouns; person-distinction "
+    "may not add signal."
 )
 
 
