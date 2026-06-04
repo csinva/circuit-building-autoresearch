@@ -65,11 +65,11 @@ CAT_OFFSET = 2
 
 _stoi = {c: i for i, c in enumerate(_BASE_CHARS)}
 
-LAMBDAS = (-2.0, 0.0, 4.0, 16.0)
-N_APPEND_WORDS = 12
+LAMBDAS = (-4.0, 0.0, 4.0, 16.0)
+N_APPEND_WORDS = 10
 # recency emphasis: number of times a word's feature tokens are repeated, by
 # distance from the end (index 0 == last word).
-RECENCY_REPS = (2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)
+RECENCY_REPS = (6, 1, 1, 1, 1, 1, 1, 1, 1, 1)
 
 USE_CHAR_CONTENT = False
 CHAR_CONTENT_STD = 1.0  # std scale of random char embeddings
@@ -100,7 +100,7 @@ _SEM_CATEGORIES = {
     "COLOR": "red blue green yellow white black gray grey brown orange purple pink color colors colour golden silver dark bright pale".split(),
     "KINSHIP": "mother father mom dad parent parents son daughter sister brother wife husband child children baby uncle aunt cousin grandmother grandfather grandma grandpa family nephew niece".split(),
     "ANIMAL": "dog dogs cat cats bird birds fish horse horses cow pig sheep chicken duck lion tiger bear wolf fox deer rabbit mouse rat snake frog insect bug bee ant spider animal animals creature".split(),
-    "WEATHER": "rain rained snow snowed wind windy storm sunny cloudy cold hot warm cool freezing fog ice frost heat winter summer spring autumn season weather temperature".split(),
+    "WEATHER": "rain rained snow snowed wind windy storm sunny cloudy cold hot warm freezing fog ice frost heat winter summer spring autumn season weather temperature".split(),
     "ABSTRACT_REL": "cause caused because reason result effect purpose means kind sort type way ways form part parts whole sense point fact case matter problem question chance luck fate course rest bit influence experience risk risks truth".split(),
     "POSSESSION": "have has had having own owns owned get gets getting got gotten give gave given take took taken takes keep kept hold held lose lost find found bring brought carry carried receive offer put set place placed leave left use used using wait waited waiting stay stayed staying stand stood sit sat sent send check checked wear wore worn".split(),
     "CHANGE": "become became becoming change changed grow grew grown turn turned increase decrease rise rose fall fell break broke broken make made build built create destroy form develop begin began start started starts stop stopped end ended finish open opened close closed happen happened happens happening cut hit drop dropped remove removed appear appeared appears spend spent spending".split(),
@@ -109,7 +109,7 @@ _SEM_CATEGORIES = {
     "SUBSTANCE": "cigarette cigarettes smoke smoking smoked tobacco pack drug drugs alcohol beer wine drink drunk pill pills medicine weed pot ash lighter match matches nicotine".split(),
     "VEHICLE": "car cars truck trucks bus buses train trains plane planes boat boats bike bikes motorcycle taxi cab subway seat seatbelt wheel engine brake brakes gas drive driving road traffic helicopter pilot flight airport jet".split(),
     "MONEY_NUM": "dollar dollars cent cents penny dime buck bucks cost price cheap expensive free pay paid owe debt cash credit bill bills change worth value".split(),
-    "TECH": "phone phones computer screen tv television radio camera internet email text message call button machine wire battery light switch electric power".split(),
+    "TECH": "phone phones computer screen tv television radio camera internet email text message call button machine wire battery switch electric power".split(),
     "LIFE_DEATH": "life live lived lives living alive born birth grow grew age aged young old die died death dead dying kill killed survive survived breathe breath heartbeat exist".split(),
     "SCHOOL_INST": "school university college campus class classroom student students teacher professor study studied learn lesson grade exam test homework library team club church government union company office church liberty semester".split(),
     "RELIGION": "god gods church pray prayed prayer faith religion religious holy heaven hell soul spirit bible jesus christ christian sin angel devil priest worship sacred divine blessed evangelical".split(),
@@ -147,7 +147,7 @@ _WORD2CATS = {w: sorted(cs) for w, cs in _WORD2CATS.items()}
 _MODALITY = {
     "VISION": "see saw seen seeing look looked looking looks watch watched watching bright dark color colors red blue green yellow white black light lights shadow shadows glow shine shining appear appeared vision sight glance glanced stare stared gaze visible image picture view scene".split(),
     "SOUND": "hear heard hearing listen listened loud quiet sound sounds noise noises music song songs voice voices ring rang bell bang banging crash whisper whispered scream screamed shout yell echo silence silent loud quiet tune".split(),
-    "TOUCH": "touch touched feel felt soft hard rough smooth warm cold hot cool wet dry sharp press pressed grip held holding squeeze rub texture sticky slippery".split(),
+    "TOUCH": "touch touched feel felt soft hard rough smooth warm cold hot wet dry sharp press pressed grip held holding squeeze rub texture sticky slippery".split(),
     "TASTE": "taste tasted sweet bitter sour salty spicy delicious flavor flavour eat ate yummy bland".split(),
     "SMELL": "smell smelled scent odor odour fragrance stink stinky perfume aroma nose sniff".split(),
     "MOTOR": "grab grabbed push pushed pull pulled lift lifted throw threw kick kicked run ran walk walked jump jumped grip held hold carry carried hit punch grasp reach reached swing wave squeeze".split(),
@@ -162,6 +162,7 @@ for _mi, _mn in enumerate(_MOD_NAMES):
     for _w in _MODALITY[_mn]:
         _WORD2MOD.setdefault(_w, set()).add(_mi)
 _WORD2MOD = {w: sorted(cs) for w, cs in _WORD2MOD.items()}
+_NO_CAT_SOUND = set("write wrote writing written".split())
 
 _CONCRETE = set("house tree dog cat car book table chair hand eye water fire stone door window food bird fish rock wall floor street road wood metal glass bottle cup phone money".split())
 _ABSTRACT = set("idea thought love fear hope time truth freedom justice mind dream memory reason power belief fact chance luck soul spirit meaning".split())
@@ -209,6 +210,7 @@ _SELF_REF = set("i me my mine myself we us our ours ourselves "
                 "im id ive weve wed".split())
 # Third-person / other-person reference (theory-of-mind, social cognition).
 _OTHER_REF = set("he him his she her hers they them their theirs "
+                 "himself herself themselves "
                  "hes shes theyre theyve theyd theyll".split())
 # Inanimate/expletive third-person reference (no theory-of-mind / no animacy).
 _INANIM_REF = set("it its itself".split())
@@ -248,7 +250,27 @@ _FREQ_LIST = (
     "these give day most us man find here thing tell very still should through where much "
     "before too same right around another himself old little place such again off went "
     "while away something both house world own being head down many never under last "
-    "those great life always those once side might room"
+    "those great life always those once side might room "
+    "three came does turn ask men need land different home move try kind hand change "
+    "play air point page letter mother answer found study learn school father keep tree "
+    "start city earth eye light thought under story saw left few along close seem next "
+    "hard open begin paper together group often until children feet car mile night walk "
+    "white sea began grow took river four carry state book hear stop second later miss "
+    "idea enough eat face watch far almost let above girl mountain cut young talk soon "
+    "list song family leave mind every name big high follow act house "
+    "real night close stop open seem next begin mark book mile feet care second carry "
+    "eat room friend fish north base horse sure watch color wood main girl ready ever "
+    "red though feel talk bird soon body dog measure black short class wind question "
+    "happen ship area half rock order fire south problem piece told knew pass since top "
+    "whole king space best hour better true during five remember step early hold ground "
+    "reach fast sing table travel morning ten simple toward war pattern center love "
+    "person money serve appear road map science rule pull cold notice voice fall power "
+    "town fine certain fly lead cry dark machine note wait plan figure star field rest "
+    "able beauty drive front teach week final gave green develop sleep warm strong clear "
+    "fact street lot nothing course stay full force blue object decide deep moon island "
+    "foot word turn ask men land different move kind hand change play air point page "
+    "letter mother answer study learn school father keep tree start city earth eye light "
+    "thought under story saw left"
 ).split()
 _WORD2FREQRANK = {w: i for i, w in enumerate(_FREQ_LIST)}
 
@@ -257,8 +279,6 @@ def freq_bucket(w: str) -> str:
     r = _WORD2FREQRANK.get(w)
     if r is None:
         return "FREQ_RARE"
-    if r < 30:
-        return "FREQ_TOP"
     return "FREQ_HIGH"
 
 
@@ -389,6 +409,8 @@ def word_features(w: str) -> List[str]:
     # (perceptual modality is a strong driver of sensory-language cortex).
     for cat, mod in _CAT2MOD.items():
         if cat in catset and mod not in {_MOD_NAMES[m] for m in mods}:
+            if mod == "SOUND" and w in _NO_CAT_SOUND:
+                continue
             feats.append("MOD_" + mod)
     # Concreteness: explicit lexicon first, else derived from semantic category
     # membership so coverage extends to hundreds of words (concreteness is a
@@ -599,8 +621,10 @@ class InterpretableEmbedder:
                          "SEM_EMOTION_POS": "SEM_EMOTION_NEG",
                          "SEM_EMOTION_NEG": "SEM_EMOTION_POS"}
                 wf = [_flip.get(f, f) for f in wf]
+            _seen = set()
+            _ordered = [f for f in (wf + extra) if not (f in _seen or _seen.add(f))]
             feat_ids = [FEAT_TOKEN_BASE + _FEAT2IDX[f]
-                        for f in (wf + extra)]
+                        for f in _ordered]
             if USE_WORD_ID:
                 feat_ids = feat_ids + [_word_hash(w)]
             for _ in range(reps):
@@ -708,7 +732,7 @@ def write_weights(model: SimpleTransformer) -> None:
     return
 
 
-model_shorthand_name = "LexFeatKindFix"
+model_shorthand_name = "LexFeatNAppend10"
 model_description = (
     "Hand-wired interpretable transformer. Each word is tokenized into a small set of "
     "interpretable feature tokens: function-word type (pronoun/prep/conj/article/aux/"
@@ -787,7 +811,7 @@ if __name__ == "__main__":
     print()
     print("---")
     print(f"subject:        {cfg.subject}")
-    print(f"test_corr:      {r['test_corr']:.6f}  (train_corr={r['corrs_train_mean']:.4f}, "
+    print(f"test_corr:      {r['test_corr']:.4f}  (train_corr={r['corrs_train_mean']:.4f}, "
           f"median={r['corrs_test_median']:.4f}, frac>0.2={r['corrs_test_frac>0.2']:.4f}, "
           f"top5%={r['corrs_test_mean_top5_percentile']:.4f})")
     print(f"roi corrs:      " + ", ".join(f"{k}={v:.3f}" for k, v in r['roi_corrs'].items()))

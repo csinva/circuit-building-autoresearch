@@ -46,14 +46,14 @@ RESULTS_DIR = os.path.join(os.path.dirname(__file__), "results")
 # Experiment knobs. Each iteration changes these plus the shorthand/description.
 TOKEN_MODE = 'semantic_only'
 POOLING_DECAY = 0.70
-TAIL_WINDOW = 96
+TAIL_WINDOW = 192
 TAIL_WINDOWS = (8, 24, 64)
 TAIL_POOLING = 'mean'
 MAX_WORD_CHARS = 16
-MAX_WORDS = 11
+MAX_WORDS = 12
 USE_COMMON_WORD_AXES = True
 COMMON_WORD_LIMIT = 6
-CUSTOM_COMMON_WORDS = ('and', 'to', 'of', 'said', 'was', 'had', 'not', 'so', 'think', 'went', 'maybe', 'old', 'love', 'little', 'inside', 'down', 'face', 'big', 'over')
+CUSTOM_COMMON_WORDS = ('and', 'to', 'of', 'said', 'was', 'had', 'not', 'so', 'think', 'went', 'maybe', 'old', 'love', 'little', 'saw')
 SUMMARY_MODE = 'tail_only'
 RECENCY_DECAYS = (0.60, 0.80, 0.95)
 INCLUDE_TAIL = True
@@ -705,8 +705,8 @@ def write_weights(model: SimpleTransformer) -> None:
 
 # A unique shorthand name + 1-2 sentence description of what this attempt does.
 # Used as the row identifier in results/overall_results.csv.
-model_shorthand_name = 'semantic_bestlex_focus_dropthe_maybe_old_love_little_inside_down_face_big_over_ctx11_tail96_v9037'
-model_description = 'Never-stop focused follow-up to the current best: drop the, keep maybe, old, love, little, inside, down, face, and big, and add over (ctx11_tail96).'
+model_shorthand_name = 'semantic_bestlex_focus_dropthe_maybe_old_love_little_saw_ctx12_tailall_v5030'
+model_description = 'Never-stop focused follow-up to the current best: drop the, keep maybe, old, love, and little, and add saw (ctx12_tailall).'
 
 
 # ---------------------------------------------------------------------------

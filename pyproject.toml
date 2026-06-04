@@ -27,4 +27,5 @@ dependencies = [
     "tabpfn>=7.0.0",
     "pypdf2>=3.0.1",
     "nltk>=3.9.4",
+    "spacy>=3.8.11",
 ]

@@ -61,18 +61,17 @@ _stoi = {c: i for i, c in enumerate(_BASE_CHARS)}
 # Multi-scale recency lambdas for the per-head position-keyed attention scores.
 # lambda<0 -> primacy (look at the front of the n-gram), 0 -> uniform mean,
 # >0 -> recency (the larger, the more concentrated on the last word).
-LAMBDAS = (-2.0, 0.0, 4.0, 16.0)
+LAMBDAS = (-2.0, 0.0, 4.0, 16.0)  # back to v23 baseline
 
 # Words actually consumed from the end of the n-gram (10-gram).
 N_APPEND_WORDS = 12
 
 # Each word emits 'reps' copies of its feature tokens. Final-word emphasis
 # increases its weight in the uniform-mean head (lambda=0).
-RECENCY_REPS = (3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)  # back to v11 baseline
+RECENCY_REPS = (3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)  # back to v23/v54 baseline
 # Content words emit features CONTENT_BONUS extra times on top of RECENCY_REPS
 # (so the lambda=0 "global mean" head is biased toward content over function).
-CONTENT_BONUS = 1
-# (v32 removed: N_SUBWORD subword features hurt — train inflated, test=0.0614)
+CONTENT_BONUS = 1  # v62: restore CB=1 (v61 CB=3 hurt slightly)
 
 USE_CHAR_CONTENT = False  # reverted in v11 (random char hurt heavily)
 CHAR_CONTENT_STD = 1.0
@@ -127,24 +126,16 @@ _SEM_CATEGORIES = {
     "SUBSTANCE": "cigarette cigarettes smoke smoking smoked tobacco pack drug drugs alcohol beer wine pill pills medicine weed pot ash lighter match matches nicotine".split(),
     "MONEY_NUM": "dollar dollars cent cents penny dime buck bucks cost price cheap expensive free pay paid owe debt cash credit bill bills change worth value".split(),
     "PEOPLE_ROLE": "boyfriend girlfriend friend boss worker assistant director directors manager nurse teacher student officer guard leader member partner clerk agent owner customer guest host neighbor".split(),
-    "NAME": ("michael mike john james robert david william richard joseph thomas charles "
-             "christopher daniel paul mark george steven kenneth andrew brian kevin edward "
-             "ronald jason jeffrey ryan jacob nicholas jonathan stephen larry justin scott "
-             "frank benjamin gregory raymond samuel patrick alexander jack dennis jerry tyler "
-             "mary patricia jennifer linda elizabeth susan jessica sarah karen nancy lisa "
-             "betty helen sandra donna carol ruth ivy melanie kristen sharon michelle laura "
-             "amy angela ashley brenda emma olivia").split(),
-    "PLACE_PROPER": ("texas georgia california florida boston chicago york america american "
-                     "washington oregon ohio michigan virginia carolina alabama colorado "
-                     "philadelphia paris london tokyo china india mexico canada europe "
-                     "africa asia atlanta dallas houston seattle denver miami phoenix "
-                     "vegas hollywood manhattan brooklyn brazil japan russia france germany "
-                     "italy spain england britain ireland scotland australia").split(),
+    # v62: NAME and PLACE_PROPER cats dropped — proper-noun lexicons rarely
+    # generalize to actual narrative names/places not in the list.
 }
 
 # Valence (sentiment).
 _VAL_POS = set("good great love like happy joy nice kind beautiful wonderful best better win won success hope safe friend gift smile laugh warm bright fun pleasant gentle clean fresh free peace calm glad enjoy enjoyed proud excited amazing perfect lucky grateful cheerful delight pleased comfort sweet cool awesome favorite special brave strong healthy smart funny laughing celebrate party loved".split())
 _VAL_NEG = set("bad worse worst hate fear pain hurt sad angry death dead kill killed lost lose fail wrong sick ill dark cold cruel ugly dirty broken danger trouble war fight blood enemy evil sorry afraid scared worried worry cry terrible awful horrible nervous anxious lonely guilt shame mad upset stress hard tough struggle difficult problem problems wound injury cancer disease tears suffering frightened poor weak tired exhausted crying alone".split())
+# v54: strong-magnitude valence subsets (extreme sentiment words).
+_VAL_POS_INT = set("love amazing perfect wonderful best awesome beautiful brilliant excited thrilled grateful proud delighted celebrate".split())
+_VAL_NEG_INT = set("hate hated terrible awful horrible worst evil cruel kill killed murder murdered furious enraged disgusted horror terror frightened devastated".split())
 
 # Animacy.
 _ANIMATE = set((
@@ -236,10 +227,7 @@ def freq_bucket(w: str) -> str:
     r = _WORD2FREQRANK.get(w)
     if r is None:
         return "FREQ_RARE"
-    if r < 30:
-        return "FREQ_TOP"
-    if r < 100:
-        return "FREQ_HIGH"
+    # v73: collapse FREQ_HIGH into FREQ_MID too — keep only RARE vs not-rare.
     return "FREQ_MID"
 
 
@@ -365,32 +353,13 @@ def word_features(w: str) -> List[str]:
         feats.append("SELF_REF")
     if w in _OTHER_REF:
         feats.append("OTHER_REF")
-    if w in _HIGH_AROUSAL:
-        feats.append("AROUSAL_HIGH")
+    # v82: AROUSAL_HIGH dropped — overlaps heavily with VAL_NEG/VAL_NEG_INT.
     if w in _VAL_POS:
         feats.append("VAL_POS")
     if w in _VAL_NEG:
         feats.append("VAL_NEG")
-    # v33: targeted morphological suffix features for content words.
-    # Captures gross word-form classes (gerund, past, adverb, nominalisation,
-    # plural/agent, comparative/superlative) without exploding vocab.
-    if ft is None and len(w) >= 4:
-        if w.endswith("ing"):
-            feats.append("SUF_ING")
-        if w.endswith("ed"):
-            feats.append("SUF_ED")
-        if w.endswith("ly"):
-            feats.append("SUF_LY")
-        if w.endswith("tion") or w.endswith("sion"):
-            feats.append("SUF_TION")
-        if w.endswith("ness"):
-            feats.append("SUF_NESS")
-        if w.endswith("ment"):
-            feats.append("SUF_MENT")
-        if w.endswith("er") and len(w) >= 5:
-            feats.append("SUF_ER")
-        if w.endswith("est") and len(w) >= 5:
-            feats.append("SUF_EST")
+    # v83: VAL_POS_INT/VAL_NEG_INT dropped — they're subsets of VAL_POS/NEG
+    # so they primarily add multicollinearity without orthogonal signal.
     return feats
 
 
@@ -404,12 +373,11 @@ def _build_feature_names() -> List[str]:
         names.append("SEM_" + c)
     for m in _MOD_NAMES:
         names.append("MOD_" + m)
-    names += ["CONC_HIGH", "CONC_LOW", "ANIMATE", "AROUSAL_HIGH",
+    names += ["CONC_HIGH", "CONC_LOW", "ANIMATE",
               "FREQ_TOP", "FREQ_HIGH", "FREQ_MID", "FREQ_RARE",
-              "VAL_POS", "VAL_NEG", "NEG_SCOPE", "SPATIAL_PREP",
-              "SELF_REF", "OTHER_REF",
-              "SUF_ING", "SUF_ED", "SUF_LY", "SUF_TION", "SUF_NESS",
-              "SUF_MENT", "SUF_ER", "SUF_EST"]
+              "VAL_POS", "VAL_NEG",
+              "NEG_SCOPE", "SPATIAL_PREP",
+              "SELF_REF", "OTHER_REF"]
     return names
 
 
@@ -425,6 +393,28 @@ _BIGRAM_NAMES = sorted({p[2] for p in BIGRAM_PATTERNS})
 FEATURE_NAMES = FEATURE_NAMES + _BIGRAM_NAMES
 NFEAT = len(FEATURE_NAMES)
 _FEAT2IDX = {n: i for i, n in enumerate(FEATURE_NAMES)}
+
+# v56: hand-coded MLP composition features. Each tuple (feat_a, feat_b) is
+# detected as a soft-AND co-occurrence in the uniform-mean pooled context and
+# written to a new unused residual slot, so the ridge can read off feature
+# interactions the linear feature bag cannot capture.
+MLP_COMPOSITIONS: List[Tuple[str, str]] = [
+    ("NEG_SCOPE", "VAL_POS"),               # negated positive
+    ("NEG_SCOPE", "VAL_NEG"),               # negated negative
+    ("SEM_BODY", "MOD_MOTOR"),              # embodied action
+    ("SELF_REF", "SEM_EMOTION_NEG"),        # self-directed distress
+    ("SELF_REF", "SEM_EMOTION_POS"),        # self-directed joy
+    ("MOD_SOUND", "SEM_COMMUNICATION"),     # speech perception
+    ("VAL_NEG_INT", "ANIMATE"),             # someone hurt/killed
+    ("AROUSAL_HIGH", "MOD_MOTOR"),          # violent action
+    ("SEM_KINSHIP", "SEM_EMOTION_POS"),     # warm family
+    ("SEM_KINSHIP", "SEM_EMOTION_NEG"),     # family conflict
+    ("MOD_VISION", "SEM_COLOR"),            # color perception
+    ("SEM_PLACE", "SEM_SELF_MOTION"),       # going somewhere
+    ("FUNC_NEG", "MOD_MOTOR"),              # not doing
+    ("FUNC_AUX", "SEM_MENTAL"),             # modal thinking (could/should think)
+    ("SEM_TIME", "SEM_CHANGE"),             # temporal change
+]
 
 
 def _bigram_match(w1: str, w2: str) -> List[str]:
@@ -756,23 +746,24 @@ def write_weights(model: SimpleTransformer) -> None:
         # Attention block: per-head, q reads BIAS_DIM and k reads POS_DIM,
         # so q.k = lambda_h * j (independent of token content). Softmax then
         # produces multi-scale recency weights (smaller lambda -> flatter).
-        # v28: apply same per-block attention config to ALL blocks.
+        blk = model.blocks[0]
+        attn = blk.attn
+        attn.W_q.weight.zero_()
+        attn.W_k.weight.zero_()
+        for hh, lam in enumerate(LAMBDAS):
+            base = hh * dh
+            attn.W_q.weight[base + 0, BIAS_DIM] = 1.0
+            attn.W_k.weight[base + 0, POS_DIM] = lam * math.sqrt(dh)
         eye = torch.eye(D)
         eye[POS_DIM, POS_DIM] = 0.0
         eye[BIAS_DIM, BIAS_DIM] = 0.0
-        for blk in model.blocks:
-            attn = blk.attn
-            attn.W_q.weight.zero_()
-            attn.W_k.weight.zero_()
-            for hh, lam in enumerate(LAMBDAS):
-                base = hh * dh
-                attn.W_q.weight[base + 0, BIAS_DIM] = 1.0
-                attn.W_k.weight[base + 0, POS_DIM] = lam * math.sqrt(dh)
-            attn.W_v.weight.copy_(eye)
-            attn.W_o.weight.copy_(torch.eye(D))
-            # MLP zeroed for every block (v19 random MLP hurt).
-            blk.mlp.fc1.weight.zero_(); blk.mlp.fc1.bias.zero_()
-            blk.mlp.fc2.weight.zero_(); blk.mlp.fc2.bias.zero_()
+        attn.W_v.weight.copy_(eye)
+        attn.W_o.weight.copy_(torch.eye(D))
+
+        # v58: drop MLP comps (neutral or slightly negative in v56/v57). MLP
+        # zeroed again to act as identity-add.
+        blk.mlp.fc1.weight.zero_(); blk.mlp.fc1.bias.zero_()
+        blk.mlp.fc2.weight.zero_(); blk.mlp.fc2.bias.zero_()
         # v21: revert v20 LN, keep final_ln as Identity (the original).
         model.final_ln = nn.Identity()
 
@@ -781,12 +772,10 @@ def write_weights(model: SimpleTransformer) -> None:
 # Identity + description
 # ---------------------------------------------------------------------------
 
-model_shorthand_name = "FeatBag_v33_Suffix"
+model_shorthand_name = "FeatBag_v83_DropValInt"
 model_description = (
-    "Replace v32 subword hashing with 8 hand-targeted suffix-morphology "
-    "features (SUF_ING, SUF_ED, SUF_LY, SUF_TION, SUF_NESS, SUF_MENT, "
-    "SUF_ER, SUF_EST) on content words. Otherwise identical to v23 "
-    "baseline (LAMBDAS=-2,0,4,16; CONTENT_BONUS=1; 4 heads)."
+    "From v82, drop VAL_POS_INT/VAL_NEG_INT (subsets of VAL_POS/NEG). "
+    "Tests whether intensity buckets primarily add multicollinearity."
 )
 
 
