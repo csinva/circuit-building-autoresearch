@@ -238,7 +238,6 @@ def write_weights(model: SimpleTransformer) -> None:
                 
         nn.init.ones_(model.final_ln.weight)
         nn.init.zeros_(model.final_ln.bias)
-        model.final_ln.bias.data += 1.18
 
 model_shorthand_name = "Deep_Ensemble_0411_Master"
 model_description = "Uses the exact optimal scales of UltraTune, but changes the staggering from a 3-way split (+0, +6, +12) with L1 decay scale set to 15-80 instead of 10-80 to create even richer timescale mixtures."

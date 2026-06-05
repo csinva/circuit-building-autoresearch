@@ -30,7 +30,7 @@ for folder in os.listdir(RUNS_DIR):
 PALETTE = {
     "fmri-jun3-run1": "#2563eb", "fmri-jun03-run2": "#db2777",
     "fmri-jun03-run3": "#059669", "fmri-jun03-run4": "#d97706",
-    "fmri-may27-run1": "#7c3aed",
+    "fmri-jun04-run1": "#0e7490", "fmri-may27-run1": "#7c3aed",
 }
 
 
@@ -93,6 +93,38 @@ for key in order:
 DATA_JS = json.dumps(DATA)
 NEW_STORIES_JS = json.dumps(C.NEW_STORIES)
 ORIG_TEST_JS = json.dumps(C.ORIG_TEST)
+
+# ---- derived statistics for the prose (kept in sync with the data) ----
+def _pct(x):
+    return f"{round(100 * x)}%"
+
+
+def _mean(xs):
+    xs = [x for x in xs if x is not None]
+    return sum(xs) / len(xs) if xs else None
+
+
+N_MODELS = len(DATA)
+_subj_ret, _story_ret, _uts02_better = [], [], 0
+for d in DATA:
+    o = d["orig"]
+    if not o:
+        continue
+    sub = _mean([d["UTS01"], d["UTS02"]])
+    if sub is not None:
+        _subj_ret.append(sub / o)
+    if d["newstory"] is not None:
+        _story_ret.append(d["newstory"] / o)
+    if d["UTS01"] is not None and d["UTS02"] is not None and d["UTS02"] >= d["UTS01"]:
+        _uts02_better += 1
+SUBJ_RET_LO, SUBJ_RET_HI = _pct(min(_subj_ret)), _pct(max(_subj_ret))
+STORY_RET_LO, STORY_RET_HI = _pct(min(_story_ret)), _pct(max(_story_ret))
+STORY_RET_MEAN = _pct(_mean(_story_ret))
+UTS02_BETTER_ALL = _uts02_better == sum(
+    1 for d in DATA if d["UTS01"] is not None and d["UTS02"] is not None)
+# May-27 best model, re-measured under the trimmed pipeline (for finding #4).
+_may = next((d for d in DATA if d["model"] == "WordNetMorphLingPerceptual"), None)
+MAY_TRIMMED = f"{_may['orig']:.3f}" if _may and _may["orig"] is not None else "—"
 
 # ---- original-runs recap table ----
 def recap_rows():
@@ -168,6 +200,13 @@ HTML = f'''<!doctype html>
     <b>identical pipeline</b> (10-gram features, 30-TR edge trim, <code>ndelays=4</code>, 8 training
     stories, bootstrapped ridge), so original-vs-new comparisons are apples-to-apples.
     See the original report (<code>report.html</code>) for the full evolution curves.
+    Only genuinely <b>hand-wired</b> models are tested here: the Jun-03 run 3 iterations that loaded an
+    <b>external pretrained encoder</b> (Qwen / DistilBERT / RoBERTa / GloVe) or that <b>trained on data</b>
+    are flagged in the headline report and were <b>excluded</b> from selection. All six runs are represented,
+    including the later <b>Jun-04 run 1</b> (Claude Opus 4.8, xhigh) — a confirmation run that, having been
+    given <b>all prior runs' results</b>, resumed run 4's <code>FeatBag</code> circuit and plateaued at the
+    same ~0.077; its models are largely <b>redundant</b> in method-family with run 4's FeatBag, and we test
+    them here to confirm they transfer the same way.
   </p>
 
   <div class="note">
@@ -182,15 +221,15 @@ HTML = f'''<!doctype html>
 
   <h2>Key findings</h2>
   <div class="panel">
-    <p><b>1. Cross-subject transfer is partial but consistent.</b> Every one of the 12 models keeps
-    roughly <b>half</b> of its correlation when moved to a new subject (subject retention ~49–62%),
-    with <b>UTS02 transferring better than UTS01</b> for every model. So the hand-built circuits
+    <p><b>1. Cross-subject transfer is partial but consistent.</b> Every one of the {N_MODELS} models keeps
+    roughly <b>half</b> of its correlation when moved to a new subject (subject retention ~{SUBJ_RET_LO}–{SUBJ_RET_HI}),
+    {"with <b>UTS02 transferring better than UTS01</b> for every model" if UTS02_BETTER_ALL else "with <b>UTS02 generally transferring better than UTS01</b>"}. So the hand-built circuits
     capture genuine, subject-general language signal — but a substantial part of each model's score is
     subject-specific (the ridge readout is always refit per subject; the feature circuit is what
     transfers).</p>
     <p><b>2. Cross-story transfer is weaker than cross-subject, but holds up.</b> Averaged over
-    <b>all {len(C.NEW_STORIES)} held-out shared stories</b>, models keep <b>~35–47% (mean ~40%)</b> of
-    their original correlation — below the cross-subject ~50–62%, but well above what a small sample
+    <b>all {len(C.NEW_STORIES)} held-out shared stories</b>, models keep <b>~{STORY_RET_LO}–{STORY_RET_HI} (mean ~{STORY_RET_MEAN})</b> of
+    their original correlation — below the cross-subject ~{SUBJ_RET_LO}–{SUBJ_RET_HI}, but well above what a small sample
     implied. (An earlier 3-story version of this test gave only ~19–32%: those particular stories were
     a noisy, pessimistic draw. Averaging over the full shared set raises and stabilizes the estimate,
     and the new-story score now <b>tracks the original ranking</b> — the strongest original models stay
@@ -201,11 +240,11 @@ HTML = f'''<!doctype html>
     the evolutionary runs hold up under transfer — the differences are attenuated, not reordered.</p>
     <p><b>4. The May-27 models are not special once measured consistently.</b> Re-measured under the
     same trimmed pipeline, <code>WordNetMorphLingPerceptual</code> drops from its reported (untrimmed)
-    0.115 to <b>0.064</b>, and its transfer is in line with the other runs.</p>
+    0.115 to <b>{MAY_TRIMMED}</b>, and its transfer is in line with the other runs.</p>
   </div>
 
   <h2>Original runs (recap)</h2>
-  <p class="lead">The five evolutionary runs and the models sampled from each for this experiment.</p>
+  <p class="lead">The six evolutionary runs and the models sampled from each for this experiment.</p>
   <div class="panel"><table>
     <thead><tr><th>Run</th><th>Driver model</th><th>Effort</th><th>Untrimmed</th>
       <th>Models tested here</th></tr></thead>

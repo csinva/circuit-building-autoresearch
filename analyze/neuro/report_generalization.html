@@ -48,6 +48,12 @@
     <b>identical pipeline</b> (10-gram features, 30-TR edge trim, <code>ndelays=4</code>, 8 training
     stories, bootstrapped ridge), so original-vs-new comparisons are apples-to-apples.
     See the original report (<code>report.html</code>) for the full evolution curves.
+    Only genuinely <b>hand-wired</b> models are tested here: the Jun-03 run 3 iterations that loaded an
+    <b>external pretrained encoder</b> (Qwen / DistilBERT / RoBERTa / GloVe) or that <b>trained on data</b>
+    are flagged in the headline report and were <b>excluded</b> from selection. The later <b>Jun-04 run 1</b>
+    (Claude Opus 4.8, xhigh) is also omitted as <b>redundant</b> — it resumes run 4's identical
+    <code>FeatBag</code> circuit and plateaus at the same ~0.075, so run 4's FeatBag models already represent
+    that family here.
   </p>
 
   <div class="note">

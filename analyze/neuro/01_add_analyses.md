@@ -1,6 +1,6 @@
 Read through the results in the `runs-neuro` directory and the report in `analyze/neuro/report.html`.
 
-Your job is to test the generalization of the build models to new subjects and new stories. To do this, take a handful of the best-performing non-redundant models from each of the runs and test them in two new settings:
+Your job is to test the generalization of the build models to new subjects and new stories. To do this, take a handful of the best-performing non-redundant models (and a couple unique weak-performing models) from each of the runs and test them in two new settings:
 
 1. New subjects: test the models on the same stories but with new subjects (original training was done on UTS03, now test on UTS01 and UTS02) with the same test stories. Produce plots of original performance vs new performance for each model, and a summary plot that shows all the models together.
 2. New stories: test the models on the same subjects but with new stories (take all the training stories that were not originally used for training). Produce plots of original performance vs new performance for each model, and a summary plot that shows all the models together.

@@ -61,17 +61,34 @@ _stoi = {c: i for i, c in enumerate(_BASE_CHARS)}
 # Multi-scale recency lambdas for the per-head position-keyed attention scores.
 # lambda<0 -> primacy (look at the front of the n-gram), 0 -> uniform mean,
 # >0 -> recency (the larger, the more concentrated on the last word).
-LAMBDAS = (-2.0, 0.0, 4.0, 16.0)  # back to v23 baseline
+LAMBDAS = (-0.05, 0.05, 0.5, 32.0)  # v479
 
 # Words actually consumed from the end of the n-gram (10-gram).
 N_APPEND_WORDS = 12
 
 # Each word emits 'reps' copies of its feature tokens. Final-word emphasis
 # increases its weight in the uniform-mean head (lambda=0).
-RECENCY_REPS = (3, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)  # back to v23/v54 baseline
+RECENCY_REPS = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)  # v458
 # Content words emit features CONTENT_BONUS extra times on top of RECENCY_REPS
 # (so the lambda=0 "global mean" head is biased toward content over function).
-CONTENT_BONUS = 1  # v62: restore CB=1 (v61 CB=3 hurt slightly)
+CONTENT_BONUS = 6  # v458 base
+RARE_BONUS = 4  # v463 base
+EMO_BONUS = 60  # v463 base
+BODY_BONUS = 8  # v463 base
+MOTION_BONUS = 8  # v392
+PLACE_BONUS = 4  # v337: place words (RSC/PPA)
+PERCEPTION_BONUS = 60  # v463 base
+MENTAL_BONUS = 20  # v463 base
+INTENSITY_BONUS = 48  # v463 base
+DISCOURSE_BONUS = 0  # v359 reverted
+TIME_BONUS = 8  # v361
+SPACE_BONUS = 0  # v363 reverted
+QUALITY_BONUS = 8  # v463 base
+QUANTITY_BONUS = 0  # v368 reverted
+COMM_BONUS = 8  # v370
+LIFE_BONUS = 8  # v374
+CHANGE_BONUS = 8  # v376
+SOCIAL_BONUS = 8  # v463 base
 
 USE_CHAR_CONTENT = False  # reverted in v11 (random char hurt heavily)
 CHAR_CONTENT_STD = 1.0
@@ -83,42 +100,42 @@ CHAR_CONTENT_STD = 1.0
 # computed from corpus statistics.
 # ---------------------------------------------------------------------------
 _SEM_CATEGORIES = {
-    "MOTION": "go goes went going gone come comes came coming run ran running walk walked walking move moved moving fly flew flown drive drove driven ride rode jump jumped fall fell fallen throw threw catch caught turn turned turns rush chase climb crawl slide roll spin march step leave left arrive enter exit return follow approach escape flee swim dive sit sitting stand standing lay laying lie lying swing".split(),
-    "SPACE": "up down left right above below under over inside outside near far here there front back top bottom between among around through across along beside behind beyond edge corner middle center side north south east west forward backward upward downward out off away apart together onto toward towards against next".split(),
-    "TIME": "time times now then today tomorrow yesterday soon later before after early late always never often sometimes year years month months week weeks day days hour hours minute minutes second moment moments morning night nights evening afternoon noon midnight past future present while during until since again ago already yet still when whenever".split(),
-    "QUANTITY": "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety zero many few several all some none most least more less much little half double twice huge tiny count number numbers dates lot lots dozen hundred thousand million plenty enough single whole total each every first second third last".split(),
+    "MOTION": "go goes went going gone come comes came coming run ran running runs walk walks walked walking move moves moved moving fly flies flew flown drive drove driven ride rides rode jump jumps jumped falls fall fell fallen throw throws threw catch caught catches turn turned turns turning rush rushes chase chased chases climb climbs climbed crawl crawls slide slides rolls roll spin spins march marches step stepped steps leave left leaves arrive arrives arrived enter enters entered exit exits return returns returned follow followed approaches approach approached escape escaped flee fleeing swim swam dive dived sit sits sitting sat stand stood standing stands lay laying lying lies swing swings swung hurry hurried hurries hurrying race raced races racing dash dashed dashes dashing sprint sprinted sprints jogging jogged jogs trot trotted trots tiptoe tiptoed limp limped wander wandered wanders bolt bolted bolts pace paced paces wade waded skip skipped skips hop hopped hops bounce bounced bounces stagger staggered stumble stumbled trip tripped".split(),
+    "SPACE": "up down left right above below under over inside outside near far here there front back top bottom between among around through across along beside behind beyond edge edges corner corners middle center centre side sides north south east west forward forwards backward backwards backwards upward upwards downward downwards out off away apart together onto toward towards against next ahead amid amidst within without alongside beneath underneath atop opposite adjacent surrounding".split(),
+    "TIME": "time times now then today tomorrow yesterday soon later before after early late always never often sometimes year years month months week weeks day days hour hours minute minutes second seconds moment moments morning mornings night nights evening evenings afternoon afternoons noon midnight past future present while during until since again ago already yet still when whenever whence forever instantly immediately recently currently briefly weekly daily monthly yearly nightly hourly century centuries decade decades eternity eternal eternally awhile ahead onwards onward backward forward usually rarely seldom occasionally constantly frequently regularly".split(),
+    "QUANTITY": "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety zero many few several all some none most least more less much little half double twice huge tiny count number numbers dates lot lots dozen hundred thousand million plenty enough single whole total each every first second third last hundreds thousands millions billion billions count countless multiple multiples couple bunch piles handful many fewer fewer additional extra".split(),
     "BODY": "head face eye eyes ear ears nose mouth lip lips tooth teeth hand hands arm arms leg legs foot feet finger fingers hair skin heart blood bone bones back chest shoulder shoulders knee knees throat stomach brain neck chin cheek wrist elbow thumb nail body skull beard tears tear scar scars".split(),
     "PERSON": "man men woman women boy boys girl girls child children people person guy guys lady kid kids baby friend friends mother father mom dad sister brother son daughter wife husband family neighbor stranger crowd human folk gentleman".split(),
-    "SOCIAL": "together alone meet met meeting marry married wedding party group team gang community share shared help helped helping agree argue argued fight fought war peace trust betray join visit invite welcome greet".split(),
-    "EMOTION_POS": "happy joy joyful glad love loved loving like liked enjoy enjoyed excited exciting wonderful great amazing beautiful pleasure smile smiled laugh laughed laughing proud hope hopeful delight cheerful pleased grateful relief calm".split(),
-    "EMOTION_NEG": "sad sadness angry anger afraid fear scared frightened worried worry cry cried crying pain hurt terrible awful horrible hate hated disgust grief sorrow lonely nervous anxious upset miserable depressed guilt shame jealous".split(),
-    "COMMUNICATION": "say said says saying tell told telling tells speak spoke spoken speaking talk talked talking ask asked asking answer answered call called calling shout yell whisper word words voice question questions story stories explain read write wrote writing letter book reply discuss mention describe name names news conversation promise promised thank thanks thanked".split(),
-    "MENTAL": "think thought thinking know knew known believe believed remember remembered forget forgot understand understood realize realized wonder wondered imagine imagined guess idea ideas mind learn learned dream dreamed decide decided suppose consider expect assume doubt notice want wanted wants wanting wish wished need needed hope mean meant figure figured plan planned try tried trying care cared teach taught experience truth".split(),
-    "PERCEPTION": "see saw seen seeing look looked looking looks watch watched watching hear heard hearing listen listened smell smelled taste tasted touch touched feel felt feeling notice noticed stare stared glance observe gaze".split(),
-    "FOOD": "eat ate eaten eating food drink drank drinking water bread meat fruit apple orange meal meals breakfast lunch dinner cook cooked cooking hungry thirsty sweet bitter sour salt sugar coffee tea wine beer milk egg cheese cake soup rice".split(),
+    "SOCIAL": "together alone meet met meeting marry married wedding party group team gang community share shared help helped helping agree argue argued fight fought war peace trust betray join visit invite welcome greet socialize socializing socialized celebrate celebrated celebrating celebrates greeting greetings introduce introduced introducing introduces hug hugged hugging hugs kiss kissed kissing kisses dance danced dances dancing share shares shared sharing partner partners partnership members member friendship friends gathering gathered group groups crowd crowds crowded teamwork cooperation collaborate collaborated collaboration meeting meetings reunion reunions gather gathering gathers companion companions comrade comrades buddy buddies pal pals neighbor neighbors community communities society societies club clubs association associations organization organizations conference conferences interaction interactions relationship relationships dating date dated dates wedding weddings divorce divorced divorcing fight fighting fought fights argue arguing argued argues conflict conflicts dispute disputes peace peaceful peacefully accord agreements agreement disagree disagreed disagreement compromise compromised cooperation cooperate cooperated unite united uniting unity socialize hosting hosted hosts visit visited visiting visits invite invited inviting invites welcome welcomed welcoming welcomes embrace embraced embracing embraces farewell farewells reunion goodbye goodbyes".split(),
+    "EMOTION_POS": "happy happily happiness joy joyful joys glad gladly love loved loves loving like liked likes enjoy enjoyed enjoying enjoys excited exciting excitement wonderful wonderfully great greatness amazing amazingly beautiful beautifully pleasure pleasures pleasant smile smiled smiles smiling laugh laughs laughed laughing proud proudly pride hope hoped hoping hopes hopeful delight delighted delights delightful cheerful cheerfully cheered pleased grateful gratitude relief relieved calm calmly thrill thrilled thrilling thrills euphoric ecstatic content contented contentment satisfaction satisfied jubilant elated overjoyed".split(),
+    "EMOTION_NEG": "sad sadness angry anger afraid afraidly fear fears feared scared scarier frightened frightens frightening worried worry worries worrying cry cried cries crying pain pains painful hurt hurts terrible awful awfully horrible hate hated hates hating disgust disgusts disgusted grief griefs sorrow lonely loneliness nervous nervously anxious anxiously upset miserable misery depressed depression guilt guilty shame jealous jealousy fears scares scared fearful sadly sadder sorrow sorrows grieve grieving grieved cries crying sorrowful angered jealousy resentful bitter bitterly miserably wept weep weeping mournful frustrated frustration shame shameful regret regretted regretting fury furious annoyed annoying anguish anguished dreaded dread despair desperate".split(),
+    "COMMUNICATION": "say said says saying tell told telling tells speak spoke spoken speaking talk talked talking talks ask asked asking asks answer answers answered answering call called calling calls shout shouts shouted shouting yell yelled whisper whispers whispered word words voice voices question questions story stories explain explained explains read reads write wrote writing writes letter letters book books reply replies replied discuss discussed mention mentioned mentions describe described describes name names news conversation conversations promise promised promises thank thanks thanked thanking announce announced state stated".split(),
+    "MENTAL": "think thought thinks thinking know knew known knows believe believed believes believing remember remembered remembers remembering forget forgot forgotten forgets forgetting understand understood understands understanding realize realized realizes realizing wonder wondered wonders wondering imagine imagined imagines imagining guess guessed guesses guessing idea ideas mind learn learned learns learning dream dreamed dreams dreaming decide decided decides deciding suppose supposed supposing consider considered considering considers expect expected expects expecting assume assumed assumes doubt doubted doubts notice noticed notices noticing want wanted wants wanting wish wished wishes need needed needs needing hope hoped hopes hoping mean meant means meaning figure figured figures figuring plan planned plans planning try tried tries trying care cared cares caring teach taught teaches teaching experience experienced experiences truth knows believes thinks remembers forgets understands realizes wonders imagines guesses thinking knowing believing remembering forgetting understanding decision decisions choice choices opinion opinions reflect reflected reflecting reflects meditate meditates meditated considering pondering ponder pondered recall recalled recalls recalling perceive perceived perceives".split(),
+    "PERCEPTION": "see saw seen seeing look looked looking looks watch watched watching watches hear heard hears hearing listen listened listens listening smell smelled smells smelling taste tasted tastes tasting touch touched touches touching feel felt feels feeling notice noticed notices noticing stare stared stares staring glance glanced glances observe observed observes observing gaze gazed gazes gazing peer peered peering glimpse glimpsed sniff sniffed peeking peeked peek".split(),
+    "FOOD": "eat ate eaten eating eats food foods drink drank drinking drunk drinks water bread breads meat meats fruit fruits apple apples orange oranges meal meals breakfast breakfasts lunch lunches dinner dinners cook cooked cooking cooks hungry thirsty sweet bitter sour salt sugar coffee tea wine beer milk egg eggs cheese cheeses cake cakes soup soups rice cookies cookie pizza pizzas burger burgers pasta noodles salad salads sandwich sandwiches dessert desserts chocolate candy candies snack snacks butter sauce sauces juice juices yogurt cereal pancakes waffles bacon ham turkey chicken vegetable vegetables potato potatoes tomato tomatoes onion onions garlic carrot carrots peach peaches berry berries strawberry strawberries banana bananas grape grapes lemon lemons mushroom mushrooms".split(),
     "PLACE": "house home homes room rooms door doors window windows wall walls floor street streets road roads city cities town towns country school church store shop office building park garden field forest mountain river ocean sea lake beach sky world land farm village ground cabin central downtown".split(),
     "OBJECT": "thing things stuff box book books table chair bed car cars key keys money paper bag bottle cup phone clock machine tool tools wheel stone wood metal glass cloth knife pen door chain rope ball gun camera computer screen coin coins triangle".split(),
-    "NATURE": "tree trees fire air earth wind rain snow storm sun moon star stars cloud clouds animal dog cat bird birds fish horse flower flowers grass leaf leaves rock rocks soil dirt mud ice wave hill valley river rivers stream".split(),
-    "HEALTH": "doctor doctors nurse surgeon surgery hospital emergency patient sick ill illness disease pain ache hurt injured injury wound blood heal healed cure pill pills medicine drug treatment cancer fever cough epilepsy seizure ambulance clinic operation recovery dying health insurance".split(),
-    "QUALITY": "good bad new old young right wrong true false real fake strange normal important hard easy soft strong weak rich poor clean dirty empty full heavy light bright dark sharp dull fresh nice fine perfect big small large little long short tall wide narrow huge tiny crazy weird wild quiet loud sorry able main different same fancy plain rough smooth thick thin deep flat round fast slow quick ready tough best worst slowly quickly".split(),
+    "NATURE": "tree trees fire fires air earth wind winds rain snow storm sun moon star stars cloud clouds animal dog cat bird birds fish horse flower flowers grass leaf leaves rock rocks soil dirt mud ice wave waves hill hills valley valleys river rivers stream streams forests forest woods bush bushes branch branches root roots leafy pine oak maple sand sands sandy sandbar shore shores beach beaches pond ponds creek creeks meadow meadows lake lakes mountain mountains mountainous waterfall waterfalls volcano volcanoes desert deserts island islands cliff cliffs canyon canyons jungle jungles swamp swamps marsh marshes glacier glaciers iceberg icebergs cave caves boulder boulders pebble pebbles puddle puddles brook brooks ravine ravines plateau plateaus tundra prairie prairies".split(),
+    "HEALTH": "doctor doctors nurse nurses surgeon surgeons surgery hospital hospitals emergency patient patients sick ill illness illnesses disease diseases pain pains ache aches hurt hurts hurting injured injury injuries wound wounded blood bloody heal healed healing cure cured pill pills medicine medicines drug drugs treatment treatments cancer fever cough coughing epilepsy seizure seizures ambulance clinic operation operations recovery dying health insurance bandage stitches diagnosis symptoms therapy therapist".split(),
+    "QUALITY": "good bad new old young right wrong true false real fake strange normal important hard easy soft strong weak rich poor clean dirty empty full heavy light bright dark sharp dull fresh nice fine perfect big small large little long short tall wide narrow huge tiny crazy weird wild quiet loud sorry able main different same fancy plain rough smooth thick thin deep flat round fast slow quick ready tough best worst slowly quickly excellent terrific awful brilliant ordinary unusual common typical pleasant unpleasant powerful gentle obvious clear unclear vague better worse older younger stronger weaker bigger smaller larger shorter taller wider deeper softer harder rougher smoother brighter darker richer poorer cleaner dirtier heavier lighter quieter louder faster slower quicker tougher easier harder simpler complicated complex simple simpler easiest hardest fastest slowest biggest smallest tallest shortest widest narrowest deepest flattest roundest sharpest dullest freshest finest greatest highest lowest higher lower".split(),
     "WORK_MONEY": "work worked working job jobs money pay paid buy bought buying sell sold selling business company boss market price cost dollar dollars trade build built building factory worker wage profit bank store customer".split(),
-    "COLOR": "red blue green yellow white black gray grey brown orange purple pink color colors colour golden silver dark bright pale".split(),
-    "KINSHIP": "mother father mom dad parent parents son daughter sister brother wife husband child children baby uncle aunt cousin grandmother grandfather grandma grandpa family nephew niece".split(),
-    "ANIMAL": "dog dogs cat cats bird birds fish horse horses cow pig sheep chicken duck lion tiger bear wolf fox deer rabbit mouse rat snake frog insect bug bee ant spider animal animals creature".split(),
-    "WEATHER": "rain rained snow snowed wind windy storm sunny cloudy cold hot warm cool freezing fog ice frost heat winter summer spring autumn season weather temperature".split(),
+    "COLOR": "red blue green yellow white black gray grey brown orange purple pink color colors colour golden silver dark bright pale crimson scarlet rosy beige tan ivory navy maroon teal violet hue shade tint colored".split(),
+    "KINSHIP": "mother father mom dad parent parents son daughter sister brother wife husband child children baby uncle aunt cousin grandmother grandfather grandma grandpa family nephew niece sons daughters sisters brothers wives husbands children babies kids cousins aunts uncles relative relatives stepfather stepmother stepson stepdaughter inlaw inlaws spouse spouses".split(),
+    "ANIMAL": "dog dogs cat cats bird birds fish fishes horse horses cow cows pig pigs sheep chicken chickens duck ducks lion lions tiger tigers bear bears wolf wolves fox foxes deer rabbit rabbits mouse rat rats snake snakes frog frogs insect insects bug bugs bee bees ant ants spider spiders animal animals creature creatures puppy puppies kitten kittens kitty mouse mice rats squirrel squirrels chipmunk chipmunks goat goats elephant elephants giraffe giraffes whale whales dolphin dolphins shark sharks shrimp crab crabs eagle eagles hawk hawks owl owls parrot parrots pigeon pigeons hen hens rooster bull bulls cattle calf calves lamb lambs piglet pony ponies".split(),
+    "WEATHER": "rain rained raining rains snow snowed snowing snows wind windy storm storms stormy sunny sunshine cloudy clouds cloud cold hot warm cool freezing freeze frozen fog foggy ice icy frost frosty heat hail hailstorm lightning thunder thunderstorm drizzle downpour blizzard hurricane tornado winter summer spring autumn fall season seasons weather temperature climate humid humidity dry damp".split(),
     "POSSESSION": "have has had having own owns owned get gets getting got gotten give gave given take took taken takes keep kept hold held lose lost find found bring brought carry carried receive offer put set place placed leave left use used using wait waited waiting stay stayed staying stand stood sit sat sent send check checked wear wore worn".split(),
-    "CHANGE": "become became becoming change changed grow grew grown turn turned increase decrease rise rose fall fell break broke broken make made build built create destroy form develop begin began start started starts stop stopped end ended finish open opened close closed happen happened happens happening cut hit drop dropped remove removed appear appeared appears spend spent spending".split(),
-    "INTENSITY": "very really so too quite rather extremely incredibly absolutely totally completely almost nearly barely hardly just only even much".split(),
-    "CLOTHING": "shoe shoes shirt shirts pants dress dresses coat coats jacket hat hats sock socks glove gloves scarf belt tie suit boot boots sweater skirt jeans clothes clothing button pocket sleeve collar zipper cap garment garments uniform".split(),
+    "CHANGE": "become became becoming becomes change changed changes changing grow grew grown growing grows turn turned turns turning increase increased increases increasing decrease decreased decreases decreasing rise rose risen rises rising fall fell falls falling fallen break broke broken breaks breaking make made makes making build built builds building create created creates creating destroy destroyed destroys destroying form formed forms forming develop developed develops developing develops begin began begun begins beginning start started starts starting stop stopped stops stopping end ended ends ending finish finished finishes finishing open opened opens opening close closed closes closing happen happened happens happening cut cuts cutting hit hits hitting drop dropped drops dropping remove removed removes removing appear appeared appears appearing spend spent spends spending bend bent bends bending burst bursting bursts transform transformed transforms shrink shrank shrinking expand expanded expands shift shifted shifts evolve evolved evolving fade faded fading vanish vanished vanishes melt melted melts melting".split(),
+    "INTENSITY": "very really so too quite rather extremely incredibly absolutely totally completely almost nearly barely hardly just only even much way super pretty kind sorta kinda highly utterly purely simply fully entirely truly genuinely particularly especially significantly somewhat slightly mildly indeed enough plenty heavily lightly mostly mainly partly partially primarily merely scarcely virtually relatively definitely surely greatly tremendously immensely enormously fairly wholly altogether actually exactly precisely roughly approximately about almost nearly nearly already still already always never ever".split(),
+    "CLOTHING": "shoe shoes shirt shirts pants dress dresses coat coats jacket hat hats sock socks glove gloves scarf belt tie suit boot boots sweater skirt jeans clothes clothing button pocket sleeve collar zipper cap garment garments uniform shorts blouse blouses sweatshirt hoodie hoodies trench shawl shawls slipper slippers sandal sandals sneaker sneakers gown gowns robe vest vests trousers tights stockings ribbon ribbons necklace bracelet earring earrings ring rings".split(),
     "VEHICLE": "car cars truck trucks bus buses train trains plane planes boat boats bike bikes motorcycle taxi cab subway seat seatbelt wheel engine brake brakes gas drive driving road traffic helicopter pilot flight airport jet".split(),
     "TECH": "phone phones computer screen tv television radio camera internet email text message call button machine wire battery light switch electric power".split(),
-    "LIFE_DEATH": "life live lived lives living alive born birth grow grew age aged young old die died death dead dying kill killed survive survived breathe breath heartbeat exist".split(),
+    "LIFE_DEATH": "life live lived lives living alive born birth grow grew growing grows age aged ages aging young old die died dies dying death dead deaths kill killed kills killing survive survived survives surviving breathe breathed breathing breath heartbeat exist existed existing existence murder murdered murders murdering drown drowned drowns drowning suicide dead corpse corpses buried bury buries burying funeral funerals grave graves casket caskets coffin coffins tombstone tombstones mortal mortality immortal newborn rebirth reborn resurrect resurrected perish perished perishing perishes deceased dying killed killer killers victim victims slay slain slew slaying assassin assassinate assassinated".split(),
     "SCHOOL": "school university college campus class classroom student students teacher professor study studied learn lesson grade exam test homework library team club semester".split(),
-    "RELIGION": "god gods church pray prayed prayer faith religion religious holy heaven hell soul spirit bible jesus christ christian sin angel devil priest worship sacred divine blessed".split(),
-    "GAME_PLAY": "play played playing plays game games sport sports football basketball baseball soccer tennis golf team score win lose won ball bat field coach fun funny awesome joke toy toys".split(),
-    "SELF_MOTION": "go goes went going gone come comes came coming run ran running walk walked walking move moved moving fly flew swim climb jump jumped fall fell rise rose arrive enter leave left return wander wandered".split(),
-    "CAUSED_MOTION": "throw threw thrown push pushed pull pulled carry carried lift lifted drag dragged drop dropped kick kicked toss shove grab grabbed hand handed bring brought".split(),
-    "SPEECH_ACT": "say said says saying tell told telling ask asked asking answer answered speak spoke talk talked shout shouted yell whisper whispered call called reply explain explained".split(),
+    "RELIGION": "god gods church churches pray prayed praying prayer prayers prays faith faithful religion religions religious holy heaven heavens hell soul souls spirit spirits bible bibles jesus christ christian christians christianity sin sins sinned sinning sinner sinners angel angels devil devils demon demons priest priests worship worshipped worshipping worships worshipper sacred divine blessed bless blesses blessing blessings pastor pastors bishop bishops monk monks nun nuns temple temples synagogue synagogues mosque mosques rabbi rabbis muslim muslims islamic jewish catholic catholics protestant protestants ritual rituals sacrifice sacrificed sacrificing sacrifices baptism baptized baptize baptizing redeem redeemed redemption salvation saved save saving saves savior repent repented confess confessed confession blasphemy heretic preacher preached preaching".split(),
+    "GAME_PLAY": "play played plays playing game games sport sports football basketball baseball soccer tennis golf hockey team teams score scored scores scoring win wins won winning lose loses lost losing ball bat field coach coaches coached coaching player players fun funny awesome joke jokes joking joked toy toys puzzle puzzles cards card deck race raced racing trophy medal medals champion champions competition competitions tournament tournaments match matches matched round rounds goal goals dribble dribbled dribbling shoot shot shots shooting pass passed passing passes kick kicked kicking kicks bat batting batted batter pitch pitched pitching throws threw throwing inning innings quarter quarters half halves overtime referee referees umpire umpires".split(),
+    "SELF_MOTION": "go goes went going gone come comes came coming run ran running walk walked walking move moved moving fly flew flies flying swim swam swims swimming climb climbed climbs climbing jump jumped jumps jumping fall fell falls falling rise rose risen rises rising arrive arrived arrives enter entered enters leave left leaves leaving return returned returns wander wandered wanders crawl crawled crawls roll rolled rolls slide slid sliding step stepped stepping march marched approach approached approaches".split(),
+    "CAUSED_MOTION": "throw throws threw thrown throwing push pushes pushed pushing pull pulls pulled pulling carry carries carried carrying lift lifts lifted lifting drag drags dragged dragging drop drops dropped dropping kick kicks kicked kicking toss tosses tossed shove shoves shoved grab grabs grabbed grabbing hand hands handed bring brings brought roll rolls rolled rolling slide slides slid sliding fling flings flung hurl hurls hurled".split(),
+    "SPEECH_ACT": "say said says saying tell told telling tells ask asked asking asks answer answered answers answering speak spoke speaks speaking spoken talk talked talks talking shout shouted shouts shouting yell yelled yells yelling whisper whispered whispers whispering call called calls calling reply replied replies replying explain explained explains explaining mention mentioned mentions mentioning suggest suggested suggests suggesting confess confessed admit admitted insist insisted argued argue argues arguing".split(),
     "DISCOURSE": "because so then therefore thus hence since although though however but yet still meanwhile afterward afterwards consequently whereas otherwise nonetheless besides moreover anyway when while after before until once whenever unless instead finally eventually suddenly".split(),
     "NUMERIC": "one two three four five six seven eight nine ten hundred thousand million first second third twice double half".split(),
     "MOTOR": "grab push pull pulled lift throw kick grip hold holding held carry hit punch grasp reach shave wipe squeeze press pick poke tap pat tug".split(),
@@ -131,8 +148,8 @@ _SEM_CATEGORIES = {
 }
 
 # Valence (sentiment).
-_VAL_POS = set("good great love like happy joy nice kind beautiful wonderful best better win won success hope safe friend gift smile laugh warm bright fun pleasant gentle clean fresh free peace calm glad enjoy enjoyed proud excited amazing perfect lucky grateful cheerful delight pleased comfort sweet cool awesome favorite special brave strong healthy smart funny laughing celebrate party loved".split())
-_VAL_NEG = set("bad worse worst hate fear pain hurt sad angry death dead kill killed lost lose fail wrong sick ill dark cold cruel ugly dirty broken danger trouble war fight blood enemy evil sorry afraid scared worried worry cry terrible awful horrible nervous anxious lonely guilt shame mad upset stress hard tough struggle difficult problem problems wound injury cancer disease tears suffering frightened poor weak tired exhausted crying alone".split())
+_VAL_POS = set("good great love like happy joy nice kind beautiful wonderful best better win won success hope safe friend gift smile laugh warm bright fun pleasant gentle clean fresh free peace calm glad enjoy enjoyed proud excited amazing perfect lucky grateful cheerful delight pleased comfort sweet cool awesome favorite special brave strong healthy smart funny laughing celebrate party loved liked likes loves loved enjoying friendly trusted soft warmer kindness happiness joyful peaceful relaxed gorgeous heaven blessed marvelous talented charming hopeful caring tender precious treasure dream dreams victory wins easygoing fantastic terrific superb magnificent splendid breathtaking exquisite stunning radiant glorious triumph triumphant cherish cherished cherishing admire admired admirable adore adored adoring".split())  # v130: expanded
+_VAL_NEG = set("bad worse worst hate fear pain hurt sad angry death dead kill killed lost lose fail wrong sick ill dark cold cruel ugly dirty broken danger trouble war fight blood enemy evil sorry afraid scared worried worry cry terrible awful horrible nervous anxious lonely guilt shame mad upset stress hard tough struggle difficult problem problems wound injury cancer disease tears suffering frightened poor weak tired exhausted crying alone abandoned betrayed disappointed disappointing depressed depressing dreadful awful disgusting heartbroken miserable annoying agonizing painful tragic tragedy nightmare crisis disaster calamity catastrophic deadly fatal".split())
 # v54: strong-magnitude valence subsets (extreme sentiment words).
 _VAL_POS_INT = set("love amazing perfect wonderful best awesome beautiful brilliant excited thrilled grateful proud delighted celebrate".split())
 _VAL_NEG_INT = set("hate hated terrible awful horrible worst evil cruel kill killed murder murdered furious enraged disgusted horror terror frightened devastated".split())
@@ -149,12 +166,12 @@ _HIGH_AROUSAL = set("scream shout run fight fire explode crash rush panic terror
 
 # Perceptual modality.
 _MODALITY = {
-    "VISION": "see saw seen seeing look looked looking looks watch watched watching bright dark color colors red blue green yellow white black light lights shadow shadows glow shine shining appear appeared vision sight glance glanced stare stared gaze visible image picture view scene".split(),
-    "SOUND": "hear heard hearing listen listened loud quiet sound sounds noise noises music song songs voice voices ring rang bell bang banging crash whisper whispered scream screamed shout yell echo silence silent loud tune".split(),
+    "VISION": "see saw seen seeing look looked looking looks watch watched watching bright dark color colors red blue green yellow white black light lights shadow shadows glow shine shining appear appeared vision sight glance glanced stare stared gaze visible image picture view scene observed observe observes observing peek peeked peeking glimpse glimpsed glimpsing scenery viewing watching reflect reflected reflection shimmer shimmering sparkle sparkling gleam gleamed glowing glittering glitter glittered radiant beam beamed".split(),
+    "SOUND": "hear heard hearing listen listened loud quiet sound sounds noise noises music song songs voice voices ring rang bell bang banging crash whisper whispered scream screamed shout yell echo silence silent loud tune hears listens noisily musical singing sing sang sung hum hummed humming buzz buzzing thunder thundered click clicked clicking knock knocked knocking tap tapped tapping squeak squeaking creak creaking".split(),
     "TOUCH": "touch touched feel felt soft hard rough smooth warm cold hot cool wet dry sharp press pressed grip held holding squeeze rub texture sticky slippery".split(),
-    "TASTE": "taste tasted sweet bitter sour salty spicy delicious flavor flavour eat ate yummy bland".split(),
+    "TASTE": "taste tasted tastes tasting sweet bitter sour salty spicy delicious flavor flavour flavors flavours eat ate yummy bland savory tasty tangy gulp swallow swallowed crunchy crunch crunchy mouth chew chewed chewing".split(),
     "SMELL": "smell smelled scent odor odour fragrance stink stinky perfume aroma nose sniff".split(),
-    "MOTOR": "grab grabbed push pushed pull pulled lift lifted throw threw kick kicked run ran walk walked jump jumped grip held hold carry carried hit punch grasp reach reached swing wave squeeze".split(),
+    "MOTOR": "grab grabbed push pushed pull pulled lift lifted throw threw kick kicked run ran walk walked jump jumped grip held hold carry carried hit punch grasp reach reached swing wave squeeze grasps grabbing pushes pushing pulls pulling lifts throws threw catches caught punches punching slams slammed slap slapped slapping wrestle wrestled bend bent bending stretching".split(),
 }
 _CAT2MOD = {"COLOR": "VISION", "FOOD": "TASTE", "BODY": "TOUCH", "MOTION": "MOTOR",
             "ANIMAL": "VISION", "NATURE": "VISION", "WEATHER": "VISION",
@@ -164,21 +181,28 @@ _CAT2MOD = {"COLOR": "VISION", "FOOD": "TASTE", "BODY": "TOUCH", "MOTION": "MOTO
 _CONCRETE = set("house tree dog cat car book table chair hand eye water fire stone door window food bird fish rock wall floor street road wood metal glass bottle cup phone money".split())
 _ABSTRACT = set("idea thought love fear hope time truth freedom justice mind dream memory reason power belief fact chance luck soul spirit meaning".split())
 _CONCRETE_CATS = {"BODY", "FOOD", "PLACE", "OBJECT", "NATURE", "ANIMAL", "COLOR",
-                  "CLOTHING", "VEHICLE", "TECH", "PERSON"}
+                  "CLOTHING", "VEHICLE", "TECH", "PERSON",
+                  "MOTOR", "WEATHER", "SUBSTANCE"}  # v122: drop GAME_PLAY/HEALTH (neutral noise)
 _ABSTRACT_CATS = {"MENTAL", "EMOTION_POS", "EMOTION_NEG", "TIME", "QUANTITY", "CHANGE",
-                  "SOCIAL", "RELIGION"}
+                  "SOCIAL", "RELIGION",
+                  "ABSTRACT_REL", "MONEY_NUM",
+                  "LIFE_DEATH", "POSSESSION",
+                  "SCHOOL", "COMMUNICATION"}  # v118: also add communication
 
 # Function-word classes.
 _PRONOUN = set((
     "i you he she it we they me him her us them my your his its our their this that "
     "these those who what which whom whose myself himself herself yourself themselves "
     "ourselves something anything everything nothing someone anyone everyone "
-    "somebody anybody everybody somewhere anywhere everywhere other another each"
+    "somebody anybody everybody somewhere anywhere everywhere other another each "
+    "ya yall mine yours hers ours theirs itself one some any none either neither"
 ).split())
-_PREP = set("in on at to from of for with by about into over under after before between through during without within against among around".split())
-_SPATIAL_PREP = set("in on at into over under through between among around within "
-                    "above below behind across near beside inside outside onto".split())
-_CONJ = set("and or but so because although though while if when as than nor yet whether unless".split())
+_PREP = set("in on at to from of for with by about into over under after before between through during without within against among around above below behind across near beside inside outside off out upon underneath beneath beyond alongside opposite toward towards past throughout".split())
+_SPATIAL_PREP = set("in on at into onto over under through between among around within "
+                    "above below behind across near beside inside outside off out "
+                    "upon underneath beneath beyond amid amidst alongside opposite "
+                    "toward towards against past throughout".split())
+_CONJ = set("and or but so because although though while if when as than nor yet whether unless once whereas wherever whenever since plus where except besides nevertheless thus hence therefore furthermore moreover additionally meanwhile afterwards afterward".split())
 _ARTICLE = set("a an the".split())
 _AUX = set((
     "is are was were be been being am do does did have has had will would can "
@@ -188,7 +212,8 @@ _AUX = set((
 _NEG = set((
     "not no never none nothing nobody nowhere neither nor "
     "dont didnt doesnt cant cannot wont wouldnt couldnt shouldnt isnt arent "
-    "wasnt werent havent hasnt hadnt aint mustnt mightnt neednt"
+    "wasnt werent havent hasnt hadnt aint mustnt mightnt neednt "
+    "without lack lacks lacking lacked"
 ).split())
 _SELF_REF = set("i me my mine myself we us our ours ourselves im id ive weve wed".split())
 _OTHER_REF = set("he him his she her hers they them their theirs hes shes theyre theyve theyd theyll".split())
@@ -198,13 +223,15 @@ _PRON_CONTRACT = set((
 ).split())
 _INTERJ = set((
     "oh uh um yeah ok okay yes yep nope hmm huh ah eh wow hey alright "
-    "hello hi bye well gosh wel umm uhh mmm mhm"
+    "hello hi bye well gosh wel umm uhh mmm mhm "
+    "ouch oops oof yikes shh psst whoa wait alas geez damn gee"
 ).split())
-_WH = set("where when why how what which who whom whose whatever whenever wherever however".split())
+_WH = set("where when why how what which who whom whose whatever whenever wherever however whichever whoever".split())
 _DISC = set((
     "maybe sure actually exactly pretty kinda sorta really probably definitely "
     "basically literally honestly obviously apparently certainly perhaps possibly "
-    "anyway somehow though although besides instead therefore suddenly"
+    "anyway somehow though although besides instead therefore suddenly "
+    "essentially specifically usually generally frankly seriously truly indeed"
 ).split())
 
 # Word frequency (rough rank list of most-common English words). Words not
@@ -218,7 +245,33 @@ _FREQ_LIST = (
     "these give day most us man find here thing tell very still should through where much "
     "before too same right around another himself old little place such again off went "
     "while away something both house world own being head down many never under last "
-    "those great life always those once side might room"
+    "those great life always those once side might room "
+    "really feel hand seem leave high big call try long woman own home eye next big "
+    "different go ask night each between mean keep let help start year run point hold word "
+    "country small turn problem hand part lot system show end school few light social less "
+    "story group together fact stand company kind young person fact tell each early hand "
+    "small large light able state late minute book child love friend tonight stay change "
+    "lose late mean walk speak set carry head heart full bring close every father reach "
+    "girl boy real face open begin watch live family local meet ten enough lose pay later "
+    "follow money read learn move stop play wait wear talk hear food car father mother "
+    "child boy girl house room door window car phone street city school church store water "
+    "remember walk run sit stand sleep wake eat drink eat watched looked sat stood "
+    "stopped started went going turned came smiled laughed cried said replied asked "
+    "felt knew thought wanted needed loved hated saw heard told understood realized "
+    "nodded shook frowned sighed glanced reached pulled pushed leaned grabbed touched "
+    "almost finally suddenly anyway instead probably perhaps maybe somehow somewhere "
+    "white black red blue green old young little big small whole tall short cold hot warm "
+    "moment wondered decided noticed opened closed dropped paused breathed breath "
+    "front back top bottom middle side shoulder "
+    "someone anyone everyone nobody everybody anything everything nothing "
+    "where when wherever whenever although though however therefore thus indeed "
+    "despite during since while until either neither both must should may might "
+    "shall better best worse worst more less most least quite yet "
+    "tried remembered believed expected imagined hoped wished realized assumed "
+    "often always never sometimes usually rarely already ever also again once "
+    "quickly slowly softly quietly loudly briefly immediately eventually "
+    "rather besides meanwhile recently currently presently almost barely nearly "
+    "certainly definitely obviously clearly apparently possibly"
 ).split()
 _WORD2FREQRANK = {w: i for i, w in enumerate(_FREQ_LIST)}
 
@@ -343,14 +396,17 @@ def word_features(w: str) -> List[str]:
     for cat, mod in _CAT2MOD.items():
         if cat in catset and "MOD_" + mod not in feats:
             feats.append("MOD_" + mod)
-    if w in _CONCRETE or (catset & _CONCRETE_CATS):
+    if catset & _CONCRETE_CATS:
         feats.append("CONC_HIGH")
-    if w in _ABSTRACT or (catset & _ABSTRACT_CATS):
+    if catset & _ABSTRACT_CATS:
         feats.append("CONC_LOW")
-    if w in _ANIMATE:
-        feats.append("ANIMATE")
-    # v84: SELF_REF/OTHER_REF dropped — overlap with FUNC_PRON which already
-    # marks all pronouns. Pronoun identity may not add signal beyond PRON.
+    # v90: ANIMATE dropped — words overlap heavily with KINSHIP/PEOPLE_ROLE/
+    # SEM_PERSON_GENERIC/_ANIMAL cats.
+    if w in _SELF_REF:
+        feats.append("SELF_REF")
+    if w in _OTHER_REF:
+        feats.append("OTHER_REF")
+    # v82: AROUSAL_HIGH dropped — overlaps heavily with VAL_NEG/VAL_NEG_INT.
     if w in _VAL_POS:
         feats.append("VAL_POS")
     if w in _VAL_NEG:
@@ -370,10 +426,11 @@ def _build_feature_names() -> List[str]:
         names.append("SEM_" + c)
     for m in _MOD_NAMES:
         names.append("MOD_" + m)
-    names += ["CONC_HIGH", "CONC_LOW", "ANIMATE",
-              "FREQ_TOP", "FREQ_HIGH", "FREQ_MID", "FREQ_RARE",
+    names += ["CONC_HIGH", "CONC_LOW",
+              "FREQ_MID", "FREQ_RARE",
               "VAL_POS", "VAL_NEG",
-              "NEG_SCOPE", "SPATIAL_PREP"]
+              "NEG_SCOPE", "SPATIAL_PREP",
+              "SELF_REF", "OTHER_REF"]
     return names
 
 
@@ -636,6 +693,57 @@ class InterpretableEmbedder:
             # Content words get a bonus rep count.
             if "CONTENT" in wf:
                 reps = reps + CONTENT_BONUS
+            # v311: rare content words get extra bonus (more informative).
+            if "FREQ_RARE" in wf and "CONTENT" in wf:
+                reps = reps + RARE_BONUS
+            # v323: emotion-laden words emit extra copies (high salience).
+            if "SEM_EMOTION_POS" in wf or "SEM_EMOTION_NEG" in wf:
+                reps = reps + EMO_BONUS
+            # v331: body words emit extra copies (motor/somatosensory activation).
+            if "SEM_BODY" in wf:
+                reps = reps + BODY_BONUS
+            # v334: motion/self-motion words also recruit motor cortex.
+            if "SEM_MOTION" in wf or "SEM_SELF_MOTION" in wf:
+                reps = reps + MOTION_BONUS
+            # v337: place words drive RSC/PPA scene network.
+            if "SEM_PLACE" in wf:
+                reps = reps + PLACE_BONUS
+            # v342: perception words drive sensory cortices.
+            if "SEM_PERCEPTION" in wf:
+                reps = reps + PERCEPTION_BONUS
+            # v346: mental state verbs drive theory-of-mind network.
+            if "SEM_MENTAL" in wf:
+                reps = reps + MENTAL_BONUS
+            # v351: intensity markers amplify nearby content.
+            if "SEM_INTENSITY" in wf:
+                reps = reps + INTENSITY_BONUS
+            # v359: discourse connectives mark structural boundaries.
+            if "SEM_DISCOURSE" in wf:
+                reps = reps + DISCOURSE_BONUS
+            # v360: time words mark story pacing.
+            if "SEM_TIME" in wf:
+                reps = reps + TIME_BONUS
+            # v363: space words drive spatial cognition (IPS, RSC).
+            if "SEM_SPACE" in wf:
+                reps = reps + SPACE_BONUS
+            # v364: quality adjectives.
+            if "SEM_QUALITY" in wf:
+                reps = reps + QUALITY_BONUS
+            # v368: quantity words.
+            if "SEM_QUANTITY" in wf:
+                reps = reps + QUANTITY_BONUS
+            # v369: communication verbs.
+            if "SEM_COMMUNICATION" in wf:
+                reps = reps + COMM_BONUS
+            # v373: life/death words.
+            if "SEM_LIFE_DEATH" in wf:
+                reps = reps + LIFE_BONUS
+            # v375: change verbs.
+            if "SEM_CHANGE" in wf:
+                reps = reps + CHANGE_BONUS
+            # v380: social interaction verbs.
+            if "SEM_SOCIAL" in wf:
+                reps = reps + SOCIAL_BONUS
             feat_ids = [FEAT_TOKEN_BASE + _FEAT2IDX[f] for f in (wf + extra)]
             if USE_CONTENT_WORD_ID and "CONTENT" in wf:
                 lookup = w.replace("'", "")
@@ -768,12 +876,8 @@ def write_weights(model: SimpleTransformer) -> None:
 # Identity + description
 # ---------------------------------------------------------------------------
 
-model_shorthand_name = "FeatBag_v84_DropSelfOther"
-model_description = (
-    "From v83, drop SELF_REF/OTHER_REF (1st vs 3rd person pronoun "
-    "indicators). FUNC_PRON already marks all pronouns; person-distinction "
-    "may not add signal."
-)
+model_shorthand_name = "FeatBag_v479_Lam105"
+model_description = "From v473, LAMBDAS[1]=0.05 mild recency."
 
 
 # ---------------------------------------------------------------------------

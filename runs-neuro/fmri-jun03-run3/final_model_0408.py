@@ -6,11 +6,10 @@ from __future__ import annotations
 
 import math
 import argparse
-
 import os
 import sys
 import time
-from typing import List
+from typing import List, Dict
 
 import numpy as np
 import torch
@@ -22,12 +21,46 @@ from src.eval import (
     EncodingConfig, run_encoding, make_result_row,
     upsert_overall_results, plot_corr_over_iterations,
 )
-from top_words import TOP_WORDS
 
 RESULTS_DIR = os.path.join(os.path.dirname(__file__), "results")
 
+SEMANTIC_WORDS: Dict[str, set[str]] = {
+    "first_person": {"i", "me", "my", "mine", "myself", "we", "us", "our", "ours", "ourselves"},
+    "second_person": {"you", "your", "yours", "yourself", "yourselves"},
+    "third_person": {"he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its", "itself"},
+    "plural_pronoun": {"we", "us", "our", "they", "them", "their", "theirs", "everyone", "somebody"},
+    "social_family": {"mother", "mom", "mommy", "father", "dad", "daddy", "parent", "parents", "brother", "sister", "son", "daughter", "child", "children", "kid", "kids", "wife", "husband", "boyfriend", "girlfriend", "friend", "friends", "family", "grandmother", "grandfather", "grandma", "grandpa"},
+    "people": {"man", "woman", "men", "women", "boy", "girl", "person", "people", "guy", "lady", "child", "children", "kid", "teacher", "doctor", "student", "police", "cop", "stranger", "neighbor", "boss", "worker", "baby"},
+    "communication": {"say", "said", "says", "tell", "told", "talk", "talked", "speak", "spoke", "ask", "asked", "answer", "answered", "call", "called", "shout", "shouted", "whisper", "whispered", "voice", "word", "words", "story", "read", "write", "heard", "listen", "conversation"},
+    "cognition": {"think", "thought", "know", "knew", "believe", "remember", "forgot", "forget", "understand", "wonder", "guess", "decide", "decided", "realize", "realized", "idea", "mind", "dream", "imagine", "learn", "learned", "mean", "meant"},
+    "emotion_positive": {"love", "loved", "like", "liked", "happy", "glad", "laugh", "laughed", "smile", "smiled", "fun", "funny", "nice", "good", "great", "beautiful", "safe", "hope"},
+    "emotion_negative": {"hate", "hated", "sad", "angry", "mad", "afraid", "scared", "fear", "worried", "worry", "cry", "cried", "hurt", "pain", "bad", "wrong", "terrible", "dead", "death", "kill", "killed", "alone", "sorry"},
+    "motion": {"go", "goes", "went", "gone", "come", "came", "walk", "walked", "run", "ran", "move", "moved", "turn", "turned", "stand", "stood", "sit", "sat", "leave", "left", "enter", "entered", "drive", "drove", "fall", "fell", "jump", "climb"},
+    "perception": {"see", "saw", "seen", "look", "looked", "watch", "watched", "hear", "heard", "listen", "listened", "feel", "felt", "smell", "taste", "notice", "noticed"},
+    "body": {"hand", "hands", "arm", "arms", "leg", "legs", "head", "face", "eye", "eyes", "mouth", "hair", "heart", "body", "back", "feet", "foot", "finger", "fingers", "skin", "blood", "brain"},
+    "place_scene": {"room", "house", "home", "street", "road", "car", "school", "city", "town", "store", "office", "door", "window", "bed", "table", "kitchen", "bathroom", "park", "river", "water", "church", "hospital", "apartment"},
+    "time": {"time", "day", "night", "morning", "evening", "hour", "minute", "second", "week", "month", "year", "today", "yesterday", "tomorrow", "then", "now", "before", "after", "later", "again", "always", "never"},
+    "number_quantity": {"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "first", "second", "third", "many", "much", "few", "more", "less", "all", "some", "any", "each", "every", "both", "half"},
+    "object_artifact": {"thing", "things", "book", "paper", "phone", "letter", "money", "gun", "knife", "bag", "box", "chair", "table", "bed", "clothes", "shirt", "shoes", "picture", "photo", "key", "keys", "glass", "bottle", "computer"},
+    "food_drink": {"food", "eat", "ate", "eating", "drink", "drank", "water", "coffee", "tea", "beer", "wine", "bread", "milk", "meat", "cake", "dinner", "breakfast", "lunch"},
+    "animal_nature": {"dog", "cat", "bird", "horse", "animal", "tree", "trees", "flower", "flowers", "sun", "moon", "sky", "rain", "snow", "wind", "fire", "earth", "forest", "sea"},
+    "abstract_logic": {"because", "if", "though", "although", "maybe", "probably", "perhaps", "why", "reason", "cause", "truth", "true", "false", "fact", "problem", "question"},
+    "negation": {"no", "not", "never", "nothing", "nobody", "none", "cannot", "cant", "don't", "didn't"},
+    "question": {"who", "what", "when", "where", "why", "how", "which", "question", "ask", "asked"},
+    "determiner": {"the", "a", "an", "this", "that", "these", "those", "each", "every"},
+    "preposition": {"in", "on", "at", "by", "for", "with", "without", "from", "to", "into", "onto", "over", "under", "between", "through", "around", "about", "against", "inside", "outside", "before", "after"},
+    "conjunction": {"and", "or", "but", "so", "because", "while", "though", "although", "if", "then"},
+    "auxiliary": {"is", "am", "are", "was", "were", "be", "been", "being", "do", "does", "did", "have", "has", "had", "will", "would", "can", "could", "should", "may", "might", "must"},
+}
+SEMANTIC_KEYS = list(SEMANTIC_WORDS.keys())
+
+VOCAB_WORDS = []
+for words in SEMANTIC_WORDS.values():
+    VOCAB_WORDS.extend(list(words))
+VOCAB_WORDS = list(set(VOCAB_WORDS))
+
 _VOCAB_CHARS = " abcdefghijklmnopqrstuvwxyz0123456789'-.!()[]{}\\"
-VOCAB = ['<pad>', '<unk>'] + list(_VOCAB_CHARS)
+VOCAB = ['<pad>', '<unk>'] + list(_VOCAB_CHARS) + VOCAB_WORDS
 
 class CausalSelfAttention(nn.Module):
     def __init__(self, d_model: int, n_heads: int):
@@ -105,17 +138,33 @@ class InterpretableEmbedder(nn.Module):
         self.model = model.to(device)
         self.device = device
 
+    def encode_text(self, text: str) -> torch.Tensor:
+        text = text[-self.model.max_seq_len:]
+        text = text.ljust(self.model.max_seq_len, ' ')
+        
+        ids = [VOCAB.index(c) if c in VOCAB else VOCAB.index('<unk>') for c in text]
+        
+        import re
+        words = re.findall(r"[\w']+|[.,!?;]", text.lower())
+        
+        char_idx = 0
+        for w in words:
+            start_idx = text.lower().find(w, char_idx)
+            if start_idx != -1:
+                end_idx = start_idx + len(w) - 1
+                if w in VOCAB:
+                    ids[end_idx] = VOCAB.index(w)
+                char_idx = end_idx + 1
+        
+        return torch.tensor(ids, dtype=torch.long)
+
     @torch.no_grad()
     def forward(self, input_strings: List[str]) -> torch.Tensor:
         B = len(input_strings)
         T = self.model.max_seq_len
         input_ids = torch.zeros(B, T, dtype=torch.long, device=self.device)
         for i, s in enumerate(input_strings):
-            for j, char in enumerate(s[-T:]):
-                if char in VOCAB:
-                    input_ids[i, j] = VOCAB.index(char)
-                else:
-                    input_ids[i, j] = VOCAB.index('<unk>')
+            input_ids[i] = self.encode_text(s)
         hidden_states = self.model(input_ids)
         return hidden_states[:, -1, :].cpu()
 
@@ -238,6 +287,7 @@ def write_weights(model: SimpleTransformer) -> None:
                 
         nn.init.ones_(model.final_ln.weight)
         nn.init.zeros_(model.final_ln.bias)
+        model.final_ln.bias.data += 1.15
         model.final_ln.bias.data += 1.18
 
 model_shorthand_name = "Deep_Ensemble_0408_Master"

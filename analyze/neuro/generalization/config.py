@@ -47,6 +47,9 @@ SELECTED = [
     # May27 run1 — Claude Opus 4.7 (xhigh), UNTRIMMED original eval. WordNet+morphology+perceptual.
     ("fmri-may27-run1", "WordNetMorphLingPerceptual", 0.1146, "best (UNTRIMMED orig eval)"),
     ("fmri-may27-run1", "WordNetMorphLingMultiTau", 0.0665, "simpler multi-tau content"),
+    # Jun04 run1 — Claude Opus 4.8 (xhigh). Resumed run4's FeatBag (was given all prior runs' results).
+    ("fmri-jun04-run1", "N3_OtherRefBonus8", 0.0774, "best FeatBag refinement (other-reference bonus)"),
+    ("fmri-jun04-run1", "E24_ContentOnly", 0.0609, "ablated FeatBag (content words only)"),
 ]
 
 

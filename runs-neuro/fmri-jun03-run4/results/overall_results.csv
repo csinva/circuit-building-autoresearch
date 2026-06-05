@@ -73,3 +73,397 @@ UTS03,0.0703,0.3953,0.1085,210.0,success,FeatBag_v80_NApp16,5.60e+07,"From v79, 
 UTS03,0.0702,0.3965,0.1084,222.6,success,FeatBag_v81_CB2,5.60e+07,"From v80, CONTENT_BONUS=2 (between v62 CB=1 and v61 CB=3). Tests intermediate emphasis on content words.",0.1696,0.1991,0.1622,0.1218,0.0719,0.0676,0.0673,0.0816
 UTS03,0.0705,0.3911,0.1092,268.7,success,FeatBag_v82_DropArousal,5.60e+07,"From v73, drop AROUSAL_HIGH feature. AROUSAL_HIGH words (scream/fight/fire/explode/panic/terror/...) overlap heavily with VAL_NEG and VAL_NEG_INT, so the bucket may add ridge noise without orthogonal signal.",0.1707,0.2001,0.1625,0.1222,0.0725,0.0682,0.0681,0.0819
 UTS03,0.0707,0.3862,0.1096,147.5,success,FeatBag_v83_DropValInt,5.60e+07,"From v82, drop VAL_POS_INT/VAL_NEG_INT (subsets of VAL_POS/NEG). Tests whether intensity buckets primarily add multicollinearity.",0.1713,0.2005,0.1621,0.1227,0.0727,0.0695,0.0695,0.0825
+UTS03,0.0700,0.3826,0.1073,197.5,success,FeatBag_v84_DropSelfOther,5.60e+07,"From v83, drop SELF_REF/OTHER_REF (1st vs 3rd person pronoun indicators). FUNC_PRON already marks all pronouns; person-distinction may not add signal.",0.1689,0.1987,0.1603,0.1213,0.0713,0.0703,0.0706,0.0829
+UTS03,0.0704,0.3830,0.1087,195.7,success,FeatBag_v85_DropNegScope,5.60e+07,"From v83, drop NEG_SCOPE feature marker (keep the valence flip). FUNC_NEG already marks negation words; an extra NEG_SCOPE on negated content words may be redundant.",0.1673,0.2004,0.1611,0.1209,0.0720,0.0673,0.0692,0.0828
+UTS03,0.0696,0.3820,0.1075,230.2,success,FeatBag_v86_DropConcLow,5.60e+07,"From v83, drop CONC_LOW (abstract marker). Many SEM cats already capture abstract concepts (MENTAL/EMOTION/SOCIAL/...). Tests whether CONC_LOW is redundant.",0.1721,0.1997,0.1629,0.1233,0.0732,0.0699,0.0685,0.0822
+UTS03,0.0700,0.3847,0.1082,170.4,success,FeatBag_v87_DropNumeric,5.60e+07,"From v83, drop SEM_NUMERIC SEM cat — its words (one/two/...hundred/first/second/...) are essentially all also in SEM_QUANTITY.",0.1716,0.2003,0.1618,0.1225,0.0724,0.0687,0.0691,0.0812
+UTS03,0.0707,0.3862,0.1096,175.9,success,FeatBag_v88_DropUnusedFreq,5.60e+07,"From v83, remove unused FREQ_TOP and FREQ_HIGH from FEATURE_NAMES. freq_bucket only emits FREQ_RARE/MID after v73 collapse — the dead names take residual slots without ever firing. Pure compaction.",0.1713,0.2005,0.1621,0.1227,0.0727,0.0695,0.0695,0.0825
+UTS03,0.0704,0.3843,0.1095,149.8,success,FeatBag_v89_DropSpatialPrep,5.60e+07,"From v88, drop SPATIAL_PREP marker. Overlaps with FUNC_PREP. v75 tested -0.0001 on v73 — retry on the new v88 baseline.",0.1715,0.2007,0.1617,0.1219,0.0725,0.0683,0.0687,0.0824
+UTS03,0.0707,0.3848,0.1095,211.4,success,FeatBag_v90_DropAnimate,5.60e+07,"From v88, drop ANIMATE feature. The word list overlaps heavily with KINSHIP/PEOPLE_ROLE/SEM_PERSON_GENERIC/_ANIMAL cats, so ANIMATE may be redundant.",0.1710,0.2006,0.1615,0.1226,0.0728,0.0699,0.0705,0.0821
+UTS03,0.0707,0.3848,0.1095,159.0,success,FeatBag_v91_PureCatConcrete,5.60e+07,"From v90, drop explicit _CONCRETE word list — rely only on _CONCRETE_CATS membership for CONC_HIGH. Most words in the list are already in PLACE/NATURE/ANIMAL/etc.",0.1710,0.2006,0.1615,0.1226,0.0728,0.0699,0.0705,0.0821
+UTS03,0.0708,0.3848,0.1096,166.6,success,FeatBag_v92_PureCatAbstract,5.60e+07,"From v91, also drop the _ABSTRACT explicit word list; rely only on _ABSTRACT_CATS for CONC_LOW. The words idea/thought/love/fear/... are all in MENTAL/EMOTION/SOCIAL cats already.",0.1709,0.2008,0.1615,0.1224,0.0727,0.0697,0.0703,0.0822
+UTS03,0.0692,0.3828,0.1066,155.3,success,FeatBag_v93_DropSemDisc,5.60e+07,"From v92, drop SEM_DISCOURSE cat. Most of its words (because/so/when/while/after/before/...) are already in CONJ/PREP/_DISC, so they get FUNC_* tags; the SEM_DISCOURSE bucket is mostly redundant.",0.1679,0.1994,0.1586,0.1206,0.0714,0.0706,0.0705,0.0792
+UTS03,0.0709,0.3834,0.1098,184.9,success,FeatBag_v94_CB0,5.60e+07,"From v92, CONTENT_BONUS=0 (no content-word rep boost). Now that we've pruned many redundant features, content boost may not be needed.",0.1709,0.2012,0.1622,0.1226,0.0730,0.0699,0.0700,0.0825
+UTS03,0.0709,0.3850,0.1099,203.2,success,FeatBag_v95_UniformReps,5.60e+07,"From v94, RECENCY_REPS uniform (all 1s). Let the attention heads (lambdas) handle ALL recency weighting, no per-word rep boost.",0.1710,0.2013,0.1618,0.1228,0.0727,0.0698,0.0700,0.0825
+UTS03,0.0709,0.3848,0.1100,138.4,success,FeatBag_v96_LamWeakPrim,5.60e+07,"From v95, LAMBDAS=(-1, 0, 4, 16). Slightly weaker primacy than -2.",0.1709,0.2012,0.1619,0.1227,0.0727,0.0698,0.0700,0.0824
+UTS03,0.0700,0.3569,0.1062,177.4,success,FeatBag_v97_NoPrimacy,5.60e+07,"From v96, LAMBDAS=(0, 1, 4, 16). No primacy head; all recency-leaning.",0.1696,0.1991,0.1609,0.1216,0.0706,0.0695,0.0685,0.0808
+UTS03,0.0709,0.3848,0.1100,204.0,success,FeatBag_v98_NApp20,5.60e+07,"From v96, N_APPEND_WORDS=20. More context for the primacy head.",0.1709,0.2012,0.1619,0.1227,0.0727,0.0698,0.0700,0.0824
+UTS03,0.0708,0.3891,0.1104,220.1,success,FeatBag_v99_SplitAux,5.60e+07,"From v96, split FUNC_AUX into FUNC_AUX_MODAL (will/would/can/could/should/may/might/must) vs FUNC_AUX_BDH (be/do/have variants). Modal vs auxiliary distinction may help.",0.1699,0.2013,0.1632,0.1226,0.0724,0.0699,0.0709,0.0822
+UTS03,0.0675,0.3972,0.1007,230.6,success,FeatBag_v100_WinPos,5.60e+07,"From v96, add WIN_FIRST (first word of recent window) and WIN_LAST (last word of window) markers. Lets ridge learn position-conditional weights without relying on attention recency alone.",0.1612,0.2053,0.1561,0.1162,0.0685,0.0671,0.0696,0.0824
+UTS03,0.0713,0.3861,0.1110,159.9,success,FeatBag_v101_ExpandAbsCats,5.60e+07,"From v96, expand _ABSTRACT_CATS to also include ABSTRACT_REL and MONEY_NUM. More words get the CONC_LOW marker for abstract concepts.",0.1709,0.2020,0.1629,0.1241,0.0737,0.0707,0.0719,0.0831
+UTS03,0.0706,0.3901,0.1085,181.2,success,FeatBag_v102_ExpandConcCats,5.60e+07,"From v101, also expand _CONCRETE_CATS with KINSHIP, WEATHER, SCHOOL, SUBSTANCE, PEOPLE_ROLE, MOTOR, SELF_MOTION, CAUSED_MOTION. More words get CONC_HIGH marker for embodied/concrete concepts.",0.1705,0.2020,0.1620,0.1229,0.0730,0.0710,0.0720,0.0804
+UTS03,0.0711,0.3861,0.1106,158.9,success,FeatBag_v103_SelectiveConc,5.60e+07,"From v101, selectively expand _CONCRETE_CATS with just KINSHIP, WEATHER, SUBSTANCE (most clearly physical). v102 over-expanded.",0.1707,0.2019,0.1628,0.1236,0.0734,0.0708,0.0719,0.0827
+UTS03,0.0714,0.3861,0.1112,234.9,success,FeatBag_v104_AddMotor,5.60e+07,"From v101, expand _CONCRETE_CATS with MOTOR only (embodied actions). v102/v103 over-expanded; try minimal addition.",0.1708,0.2014,0.1625,0.1248,0.0742,0.0710,0.0724,0.0834
+UTS03,0.0710,0.3880,0.1092,230.5,success,FeatBag_v105_AddSelfMotion,5.60e+07,"From v104, also add SELF_MOTION to _CONCRETE_CATS (walk/run/go/come are embodied movement actions).",0.1708,0.2014,0.1621,0.1238,0.0738,0.0711,0.0723,0.0823
+UTS03,0.0714,0.3875,0.1108,177.8,success,FeatBag_v106_AddAbsLifePoss,5.60e+07,"From v104, also add LIFE_DEATH and POSSESSION to _ABSTRACT_CATS. Both are abstract conceptual categories.",0.1706,0.2009,0.1633,0.1244,0.0743,0.0717,0.0717,0.0839
+UTS03,0.0705,0.3905,0.1100,192.0,success,FeatBag_v107_AddAbsIntQual,5.60e+07,"From v106, also add INTENSITY and QUALITY to _ABSTRACT_CATS. These are property-of-noun abstractions (very/much/big/small/...).",0.1706,0.2013,0.1623,0.1224,0.0736,0.0708,0.0714,0.0823
+UTS03,0.0712,0.3879,0.1106,219.9,success,FeatBag_v108_AddCausedMotion,5.60e+07,"From v106, also add CAUSED_MOTION (push/throw/kick/drop/grab) to _CONCRETE_CATS. Embodied transitive actions are concrete physical events.",0.1706,0.2010,0.1630,0.1242,0.0738,0.0714,0.0721,0.0838
+UTS03,0.0714,0.3873,0.1107,201.7,success,FeatBag_v109_AddWeather,5.60e+07,"From v106, also add WEATHER (rain/snow/cloud/sun/wind) to _CONCRETE_CATS. Weather is a visible physical phenomenon.",0.1704,0.2009,0.1627,0.1243,0.0737,0.0721,0.0723,0.0841
+UTS03,0.0715,0.3869,0.1109,161.5,success,FeatBag_v110_AddSubstance,5.60e+07,"From v109, also add SUBSTANCE (cigarette/smoke/drug/alcohol) to _CONCRETE_CATS. Physical materials/substances.",0.1709,0.2009,0.1629,0.1240,0.0735,0.0717,0.0720,0.0839
+UTS03,0.0713,0.3872,0.1106,169.4,success,FeatBag_v111_AddKinship,5.60e+07,"From v110, also add KINSHIP (mother/father/sister/brother/family) to _CONCRETE_CATS. Kin terms refer to concrete human relations.",0.1707,0.2010,0.1635,0.1241,0.0735,0.0712,0.0716,0.0836
+UTS03,0.0713,0.3878,0.1105,147.0,success,FeatBag_v112_AddPeopleRole,5.60e+07,"From v110, also add PEOPLE_ROLE (boss/teacher/nurse/manager) to _CONCRETE_CATS. People in roles are concrete human entities.",0.1708,0.2010,0.1625,0.1241,0.0730,0.0713,0.0723,0.0835
+UTS03,0.0715,0.3869,0.1108,168.7,success,FeatBag_v113_LamMid,5.60e+07,"From v110, LAMBDAS=(-1, 0, 2, 8). Less aggressive recency spread.",0.1709,0.2009,0.1628,0.1241,0.0736,0.0717,0.0720,0.0839
+UTS03,0.0706,0.3972,0.1092,154.8,success,FeatBag_v114_8Heads,5.60e+07,"From v110, 8 heads with diverse lambdas (-2, -0.5, 0, 0.5, 1, 2, 4, 16). Tests whether more head diversity provides additional pooling scales.",0.1700,0.1982,0.1612,0.1237,0.0732,0.0705,0.0708,0.0829
+UTS03,0.0715,0.3862,0.1108,158.0,success,FeatBag_v115_AddGame,5.60e+07,"From v110, also add GAME_PLAY (play/sport/ball/team) to _CONCRETE_CATS.",0.1709,0.2011,0.1641,0.1245,0.0733,0.0714,0.0720,0.0840
+UTS03,0.0715,0.3862,0.1106,161.8,success,FeatBag_v116_AddHealth,5.60e+07,"From v115, also add HEALTH (doctor/medicine/hospital) to _CONCRETE_CATS.",0.1713,0.2006,0.1639,0.1253,0.0733,0.0719,0.0710,0.0852
+UTS03,0.0716,0.3870,0.1105,162.1,success,FeatBag_v117_AddSchoolAbs,5.60e+07,"From v116, also add SCHOOL (school/study/learn/exam) to _ABSTRACT_CATS.",0.1715,0.2018,0.1637,0.1257,0.0734,0.0717,0.0711,0.0852
+UTS03,0.0718,0.3879,0.1119,161.9,success,FeatBag_v118_AddCommAbs,5.60e+07,"From v117, also add COMMUNICATION (say/tell/word/explain) to _ABSTRACT_CATS.",0.1719,0.2017,0.1627,0.1258,0.0755,0.0725,0.0712,0.0849
+UTS03,0.0718,0.3877,0.1116,155.3,success,FeatBag_v119_AddWorkMoney,5.60e+07,"From v118, also add WORK_MONEY (work/job/business/pay) to _ABSTRACT_CATS.",0.1712,0.2018,0.1623,0.1263,0.0754,0.0724,0.0716,0.0857
+UTS03,0.0718,0.3877,0.1116,169.5,success,FeatBag_v120_AddSpeechAct,5.60e+07,"From v119, also add SPEECH_ACT to _ABSTRACT_CATS (overlap with COMMUNICATION).",0.1712,0.2018,0.1623,0.1263,0.0754,0.0724,0.0716,0.0857
+UTS03,0.0712,0.3889,0.1110,144.2,success,FeatBag_v121_AddDiscAbs,5.60e+07,"From v120, also add DISCOURSE (because/so/then) to _ABSTRACT_CATS.",0.1687,0.2001,0.1637,0.1253,0.0755,0.0724,0.0717,0.0855
+UTS03,0.0718,0.3889,0.1121,166.1,success,FeatBag_v122_StripGameHealth,5.60e+07,"From v118, drop GAME_PLAY/HEALTH from concrete (they were neutral noise).",0.1713,0.2015,0.1624,0.1249,0.0761,0.0726,0.0714,0.0834
+UTS03,0.0717,0.3898,0.1117,179.3,success,FeatBag_v123_AddPeopleRoleAbs,5.60e+07,"From v122, add PEOPLE_ROLE (boss/teacher/officer/manager) to _ABSTRACT_CATS.",0.1708,0.2013,0.1617,0.1244,0.0759,0.0726,0.0718,0.0830
+UTS03,0.0714,0.3903,0.1111,166.4,success,FeatBag_v124_AddQualityAbs,5.60e+07,"From v122, add QUALITY (good/bad/true/false/right/wrong) to _ABSTRACT_CATS.",0.1709,0.2022,0.1609,0.1222,0.0755,0.0708,0.0704,0.0815
+UTS03,0.0708,0.3909,0.1088,184.1,success,FeatBag_v125_AddConcSubtypes,5.60e+07,"From v122, add CONC_LIVING (person/animal/body) and CONC_PLACE (place/nature/weather) as new bits.",0.1686,0.1998,0.1608,0.1225,0.0738,0.0737,0.0720,0.0814
+UTS03,0.0717,0.3904,0.1114,159.6,success,FeatBag_v126_AddConcPlace,5.60e+07,"From v122, add CONC_PLACE (place/nature/weather) as a separate PPA-targeted bit.",0.1697,0.2009,0.1617,0.1246,0.0759,0.0752,0.0741,0.0828
+UTS03,0.0709,0.3909,0.1089,164.5,success,FeatBag_v127_AddConcLiving,5.60e+07,"From v122, add CONC_LIVING (person/animal/body/kinship/people_role) as EBA/FFA-targeted bit.",0.1705,0.2006,0.1617,0.1230,0.0744,0.0724,0.0718,0.0818
+UTS03,0.0713,0.3885,0.1105,163.7,success,FeatBag_v128_AddSpaceConc,5.60e+07,"From v122, add SPACE (up/down/near/far) to _CONCRETE_CATS.",0.1700,0.2005,0.1619,0.1245,0.0759,0.0732,0.0728,0.0841
+UTS03,0.0717,0.3887,0.1116,147.9,success,FeatBag_v129_AddHealthAbs,5.60e+07,"From v122, add HEALTH (disease/treatment/recovery/insurance) to _ABSTRACT_CATS.",0.1712,0.2011,0.1621,0.1248,0.0755,0.0724,0.0707,0.0842
+UTS03,0.0720,0.3888,0.1126,156.6,success,FeatBag_v130_ExpandValPos,5.60e+07,"From v122, expand _VAL_POS word list (added likes/loves/happiness/etc).",0.1705,0.2016,0.1616,0.1253,0.0766,0.0729,0.0716,0.0843
+UTS03,0.0719,0.3890,0.1125,165.6,success,FeatBag_v131_ExpandValNeg,5.60e+07,"From v130, also expand _VAL_NEG word list (hates/sadly/suffering/violence/etc).",0.1707,0.2014,0.1619,0.1253,0.0765,0.0731,0.0714,0.0843
+UTS03,0.0719,0.3889,0.1124,165.5,success,FeatBag_v132_ExpandValNegMod,5.60e+07,"From v130, moderately expand _VAL_NEG (hates/suffer/misery/violence/grief/depressed).",0.1706,0.2014,0.1617,0.1253,0.0764,0.0730,0.0715,0.0845
+UTS03,0.0723,0.3890,0.1135,170.9,success,FeatBag_v133_ExpandMental,5.60e+07,"From v130, expand SEM_MENTAL word list (knows/decisions/opinions/recall).",0.1708,0.2017,0.1621,0.1255,0.0766,0.0725,0.0722,0.0848
+UTS03,0.0721,0.3887,0.1133,161.7,success,FeatBag_v134_ExpandComm,5.60e+07,"From v133, expand SEM_COMMUNICATION word list (replied/explained/chat/argued).",0.1705,0.2016,0.1620,0.1250,0.0763,0.0728,0.0723,0.0844
+UTS03,0.0722,0.3895,0.1138,179.0,success,FeatBag_v135_ExpandEmoPos,5.60e+07,"From v133, expand SEM_EMOTION_POS (thrilled/eager/satisfied/cheers).",0.1717,0.2017,0.1623,0.1254,0.0763,0.0727,0.0715,0.0839
+UTS03,0.0723,0.3889,0.1136,169.9,success,FeatBag_v136_ExpandEmoNeg,5.60e+07,"From v133, expand SEM_EMOTION_NEG (sorrow/grief/regret/frustration/jealousy).",0.1708,0.2015,0.1620,0.1255,0.0765,0.0728,0.0723,0.0848
+UTS03,0.0722,0.3889,0.1136,166.1,success,FeatBag_v137_ExpandTime,5.60e+07,"From v136, expand SEM_TIME (eternity/century/scheduled/recently).",0.1714,0.2018,0.1623,0.1258,0.0769,0.0732,0.0725,0.0849
+UTS03,0.0722,0.3887,0.1133,164.1,success,FeatBag_v138_ExpandSocial,5.60e+07,"From v136, expand SEM_SOCIAL (relationship/friendship/ally/cooperate).",0.1708,0.2018,0.1613,0.1257,0.0763,0.0726,0.0721,0.0844
+UTS03,0.0725,0.3890,0.1145,173.2,success,FeatBag_v139_ExpandChange,5.60e+07,"From v136, expand SEM_CHANGE (more inflected forms).",0.1712,0.2009,0.1617,0.1261,0.0770,0.0731,0.0724,0.0848
+UTS03,0.0724,0.3891,0.1142,180.8,success,FeatBag_v140_ExpandPerson,5.60e+07,"From v139, expand SEM_PERSON (elder/adult/teen/infant/couple).",0.1710,0.2010,0.1615,0.1260,0.0770,0.0730,0.0723,0.0848
+UTS03,0.0724,0.3887,0.1137,210.4,success,FeatBag_v141_ExpandMotion,5.60e+07,"From v139, expand SEM_MOTION (pull/push/bend/stretch/cross/slide).",0.1715,0.2012,0.1624,0.1253,0.0774,0.0725,0.0711,0.0842
+UTS03,0.0722,0.3893,0.1136,195.8,success,FeatBag_v142_ExpandObject,5.60e+07,"From v139, expand SEM_OBJECT (containers/furniture/utensils).",0.1711,0.2006,0.1620,0.1256,0.0767,0.0723,0.0717,0.0841
+UTS03,0.0724,0.3888,0.1146,161.9,success,FeatBag_v143_ExpandBody,5.60e+07,"From v139, expand SEM_BODY (hip/ankle/torso/muscles/spine).",0.1711,0.2010,0.1616,0.1258,0.0773,0.0729,0.0720,0.0846
+UTS03,0.0721,0.3888,0.1136,159.6,success,FeatBag_v144_ExpandPlace,5.60e+07,"From v139, expand SEM_PLACE (bedroom/cafe/hotel/library/palace).",0.1719,0.2003,0.1622,0.1264,0.0768,0.0743,0.0728,0.0819
+UTS03,0.0725,0.3890,0.1142,148.4,success,FeatBag_v145_ExpandQuantity,5.60e+07,"From v139, expand SEM_QUANTITY (hundreds/thousands/billion/bunch/multiple).",0.1716,0.2009,0.1610,0.1262,0.0774,0.0735,0.0724,0.0846
+UTS03,0.0722,0.3893,0.1136,152.5,success,FeatBag_v146_ExpandPerception,5.60e+07,"From v145, expand SEM_PERCEPTION (sees/hears/feels/observing).",0.1708,0.2005,0.1613,0.1255,0.0769,0.0735,0.0724,0.0856
+UTS03,0.0724,0.3889,0.1140,153.6,success,FeatBag_v147_ExpandPossession,5.60e+07,"From v145, expand SEM_POSSESSION (obtain/lend/borrow/earn/accept/refuse).",0.1714,0.2009,0.1613,0.1263,0.0771,0.0740,0.0727,0.0843
+UTS03,0.0722,0.3892,0.1139,148.2,success,FeatBag_v148_ExpandAbsRel,5.60e+07,"From v145, expand SEM_ABSTRACT_REL (issue/condition/theme/principle/concept).",0.1706,0.2009,0.1615,0.1256,0.0771,0.0739,0.0721,0.0841
+UTS03,0.0718,0.3898,0.1137,172.6,success,FeatBag_v149_ExpandNumeric,5.60e+07,"From v145, expand SEM_NUMERIC (eleven/twelve/fourth/fifth/billion/pair).",0.1718,0.2012,0.1621,0.1258,0.0771,0.0733,0.0736,0.0839
+UTS03,0.0725,0.3889,0.1142,159.6,success,FeatBag_v150_ExpandMotorMod,5.60e+07,"From v145, expand _MODALITY[MOTOR] (slap/wrestle/bend/stretch/slam).",0.1717,0.2010,0.1620,0.1258,0.0776,0.0733,0.0720,0.0844
+UTS03,0.0724,0.3887,0.1136,171.5,success,FeatBag_v151_ExpandVisionMod,5.60e+07,"From v150, expand _MODALITY[VISION] (glow/flash/flicker/brighten/sparkle).",0.1712,0.2007,0.1618,0.1255,0.0772,0.0735,0.0721,0.0837
+UTS03,0.0725,0.3885,0.1143,151.8,success,FeatBag_v152_ExpandSoundMod,5.60e+07,"From v150, expand _MODALITY[SOUND] (sing/hum/buzz/thunder/click/tap/squeak).",0.1718,0.2011,0.1627,0.1254,0.0773,0.0737,0.0723,0.0845
+UTS03,0.0724,0.3886,0.1148,146.8,success,FeatBag_v153_ExpandTouchMod,5.60e+07,"From v152, expand _MODALITY[TOUCH] (fuzzy/silky/itchy/grainy/cushiony).",0.1729,0.2013,0.1633,0.1253,0.0779,0.0742,0.0732,0.0842
+UTS03,0.0726,0.3884,0.1145,151.8,success,FeatBag_v154_ExpandKinship,5.60e+07,"From v152, expand SEM_KINSHIP (relatives/stepson/stepmother/inlaws/spouse).",0.1720,0.2010,0.1624,0.1257,0.0773,0.0732,0.0723,0.0847
+UTS03,0.0727,0.3884,0.1153,135.4,success,FeatBag_v155_ExpandNature,5.60e+07,"From v154, expand SEM_NATURE (forest/branch/sand/pond/meadow/waterfall).",0.1714,0.2010,0.1623,0.1259,0.0774,0.0732,0.0725,0.0850
+UTS03,0.0727,0.3883,0.1153,145.4,success,FeatBag_v156_ExpandAnimal,5.60e+07,"From v155, expand SEM_ANIMAL (puppy/kitten/squirrel/elephant/eagle/owl).",0.1713,0.2009,0.1622,0.1260,0.0771,0.0732,0.0725,0.0850
+UTS03,0.0727,0.3883,0.1153,143.4,success,FeatBag_v157_ExpandFood,5.60e+07,"From v156, expand SEM_FOOD (pasta/salad/chocolate/vegetables/fruits).",0.1715,0.2009,0.1621,0.1253,0.0769,0.0731,0.0721,0.0847
+UTS03,0.0725,0.3883,0.1150,137.9,success,FeatBag_v158_ExpandVehicle,5.60e+07,"From v157, expand SEM_VEHICLE (scooter/wagon/ship/kayak/rocket/submarine).",0.1716,0.2010,0.1627,0.1253,0.0763,0.0735,0.0719,0.0850
+UTS03,0.0729,0.3883,0.1160,143.4,success,FeatBag_v159_ExpandClothing,5.60e+07,"From v157, expand SEM_CLOTHING (hoodie/sweater/sneaker/necklace/ring).",0.1711,0.2008,0.1620,0.1261,0.0775,0.0738,0.0727,0.0850
+UTS03,0.0728,0.3884,0.1158,151.9,success,FeatBag_v160_ExpandTech,5.60e+07,"From v159, expand SEM_TECH (laptop/headphones/wifi/app/website/video).",0.1709,0.2006,0.1612,0.1252,0.0771,0.0735,0.0730,0.0857
+UTS03,0.0731,0.3877,0.1168,148.8,success,FeatBag_v161_ExpandColor,5.60e+07,"From v159, expand SEM_COLOR (crimson/scarlet/beige/navy/teal/hue/tint).",0.1714,0.2010,0.1616,0.1263,0.0776,0.0739,0.0739,0.0848
+UTS03,0.0731,0.3880,0.1167,144.9,success,FeatBag_v162_ExpandWeather,5.60e+07,"From v161, expand SEM_WEATHER (storms/sunshine/lightning/blizzard/climate).",0.1711,0.2009,0.1612,0.1260,0.0771,0.0734,0.0730,0.0849
+UTS03,0.0718,0.3895,0.1142,136.3,success,FeatBag_v163_ExpandSubstance,5.60e+07,"From v162, expand SEM_SUBSTANCE (bottle/vodka/drunk/joint/syringe).",0.1705,0.2009,0.1599,0.1243,0.0769,0.0733,0.0708,0.0818
+UTS03,0.0729,0.3891,0.1160,154.6,success,FeatBag_v164_ExpandMotor,5.60e+07,"From v162, expand SEM_MOTOR with inflections + drag/poke variants.",0.1716,0.2018,0.1615,0.1268,0.0771,0.0735,0.0734,0.0845
+UTS03,0.0741,0.3894,0.1190,144.2,success,FeatBag_v165_ExpandSelfMotion,5.60e+07,"From v162, expand SEM_SELF_MOTION with inflections + crawl/roll/march.",0.1728,0.2020,0.1642,0.1288,0.0771,0.0745,0.0729,0.0883
+UTS03,0.0742,0.3895,0.1193,182.6,success,FeatBag_v166_ExpandCausedMotion,5.60e+07,"From v165, expand SEM_CAUSED_MOTION inflections + fling/hurl/roll/slide.",0.1732,0.2016,0.1650,0.1282,0.0769,0.0741,0.0725,0.0883
+UTS03,0.0740,0.3906,0.1198,229.7,success,FeatBag_v167_ExpandSpeechAct,5.60e+07,"From v166, expand SEM_SPEECH_ACT inflections + mutter/scream/declare.",0.1729,0.2019,0.1664,0.1279,0.0755,0.0729,0.0701,0.0877
+UTS03,0.0742,0.3887,0.1196,181.7,success,FeatBag_v168_ExpandGamePlay,5.60e+07,"From v166, expand SEM_GAME_PLAY (hockey/race/trophy/champion/tournament).",0.1728,0.2019,0.1653,0.1287,0.0767,0.0740,0.0722,0.0879
+UTS03,0.0738,0.3891,0.1192,155.6,success,FeatBag_v169_ExpandDiscourse,5.60e+07,"From v168, expand SEM_DISCOURSE with temporals + indeed/actually.",0.1731,0.2014,0.1659,0.1280,0.0771,0.0739,0.0721,0.0875
+UTS03,0.0742,0.3880,0.1197,147.7,success,FeatBag_v170_ExpandHealthList,5.60e+07,"From v168, expand SEM_HEALTH (bandage/stitches/diagnosis/symptoms/therapy).",0.1726,0.2016,0.1658,0.1293,0.0764,0.0745,0.0732,0.0885
+UTS03,0.0743,0.3881,0.1201,169.3,success,FeatBag_v171_ExpandSpace,5.60e+07,"From v170, expand SEM_SPACE (amid/beneath/atop/adjacent/surrounding).",0.1727,0.2019,0.1658,0.1297,0.0765,0.0742,0.0730,0.0888
+UTS03,0.0742,0.3881,0.1201,144.0,success,FeatBag_v172_ExpandIntensity,5.60e+07,"From v171, expand SEM_INTENSITY (utterly/awfully/highly/somewhat/seriously).",0.1720,0.2014,0.1662,0.1292,0.0758,0.0743,0.0735,0.0890
+UTS03,0.0743,0.3880,0.1201,148.9,success,FeatBag_v173_ExpandLifeDeath,5.60e+07,"From v171, expand SEM_LIFE_DEATH (murder/drown/funeral/grave/coffin).",0.1730,0.2019,0.1659,0.1298,0.0769,0.0738,0.0728,0.0888
+UTS03,0.0743,0.3877,0.1199,150.1,success,FeatBag_v174_ExpandReligion,5.60e+07,"From v173, expand SEM_RELIGION (pastor/temple/mosque/ritual/baptism).",0.1727,0.2019,0.1663,0.1298,0.0768,0.0739,0.0727,0.0890
+UTS03,0.0738,0.3882,0.1197,142.8,success,FeatBag_v175_ExpandMoneyNum,5.60e+07,"From v174, expand SEM_MONEY_NUM (salary/income/spend/bought/afford).",0.1731,0.2018,0.1660,0.1273,0.0757,0.0729,0.0713,0.0870
+UTS03,0.0740,0.3879,0.1196,142.6,success,FeatBag_v176_ExpandAbstractRel,5.60e+07,"From v174, expand SEM_ABSTRACT_REL inflections + ideas/concept/meanings.",0.1720,0.2016,0.1659,0.1296,0.0763,0.0738,0.0727,0.0889
+UTS03,0.0741,0.3880,0.1194,148.2,success,FeatBag_v177_ExpandPossession2,5.60e+07,"From v174, expand SEM_POSSESSION with -ing/-ed forms.",0.1724,0.2012,0.1657,0.1298,0.0765,0.0739,0.0726,0.0889
+UTS03,0.0743,0.3877,0.1199,144.1,success,FeatBag_v178_ExpandSpatialPrep,5.60e+07,"From v174, expand _SPATIAL_PREP (underneath/beneath/amid/toward/throughout).",0.1729,0.2019,0.1663,0.1298,0.0769,0.0739,0.0728,0.0890
+UTS03,0.0743,0.3863,0.1200,136.4,success,FeatBag_v179_ExpandMotionV2,5.60e+07,"From v178, expand SEM_MOTION with inflections (re-attempt with current best).",0.1728,0.2017,0.1662,0.1299,0.0760,0.0737,0.0726,0.0885
+UTS03,0.0745,0.3875,0.1202,146.5,success,FeatBag_v180_ExpandTasteMod,5.60e+07,"From v179, expand _MODALITY[TASTE] (tangy/savory/chew/swallow/crunch).",0.1727,0.2015,0.1668,0.1301,0.0761,0.0748,0.0733,0.0889
+UTS03,0.0742,0.3879,0.1198,138.2,success,FeatBag_v181_ExpandSmellMod,5.60e+07,"From v180, expand _MODALITY[SMELL] (whiff/nostrils/inhale/exhale).",0.1727,0.2014,0.1662,0.1297,0.0758,0.0746,0.0733,0.0882
+UTS03,0.0743,0.3875,0.1200,135.8,success,FeatBag_v182_ExpandAux,5.60e+07,"From v180, expand _AUX (doing/done/having).",0.1725,0.2011,0.1666,0.1301,0.0760,0.0744,0.0729,0.0889
+UTS03,0.0743,0.3875,0.1202,138.0,success,FeatBag_v183_ExpandBodyV2,5.60e+07,"From v180, expand SEM_BODY (forehead/jaw/belly/waist/ankle/muscle/tongue).",0.1727,0.2014,0.1662,0.1302,0.0759,0.0747,0.0733,0.0884
+UTS03,0.0745,0.3876,0.1203,140.9,success,FeatBag_v184_ExpandDisc,5.60e+07,"From v180, expand _DISC (essentially/specifically/frankly/indeed).",0.1731,0.2016,0.1668,0.1302,0.0761,0.0742,0.0733,0.0891
+UTS03,0.0747,0.3876,0.1209,147.4,success,FeatBag_v185_ExpandInterj,5.60e+07,"From v184, expand _INTERJ (ouch/oops/yikes/whoa/alas/damn).",0.1731,0.2020,0.1668,0.1305,0.0761,0.0748,0.0737,0.0892
+UTS03,0.0747,0.3876,0.1209,144.4,success,FeatBag_v186_ExpandWH,5.60e+07,"From v185, expand _WH (whichever/whoever).",0.1731,0.2020,0.1668,0.1305,0.0761,0.0748,0.0737,0.0892
+UTS03,0.0745,0.3877,0.1201,147.7,success,FeatBag_v187_ExpandPerceptionV2,5.60e+07,"From v186, expand SEM_PERCEPTION with inflections + peer/glimpse.",0.1722,0.2014,0.1666,0.1297,0.0757,0.0747,0.0733,0.0908
+UTS03,0.0743,0.3886,0.1201,135.8,success,FeatBag_v188_ExpandSocialV2,5.60e+07,"From v186, expand SEM_SOCIAL with inflections + gather/reunion/members.",0.1721,0.2013,0.1663,0.1298,0.0758,0.0738,0.0732,0.0884
+UTS03,0.0747,0.3877,0.1207,148.3,success,FeatBag_v189_ExpandQualityV2,5.60e+07,"From v186, expand SEM_QUALITY (excellent/awful/pleasant/powerful/obvious).",0.1732,0.2020,0.1668,0.1302,0.0762,0.0748,0.0741,0.0890
+UTS03,0.0746,0.3878,0.1211,155.3,success,FeatBag_v190_ExpandWorkMoney,5.60e+07,"From v189, expand SEM_WORK_MONEY (employer/career/office/industry).",0.1737,0.2018,0.1673,0.1302,0.0757,0.0747,0.0740,0.0894
+UTS03,0.0746,0.3875,0.1201,152.5,success,FeatBag_v191_ExpandPeopleRole,5.60e+07,"From v189, expand SEM_PEOPLE_ROLE (plurals + maid/waitress/secretary).",0.1736,0.2021,0.1666,0.1300,0.0754,0.0746,0.0742,0.0900
+UTS03,0.0744,0.3876,0.1194,145.1,success,FeatBag_v192_ExpandTechV2,5.60e+07,"From v189, expand SEM_TECH (laptop/tablet/wifi/router/webpage/digital).",0.1734,0.2015,0.1675,0.1284,0.0753,0.0732,0.0720,0.0892
+UTS03,0.0745,0.3876,0.1202,137.0,success,FeatBag_v193_ExpandPlaceV2,5.60e+07,"From v189, expand SEM_PLACE (apartment/hotel/restaurant/library/bridge).",0.1735,0.2019,0.1662,0.1299,0.0759,0.0759,0.0751,0.0879
+UTS03,0.0743,0.3875,0.1196,147.5,success,FeatBag_v194_ExpandObjectV2,5.60e+07,"From v189, expand SEM_OBJECT with plurals only (boxes/chairs/etc).",0.1727,0.2015,0.1666,0.1295,0.0751,0.0744,0.0743,0.0882
+UTS03,0.0746,0.3877,0.1205,147.7,success,FeatBag_v195_ExpandVehicleV2,5.60e+07,"From v189, expand SEM_VEHICLE (van/ship/ferry/wagon/scooter/drove).",0.1733,0.2018,0.1667,0.1296,0.0754,0.0750,0.0742,0.0885
+UTS03,0.0746,0.3877,0.1205,244.4,success,FeatBag_v196_ExpandPersonV2,5.60e+07,"From v189, expand SEM_PERSON (ladies/babies/families/teen/toddler/adult).",0.1730,0.2019,0.1669,0.1301,0.0761,0.0748,0.0740,0.0889
+UTS03,0.0747,0.3878,0.1207,194.0,success,FeatBag_v197_ExpandPrep,5.60e+07,"From v189, expand _PREP to align with _SPATIAL_PREP coverage.",0.1731,0.2022,0.1669,0.1304,0.0762,0.0749,0.0742,0.0890
+UTS03,0.0747,0.3879,0.1209,211.0,success,FeatBag_v198_ExpandPronoun,5.60e+07,"From v197, expand _PRONOUN (mine/yours/hers/itself/either/neither).",0.1737,0.2021,0.1670,0.1302,0.0762,0.0750,0.0743,0.0888
+UTS03,0.0747,0.3879,0.1208,156.3,success,FeatBag_v199_ExpandConj,5.60e+07,"From v198, expand _CONJ (once/whereas/wherever/whenever/since/plus).",0.1736,0.2021,0.1667,0.1301,0.0763,0.0749,0.0739,0.0888
+UTS03,0.0746,0.3881,0.1207,172.3,success,FeatBag_v200_ExpandNeg,5.60e+07,"From v199, expand _NEG (without/barely/hardly/lack/deny/refuse).",0.1734,0.2020,0.1665,0.1299,0.0759,0.0750,0.0740,0.0888
+UTS03,0.0747,0.3879,0.1208,148.1,success,FeatBag_v201_NAW14,5.60e+07,"From v199, increase N_APPEND_WORDS 12->14 (look back further in narrative).",0.1736,0.2021,0.1667,0.1301,0.0763,0.0749,0.0739,0.0888
+UTS03,0.0747,0.3880,0.1206,172.8,success,FeatBag_v202_ExpandChangeV2,5.60e+07,"From v199, deduplicate/expand SEM_CHANGE (bend/burst/transform/shrink).",0.1739,0.2024,0.1665,0.1306,0.0761,0.0749,0.0743,0.0891
+UTS03,0.0747,0.3888,0.1208,133.1,success,FeatBag_v203_ExpandEmoPosV2,5.60e+07,"From v202, expand SEM_EMOTION_POS with inflections + thrilled/relieved.",0.1745,0.2026,0.1668,0.1303,0.0759,0.0748,0.0744,0.0888
+UTS03,0.0748,0.3886,0.1212,146.2,success,FeatBag_v204_ExpandCommV2,5.60e+07,"From v203, expand SEM_COMMUNICATION with inflections + announce/state.",0.1748,0.2030,0.1674,0.1304,0.0763,0.0744,0.0737,0.0886
+UTS03,0.0748,0.3887,0.1213,162.7,success,FeatBag_v205_ExpandTimeV2,5.60e+07,"From v204, expand SEM_TIME (recently/instantly/immediately/forever/currently).",0.1748,0.2029,0.1675,0.1306,0.0765,0.0744,0.0738,0.0884
+UTS03,0.0749,0.3893,0.1217,198.3,success,FeatBag_v206_ExpandMentalV2,5.60e+07,"From v205, expand SEM_MENTAL with more inflections + perceive/ponder.",0.1750,0.2027,0.1675,0.1308,0.0763,0.0743,0.0728,0.0896
+UTS03,0.0749,0.3893,0.1218,168.1,success,FeatBag_v207_ExpandEmoNegV2,5.60e+07,"From v206, expand SEM_EMOTION_NEG (fury/anguish/dread/despair/annoyed).",0.1749,0.2026,0.1675,0.1309,0.0763,0.0744,0.0729,0.0895
+UTS03,0.0749,0.3893,0.1218,160.1,success,FeatBag_v208_ExpandAnimalV2,5.60e+07,"From v207, expand SEM_ANIMAL with more plurals + calf/lamb/piglet/pony.",0.1749,0.2026,0.1675,0.1309,0.0763,0.0744,0.0729,0.0895
+UTS03,0.0738,0.3969,0.1200,148.7,success,FeatBag_v209_AddSuffix,5.60e+07,"From v208, add SUFFIX_ING/SUFFIX_ED/SUFFIX_LY morph features.",0.1715,0.2002,0.1632,0.1291,0.0768,0.0742,0.0766,0.0878
+UTS03,0.0745,0.3917,0.1211,179.4,success,FeatBag_v210_AddSuffixLy,5.60e+07,"From v208, add only SUFFIX_LY morph feature (adverb marker).",0.1745,0.2014,0.1674,0.1307,0.0771,0.0751,0.0726,0.0889
+UTS03,0.0749,0.3904,0.1221,181.2,success,FeatBag_v211_ContentBonus1,5.60e+07,"From v208, retry CONTENT_BONUS=1 (was 0) at new baseline.",0.1755,0.2022,0.1680,0.1308,0.0758,0.0745,0.0733,0.0895
+UTS03,0.0749,0.3913,0.1222,183.3,success,FeatBag_v212_ContentBonus2,5.60e+07,"From v211, try CONTENT_BONUS=2 (was 1) for stronger content-word emphasis.",0.1760,0.2021,0.1682,0.1305,0.0755,0.0745,0.0732,0.0894
+UTS03,0.0749,0.3920,0.1224,176.0,success,FeatBag_v213_ContentBonus3,5.60e+07,"From v212, try CONTENT_BONUS=3 (push further).",0.1764,0.2022,0.1682,0.1304,0.0755,0.0744,0.0735,0.0894
+UTS03,0.0744,0.4053,0.1213,161.5,success,FeatBag_v214_Heads8,5.60e+07,"From v211, 8 heads with finer lambda spread (-2,-1,-0.5,0,0.5,2,8,32).",0.1751,0.1998,0.1665,0.1305,0.0761,0.0733,0.0728,0.0885
+UTS03,0.0749,0.3904,0.1221,204.3,success,FeatBag_v215_Lambdas2_8,5.60e+07,"From v211, LAMBDAS (-1,0,2,8) milder recency (was 4,16).",0.1754,0.2023,0.1679,0.1307,0.0757,0.0744,0.0732,0.0896
+UTS03,0.0748,0.3912,0.1217,205.8,success,FeatBag_v216_Lambdas1_4,5.60e+07,"From v211, LAMBDAS (-1,0,1,4) even milder recency.",0.1752,0.2022,0.1678,0.1306,0.0755,0.0742,0.0740,0.0894
+UTS03,0.0706,0.4976,0.1149,187.4,success,FeatBag_v217_WordIdOn,5.60e+07,"From v211, enable USE_CONTENT_WORD_ID=True (93-word mid vocab one-hots).",0.1739,0.1951,0.1610,0.1254,0.0706,0.0698,0.0689,0.0826
+UTS03,0.0749,0.3898,0.1220,185.2,success,FeatBag_v218_LastWordReps2,5.60e+07,"From v211, RECENCY_REPS[0]=2 (last word emits 2x copies).",0.1754,0.2021,0.1678,0.1308,0.0758,0.0745,0.0732,0.0895
+UTS03,0.0748,0.3895,0.1219,187.2,success,FeatBag_v219_Last3Reps2,5.60e+07,"From v218, RECENCY_REPS = (2,2,2,1,...) emphasize last 3 words.",0.1753,0.2021,0.1676,0.1307,0.0761,0.0744,0.0731,0.0894
+UTS03,0.0738,0.3940,0.1199,195.5,success,FeatBag_v220_PastTense,5.60e+07,"From v218, add PAST_TENSE feature (irregular pasts + -ed forms).",0.1736,0.2001,0.1649,0.1280,0.0743,0.0737,0.0717,0.0869
+UTS03,0.0751,0.3897,0.1225,220.6,success,FeatBag_v221_ExpandIntensity,5.60e+07,"From v218, expand SEM_INTENSITY with more degree adverbs.",0.1747,0.2018,0.1680,0.1307,0.0758,0.0750,0.0744,0.0900
+UTS03,0.0747,0.3895,0.1216,227.7,success,FeatBag_v222_ExpandAbstractRel,5.60e+07,"From v221, expand SEM_ABSTRACT_REL with more inflected/related forms.",0.1742,0.2018,0.1662,0.1304,0.0759,0.0747,0.0747,0.0891
+UTS03,0.0752,0.3891,0.1226,263.0,success,FeatBag_v223_ExpandPerceptionV3,5.60e+07,"From v221, expand SEM_PERCEPTION with more inflections + gaze/peer/glimpse.",0.1749,0.2020,0.1685,0.1306,0.0760,0.0750,0.0741,0.0904
+UTS03,0.0751,0.3894,0.1225,178.8,success,FeatBag_v224_ExpandDiscV3,5.60e+07,"From v223, expand _DISC with more stance/discourse adverbs.",0.1750,0.2020,0.1687,0.1306,0.0759,0.0749,0.0747,0.0907
+UTS03,0.0752,0.3896,0.1228,252.8,success,FeatBag_v225_ExpandSpeechActV3,5.60e+07,"From v223, expand SEM_SPEECH_ACT with full inflections + suggest/admit/argue.",0.1749,0.2016,0.1686,0.1304,0.0758,0.0745,0.0739,0.0899
+UTS03,0.0750,0.3897,0.1221,259.0,success,FeatBag_v226_ExpandPossessionV3,5.60e+07,"From v225, expand SEM_POSSESSION verb inflections (gives/giving/etc).",0.1742,0.2008,0.1685,0.1300,0.0761,0.0744,0.0728,0.0902
+UTS03,0.0745,0.3906,0.1220,189.5,success,FeatBag_v227_ExpandNumeric,5.60e+07,"From v225, expand SEM_NUMERIC with more ordinals/fractions/dozen.",0.1753,0.2018,0.1688,0.1302,0.0758,0.0738,0.0739,0.0893
+UTS03,0.0751,0.3897,0.1224,172.8,success,FeatBag_v228_ExpandOtherRef,5.60e+07,"From v225, expand _OTHER_REF with himself/herself/someone/everybody/etc.",0.1748,0.2014,0.1685,0.1300,0.0759,0.0752,0.0743,0.0898
+UTS03,0.0750,0.3899,0.1228,209.0,success,FeatBag_v229_ExpandWorkMoneyV3,5.60e+07,"From v225, expand SEM_WORK_MONEY with inflections + employee/manager/salary.",0.1754,0.2014,0.1687,0.1302,0.0759,0.0745,0.0737,0.0903
+UTS03,0.0744,0.3904,0.1214,221.8,success,FeatBag_v230_ExpandSocialV3,5.60e+07,"From v225, expand SEM_SOCIAL with inflections + hug/kiss/dance/intro.",0.1733,0.2007,0.1670,0.1304,0.0757,0.0740,0.0731,0.0887
+UTS03,0.0749,0.3900,0.1219,183.8,success,FeatBag_v231_ExpandSchool,5.60e+07,"From v225, expand SEM_SCHOOL with plurals/inflections + classroom items.",0.1740,0.2015,0.1672,0.1303,0.0756,0.0741,0.0740,0.0907
+UTS03,0.0752,0.3896,0.1229,500.3,success,FeatBag_v232_ExpandNegV2,5.60e+07,"From v225, expand _NEG with without/lack negators.",0.1748,0.2016,0.1686,0.1303,0.0757,0.0746,0.0738,0.0900
+UTS03,0.0751,0.3896,0.1227,547.6,success,FeatBag_v233_ExpandConjV2,5.60e+07,"From v232, expand _CONJ with however/therefore/besides/moreover/also/too.",0.1748,0.2015,0.1685,0.1301,0.0756,0.0743,0.0734,0.0900
+UTS03,0.0751,0.3897,0.1229,339.8,success,FeatBag_v234_ExpandPersonV3,5.60e+07,"From v232, expand SEM_PERSON with plurals + teenager/elder/adult.",0.1746,0.2016,0.1685,0.1302,0.0758,0.0745,0.0742,0.0899
+UTS03,0.0749,0.3890,0.1230,480.8,success,FeatBag_v235_ExpandTouchMod,5.60e+07,"From v232, expand _MODALITY[TOUCH] with stroke/pat/caress/textures.",0.1756,0.2018,0.1687,0.1303,0.0766,0.0751,0.0751,0.0900
+UTS03,0.0751,0.3901,0.1230,250.1,success,FeatBag_v236_ExpandVisionMod,5.60e+07,"From v232, expand _MODALITY[VISION] with sparkle/gleam/blink/flicker.",0.1744,0.2017,0.1682,0.1306,0.0756,0.0743,0.0733,0.0896
+UTS03,0.0752,0.3895,0.1228,524.0,success,FeatBag_v237_ExpandEmoPosV3,5.60e+07,"From v232, expand SEM_EMOTION_POS with elated/jubilant/content/satisfied.",0.1748,0.2017,0.1685,0.1306,0.0758,0.0747,0.0737,0.0896
+UTS03,0.0751,0.3894,0.1227,240.4,success,FeatBag_v238_ExpandBodyV3,5.60e+07,"From v237, expand SEM_BODY with plurals + belly/forehead/jaw/palm/heel/etc.",0.1745,0.2016,0.1678,0.1304,0.0757,0.0746,0.0736,0.0891
+UTS03,0.0750,0.3894,0.1223,353.0,success,FeatBag_v239_ExpandPlaceV3,5.60e+07,"From v237, expand SEM_PLACE with plurals + apartment/hotel/restaurant/etc.",0.1753,0.2017,0.1679,0.1299,0.0754,0.0757,0.0752,0.0882
+UTS03,0.0749,0.3894,0.1218,308.5,success,FeatBag_v240_ExpandObjectPlurals,5.60e+07,"From v237, just add plural forms to SEM_OBJECT.",0.1744,0.2012,0.1681,0.1298,0.0750,0.0738,0.0736,0.0889
+UTS03,0.0753,0.3896,0.1230,262.6,success,FeatBag_v241_ExpandTimeV3,5.60e+07,"From v237, expand SEM_TIME with century/decade/eternity + freq adverbs.",0.1758,0.2018,0.1688,0.1309,0.0765,0.0746,0.0739,0.0900
+UTS03,0.0753,0.3896,0.1230,426.2,success,FeatBag_v242_ExpandChangeV3,5.60e+07,"From v241, expand SEM_CHANGE with shift/evolve/fade/vanish/melt + inflections.",0.1759,0.2017,0.1688,0.1309,0.0765,0.0745,0.0739,0.0898
+UTS03,0.0751,0.3901,0.1224,202.8,success,FeatBag_v243_ExpandMotionV3,5.60e+07,"From v242, expand SEM_MOTION with full inflections + hop/skip/bounce/glide.",0.1754,0.2019,0.1682,0.1300,0.0767,0.0737,0.0736,0.0912
+UTS03,0.0752,0.3901,0.1227,194.1,success,FeatBag_v244_ExpandKinshipV2,5.60e+07,"From v242, expand SEM_KINSHIP with grandkids/godfather/families plurals.",0.1756,0.2018,0.1685,0.1306,0.0765,0.0744,0.0739,0.0897
+UTS03,0.0753,0.3896,0.1230,178.5,success,FeatBag_v245_ExpandValNegV2,5.60e+07,"From v242, expand _VAL_NEG with abandoned/depressed/tragic/disaster/etc.",0.1760,0.2018,0.1688,0.1309,0.0765,0.0746,0.0740,0.0897
+UTS03,0.0753,0.3897,0.1229,171.4,success,FeatBag_v246_ExpandValPosV2,5.60e+07,"From v245, expand _VAL_POS with fantastic/magnificent/cherish/adore/etc.",0.1759,0.2017,0.1688,0.1310,0.0765,0.0745,0.0740,0.0898
+UTS03,0.0752,0.3883,0.1222,175.4,success,FeatBag_v247_CB0Retry,5.60e+07,"From v246, retry CONTENT_BONUS=0 at new baseline.",0.1749,0.2022,0.1682,0.1311,0.0764,0.0746,0.0734,0.0901
+UTS03,0.0750,0.3899,0.1218,177.3,success,FeatBag_v248_ExpandPeopleRoleV3,5.60e+07,"From v246, expand SEM_PEOPLE_ROLE with waiter/chef/captain/soldier/scientist/etc.",0.1758,0.2018,0.1685,0.1301,0.0756,0.0737,0.0743,0.0910
+UTS03,0.0753,0.3897,0.1229,176.0,success,FeatBag_v249_ExpandFoodV3,5.60e+07,"From v246, expand SEM_FOOD with more plurals + inflected verb forms.",0.1761,0.2021,0.1691,0.1303,0.0763,0.0743,0.0739,0.0894
+UTS03,0.0752,0.3903,0.1232,172.2,success,FeatBag_v250_ExpandAuxV2,5.60e+07,"From v249, expand _AUX with more contracted/modal auxiliary forms.",0.1764,0.2027,0.1690,0.1288,0.0762,0.0733,0.0745,0.0880
+UTS03,0.0754,0.3898,0.1231,175.9,success,FeatBag_v251_ExpandQualityV2,5.60e+07,"From v249, expand SEM_QUALITY with comparative/superlative adjectives.",0.1762,0.2021,0.1688,0.1313,0.0771,0.0748,0.0738,0.0890
+UTS03,0.0752,0.3897,0.1229,174.7,success,FeatBag_v252_ExpandDiscV4,5.60e+07,"From v251, expand _DISC with more discourse adverbs/connectives.",0.1767,0.2021,0.1683,0.1310,0.0767,0.0748,0.0738,0.0895
+UTS03,0.0750,0.3903,0.1226,165.3,success,FeatBag_v253_ExpandHealthV2,5.60e+07,"From v251, expand SEM_HEALTH with more inflected verbs + medical terms.",0.1764,0.2016,0.1678,0.1309,0.0768,0.0743,0.0724,0.0893
+UTS03,0.0749,0.3899,0.1224,169.0,success,FeatBag_v254_ExpandIntensityV2,5.60e+07,"From v251, expand INTENSITY with more degree adverbs (tremendously/etc).",0.1762,0.2019,0.1686,0.1305,0.0766,0.0738,0.0726,0.0882
+UTS03,0.0754,0.3893,0.1232,176.9,success,FeatBag_v255_ExpandConjV3,5.60e+07,"From v251, expand _CONJ with more conjunctions/connectives.",0.1766,0.2026,0.1686,0.1309,0.0775,0.0753,0.0740,0.0896
+UTS03,0.0753,0.3893,0.1223,172.9,success,FeatBag_v256_ExpandCausedMotionV2,5.60e+07,"From v255, expand SEM_CAUSED_MOTION with more inflections + synonyms.",0.1767,0.2024,0.1689,0.1310,0.0783,0.0754,0.0730,0.0902
+UTS03,0.0752,0.3897,0.1231,177.5,success,FeatBag_v257_ExpandPersonV4,5.60e+07,"From v255, expand SEM_PERSON with more plurals + age/role nouns.",0.1765,0.2026,0.1685,0.1307,0.0770,0.0751,0.0733,0.0890
+UTS03,0.0755,0.3887,0.1230,180.1,success,FeatBag_v258_ExpandGamePlayV2,5.60e+07,"From v255, expand SEM_GAME_PLAY with more verbs/inflections.",0.1766,0.2021,0.1678,0.1309,0.0768,0.0755,0.0742,0.0898
+UTS03,0.0752,0.3890,0.1223,174.6,success,FeatBag_v259_ExpandVehicleV2,5.60e+07,"From v258, expand SEM_VEHICLE with more vehicles + verb inflections.",0.1764,0.2016,0.1680,0.1307,0.0761,0.0764,0.0745,0.0898
+UTS03,0.0751,0.3887,0.1221,159.9,success,FeatBag_v260_ExpandTechV2,5.60e+07,"From v258, expand SEM_TECH with more devices + inflections.",0.1767,0.2019,0.1683,0.1290,0.0766,0.0738,0.0721,0.0896
+UTS03,0.0755,0.3887,0.1230,162.1,success,FeatBag_v261_ExpandLifeDeathV2,5.60e+07,"From v258, expand SEM_LIFE_DEATH with more inflections + synonyms.",0.1766,0.2021,0.1678,0.1309,0.0768,0.0755,0.0742,0.0898
+UTS03,0.0755,0.3893,0.1230,175.4,success,FeatBag_v262_ExpandReligionV2,5.60e+07,"From v261, expand SEM_RELIGION with more verb inflections + religious nouns.",0.1768,0.2022,0.1682,0.1307,0.0768,0.0756,0.0743,0.0896
+UTS03,0.0755,0.3887,0.1230,179.4,success,FeatBag_v263_LastWordReps3,5.60e+07,"From v262, set RECENCY_REPS last word to 3x (was 2x).",0.1766,0.2021,0.1681,0.1308,0.0768,0.0755,0.0743,0.0895
+UTS03,0.0754,0.3883,0.1229,176.5,success,FeatBag_v264_LastWordReps4,5.60e+07,"From v263, set RECENCY_REPS last word to 4x (was 3x).",0.1765,0.2021,0.1681,0.1309,0.0767,0.0755,0.0741,0.0896
+UTS03,0.0754,0.3889,0.1229,177.3,success,FeatBag_v265_Last2WordsReps2,5.60e+07,"From v263, set RECENCY_REPS last 2 words to 2x.",0.1767,0.2022,0.1681,0.1307,0.0767,0.0756,0.0742,0.0895
+UTS03,0.0755,0.3898,0.1231,178.3,success,FeatBag_v266_ContentBonus2,5.60e+07,"From v263, set CONTENT_BONUS=2 (was 1).",0.1771,0.2021,0.1684,0.1306,0.0767,0.0758,0.0741,0.0896
+UTS03,0.0755,0.3906,0.1233,170.7,success,FeatBag_v267_ContentBonus3,5.60e+07,"From v266, set CONTENT_BONUS=3 (was 2).",0.1774,0.2021,0.1685,0.1306,0.0764,0.0758,0.0745,0.0897
+UTS03,0.0755,0.3912,0.1234,179.5,success,FeatBag_v268_ContentBonus4,5.60e+07,"From v267, set CONTENT_BONUS=4 (was 3).",0.1775,0.2020,0.1686,0.1306,0.0764,0.0758,0.0745,0.0897
+UTS03,0.0756,0.3919,0.1234,181.3,success,FeatBag_v269_ContentBonus6,5.60e+07,"From v268, set CONTENT_BONUS=6 (was 4).",0.1777,0.2020,0.1690,0.1306,0.0763,0.0759,0.0746,0.0899
+UTS03,0.0756,0.3925,0.1234,189.1,success,FeatBag_v270_ContentBonus8,5.60e+07,"From v269, set CONTENT_BONUS=8 (was 6).",0.1780,0.2024,0.1689,0.1303,0.0764,0.0754,0.0738,0.0898
+UTS03,0.0756,0.3930,0.1233,181.3,success,FeatBag_v271_ContentBonus12,5.60e+07,"From v270, set CONTENT_BONUS=12 (was 8).",0.1780,0.2023,0.1689,0.1304,0.0764,0.0757,0.0743,0.0898
+UTS03,0.0750,0.3958,0.1228,185.5,success,FeatBag_v272_ContentBonus20,5.60e+07,"From v271, set CONTENT_BONUS=20.",0.1789,0.2014,0.1688,0.1301,0.0764,0.0737,0.0743,0.0896
+UTS03,0.0756,0.3919,0.1235,154.8,success,FeatBag_v273_ExpandNatureV2,5.60e+07,"From v269 (CB=6), expand SEM_NATURE with more natural features + plurals.",0.1779,0.2021,0.1691,0.1302,0.0763,0.0755,0.0746,0.0896
+UTS03,0.0752,0.3922,0.1226,186.2,success,FeatBag_v274_ExpandObjectV3,5.60e+07,"From v273, expand SEM_OBJECT with more household objects + plurals.",0.1772,0.2017,0.1687,0.1297,0.0758,0.0747,0.0745,0.0883
+UTS03,0.0749,0.3923,0.1222,181.7,success,FeatBag_v275_ExpandAbstractRelV2,5.60e+07,"From v273, expand SEM_ABSTRACT_REL with more abstract relational terms.",0.1763,0.2014,0.1675,0.1298,0.0763,0.0753,0.0739,0.0888
+UTS03,0.0754,0.3922,0.1230,173.4,success,FeatBag_v276_ExpandKinshipV3,5.60e+07,"From v273, expand SEM_KINSHIP with more familial terms + diminutives.",0.1777,0.2020,0.1690,0.1299,0.0762,0.0751,0.0743,0.0896
+UTS03,0.0756,0.3906,0.1235,185.9,success,FeatBag_v277_LambdaPrimacyHalf,5.60e+07,"From v273, set LAMBDAS = (-0.5, 0, 4, 16) (was -1).",0.1785,0.2024,0.1693,0.1302,0.0766,0.0755,0.0753,0.0893
+UTS03,0.0756,0.3882,0.1235,184.3,success,FeatBag_v278_LambdaPrimacyQuarter,5.60e+07,"From v277, set LAMBDAS = (-0.25, 0, 4, 16) (was -0.5).",0.1788,0.2023,0.1684,0.1297,0.0763,0.0753,0.0763,0.0895
+UTS03,0.0746,0.3620,0.1187,177.4,success,FeatBag_v279_NoPrimacy3Recency,5.60e+07,"From v278, drop primacy: LAMBDAS = (0, 1, 4, 16).",0.1758,0.2003,0.1664,0.1298,0.0759,0.0745,0.0750,0.0896
+UTS03,0.0756,0.3881,0.1234,189.4,success,FeatBag_v280_LambdaMid2,5.60e+07,"From v278, soften middle recency: LAMBDAS = (-0.25, 0, 2, 16).",0.1787,0.2023,0.1685,0.1296,0.0763,0.0753,0.0763,0.0896
+UTS03,0.0756,0.3882,0.1235,188.2,success,FeatBag_v281_LambdaSharp32,5.60e+07,"From v278, sharper recency: LAMBDAS = (-0.25, 0, 4, 32).",0.1788,0.2023,0.1684,0.1297,0.0763,0.0753,0.0763,0.0895
+UTS03,0.0756,0.3882,0.1235,172.4,success,FeatBag_v282_ExpandVisionMod,5.60e+07,"From v281, expand _MODALITY VISION with more vision verbs/inflections.",0.1788,0.2023,0.1684,0.1297,0.0763,0.0753,0.0763,0.0895
+UTS03,0.0746,0.4042,0.1200,163.1,success,FeatBag_v283_AddMorphPrefix,5.60e+07,"From v282, add MORPH_* prefix features (UN/RE/DIS/IN/OVER/MIS/PRE).",0.1769,0.1995,0.1664,0.1287,0.0736,0.0753,0.0782,0.0910
+UTS03,0.0746,0.3826,0.1198,182.8,success,FeatBag_v284_LambdaUni05,5.60e+07,"From v282, shift uniform head: LAMBDAS = (-0.25, 0.5, 4, 16).",0.1768,0.2025,0.1671,0.1301,0.0758,0.0744,0.0733,0.0886
+UTS03,0.0756,0.3882,0.1235,180.5,success,FeatBag_v285_LambdaMid8,5.60e+07,"From v282, stronger middle recency: LAMBDAS = (-0.25, 0, 8, 32).",0.1788,0.2023,0.1684,0.1297,0.0763,0.0753,0.0763,0.0895
+UTS03,0.0759,0.3881,0.1241,183.2,success,FeatBag_v286_ExpandFreqList,5.60e+07,"From v282, expand _FREQ_LIST with more common English words.",0.1790,0.2016,0.1686,0.1300,0.0766,0.0759,0.0770,0.0899
+UTS03,0.0757,0.3883,0.1236,193.4,success,FeatBag_v287_ExpandFreqListV2,5.60e+07,"From v286, expand _FREQ_LIST further with more common verbs/nouns.",0.1792,0.2011,0.1689,0.1297,0.0761,0.0757,0.0768,0.0900
+UTS03,0.0758,0.3876,0.1240,182.2,success,FeatBag_v288_ExpandPronounV2,5.60e+07,"From v286, expand _PRONOUN with noone/whoever/whomever/etc.",0.1798,0.2014,0.1691,0.1297,0.0758,0.0754,0.0767,0.0892
+UTS03,0.0760,0.3880,0.1247,179.6,success,FeatBag_v289_ExpandFreqListNarr,5.60e+07,"From v286, add narrative-common verbs (sat/stood/looked/etc) to FREQ_LIST.",0.1790,0.2016,0.1684,0.1303,0.0770,0.0760,0.0770,0.0901
+UTS03,0.0761,0.3877,0.1251,180.6,success,FeatBag_v290_ExpandFreqListEmo,5.60e+07,"From v289, add emotion/perception past-tense narrative verbs (felt/knew/etc).",0.1797,0.2017,0.1689,0.1302,0.0774,0.0764,0.0766,0.0898
+UTS03,0.0759,0.3875,0.1244,184.3,success,FeatBag_v291_ExpandFreqListDial,5.60e+07,"From v290, add common dialog/quantifier words (yes/no/please/nothing/someone).",0.1800,0.2016,0.1691,0.1298,0.0772,0.0754,0.0760,0.0893
+UTS03,0.0761,0.3881,0.1252,157.5,success,FeatBag_v292_ContentBonus8,5.60e+07,"From v290, CONTENT_BONUS=8 (up from 6) to amplify content-word emphasis.",0.1799,0.2016,0.1689,0.1301,0.0772,0.0764,0.0769,0.0898
+UTS03,0.0761,0.3883,0.1253,188.1,success,FeatBag_v293_ContentBonus10,5.60e+07,"From v292, CONTENT_BONUS=10.",0.1799,0.2015,0.1688,0.1302,0.0772,0.0766,0.0770,0.0898
+UTS03,0.0761,0.3885,0.1253,196.8,success,FeatBag_v294_ContentBonus14,5.60e+07,"From v293, CONTENT_BONUS=14.",0.1800,0.2014,0.1689,0.1306,0.0772,0.0766,0.0775,0.0902
+UTS03,0.0759,0.3895,0.1248,195.1,success,FeatBag_v295_ContentBonus20,5.60e+07,"From v294, CONTENT_BONUS=20.",0.1800,0.2010,0.1696,0.1300,0.0768,0.0754,0.0773,0.0901
+UTS03,0.0759,0.3932,0.1247,181.8,success,FeatBag_v296_BigramsNarrative,5.60e+07,"From v290, enable 5 narrative bigram patterns (epistemic/future/obligation).",0.1797,0.2018,0.1688,0.1295,0.0773,0.0770,0.0777,0.0899
+UTS03,0.0759,0.3878,0.1248,190.9,success,FeatBag_v297_ExpandBody,5.60e+07,"From v290, expand SEM_BODY with more body parts (belly/waist/jaw/etc).",0.1796,0.2014,0.1684,0.1299,0.0770,0.0761,0.0765,0.0890
+UTS03,0.0756,0.3879,0.1233,175.4,success,FeatBag_v298_ExpandSchool,5.60e+07,"From v290, expand SEM_SCHOOL with academic vocabulary (lecture/diploma/etc).",0.1785,0.2007,0.1674,0.1299,0.0765,0.0759,0.0767,0.0903
+UTS03,0.0759,0.3877,0.1243,182.5,success,FeatBag_v299_ExpandPoss,5.60e+07,"From v290, expand SEM_POSSESSION with more verb inflections + borrow/lend/steal.",0.1788,0.2011,0.1696,0.1301,0.0777,0.0762,0.0765,0.0895
+UTS03,0.0757,0.3880,0.1241,183.4,success,FeatBag_v300_ExpandSocial,5.60e+07,"From v290, expand SEM_SOCIAL with more verb inflections + relationship nouns.",0.1793,0.2015,0.1685,0.1301,0.0765,0.0753,0.0765,0.0890
+UTS03,0.0760,0.3886,0.1249,149.2,success,FeatBag_v301_LambdaLessSpread,5.60e+07,"From v290, LAMBDAS = (-0.25, 0, 1, 8) — less spread between recency heads.",0.1793,0.2016,0.1686,0.1301,0.0774,0.0763,0.0771,0.0900
+UTS03,0.0753,0.4107,0.1245,154.6,success,FeatBag_v302_Lambda8Heads,5.60e+07,"From v290, 8-head config with finer primacy/mid gradient: (-1,-0.5,-0.25,0,0.5,2,8,32).",0.1780,0.1992,0.1678,0.1300,0.0769,0.0748,0.0756,0.0878
+UTS03,0.0761,0.3876,0.1250,180.4,success,FeatBag_v303_RecencyReps3_2,5.60e+07,"From v290, RECENCY_REPS = (3,2,1,...) — second-to-last word also boosted.",0.1797,0.2017,0.1686,0.1302,0.0774,0.0765,0.0766,0.0898
+UTS03,0.0761,0.3873,0.1251,169.1,success,FeatBag_v304_RecencyReps4_2,5.60e+07,"From v303, RECENCY_REPS = (4,2,1,...) — sharper last-word boost.",0.1797,0.2017,0.1686,0.1302,0.0773,0.0764,0.0766,0.0898
+UTS03,0.0760,0.3871,0.1250,184.1,success,FeatBag_v305_RecencyReps5_3_2,5.60e+07,"From v304, RECENCY_REPS = (5,3,2,1,...) — pyramidal recency.",0.1796,0.2017,0.1686,0.1302,0.0773,0.0762,0.0764,0.0896
+UTS03,0.0761,0.3872,0.1250,192.3,success,FeatBag_v306_RecencyReps4_3,5.60e+07,"From v304, RECENCY_REPS = (4,3,2,1,...) — fuller recent boost.",0.1796,0.2017,0.1686,0.1302,0.0773,0.0763,0.0764,0.0897
+UTS03,0.0761,0.3882,0.1251,185.3,success,FeatBag_v307_CB14_v306,5.60e+07,"From v306, CONTENT_BONUS=14.",0.1799,0.2014,0.1686,0.1304,0.0771,0.0765,0.0771,0.0901
+UTS03,0.0761,0.3877,0.1251,180.0,success,FeatBag_v308_ExpandFreqListAction,5.60e+07,"From v290, add narrative action verbs (nodded/shook/sighed/leaned) to FREQ_LIST.",0.1797,0.2017,0.1687,0.1302,0.0774,0.0764,0.0767,0.0898
+UTS03,0.0761,0.3875,0.1252,184.0,success,FeatBag_v309_ExpandFreqListAdv,5.60e+07,"From v308, add discourse adverbs (almost/finally/suddenly/maybe) to FREQ_LIST.",0.1800,0.2019,0.1688,0.1304,0.0770,0.0765,0.0764,0.0898
+UTS03,0.0761,0.3874,0.1251,176.2,success,FeatBag_v310_ExpandFreqListAdj,5.60e+07,"From v309, add common adjectives (white/black/red/cold/hot/tall) to FREQ_LIST.",0.1800,0.2021,0.1692,0.1305,0.0772,0.0767,0.0764,0.0899
+UTS03,0.0763,0.3889,0.1257,187.2,success,FeatBag_v311_RareBonus4,5.60e+07,"From v310, RARE_BONUS=4: rare content words emit extra copies.",0.1799,0.2023,0.1702,0.1315,0.0776,0.0761,0.0771,0.0903
+UTS03,0.0762,0.3908,0.1255,178.9,success,FeatBag_v312_RareBonus8,5.60e+07,"From v311, RARE_BONUS=8.",0.1802,0.2024,0.1696,0.1318,0.0776,0.0757,0.0773,0.0904
+UTS03,0.0763,0.3898,0.1256,158.6,success,FeatBag_v313_RareBonus6,5.60e+07,"From v311, RARE_BONUS=6.",0.1801,0.2023,0.1699,0.1317,0.0776,0.0761,0.0771,0.0902
+UTS03,0.0762,0.3879,0.1256,174.3,success,FeatBag_v314_RareBonus2,5.60e+07,"From v313, RARE_BONUS=2.",0.1802,0.2022,0.1695,0.1311,0.0774,0.0765,0.0768,0.0903
+UTS03,0.0763,0.3887,0.1257,196.7,success,FeatBag_v315_CB8_RB4,5.60e+07,"From v311, CB=8 RB=4.",0.1800,0.2021,0.1696,0.1313,0.0777,0.0765,0.0771,0.0904
+UTS03,0.0762,0.3905,0.1254,187.2,success,FeatBag_v316_CB4_RB6,5.60e+07,"From v311, CB=4 RB=6 — shift weight from content to rare.",0.1800,0.2025,0.1696,0.1318,0.0777,0.0757,0.0771,0.0903
+UTS03,0.0762,0.3885,0.1257,190.5,success,FeatBag_v317_Reps4_2_RB4,5.60e+07,"From v311, RECENCY_REPS=(4,2,1,...) on top of RB=4.",0.1799,0.2023,0.1699,0.1314,0.0776,0.0762,0.0770,0.0902
+UTS03,0.0761,0.3942,0.1258,185.5,success,FeatBag_v318_TwoPrimacyHeads,5.60e+07,"From v311, LAMBDAS = (-0.5, -0.25, 0, 4) — 2 primacy heads.",0.1800,0.2014,0.1679,0.1297,0.0768,0.0744,0.0776,0.0887
+UTS03,0.0762,0.3889,0.1256,184.8,success,FeatBag_v319_LambdaLowerMid,5.60e+07,"From v311, LAMBDAS = (-0.25, 0, 2, 32) — softer mid head.",0.1798,0.2022,0.1701,0.1314,0.0776,0.0761,0.0769,0.0903
+UTS03,0.0760,0.3895,0.1255,187.9,success,FeatBag_v320_ExpandMotor,5.60e+07,"From v311, expand SEM_MOTOR with inflections + more verbs.",0.1797,0.2025,0.1701,0.1320,0.0769,0.0758,0.0774,0.0900
+UTS03,0.0763,0.3888,0.1256,183.3,success,FeatBag_v321_ValBonus2,5.60e+07,"From v311, VAL_BONUS=2 — sentiment words emit extra copies.",0.1798,0.2021,0.1698,0.1313,0.0776,0.0760,0.0769,0.0902
+UTS03,0.0762,0.3891,0.1255,179.3,success,FeatBag_v322_ValBonus4,5.60e+07,"From v321, VAL_BONUS=4.",0.1799,0.2019,0.1698,0.1312,0.0775,0.0758,0.0768,0.0903
+UTS03,0.0763,0.3887,0.1257,180.2,success,FeatBag_v323_EmoBonus4,5.60e+07,"From v311, EMO_BONUS=4 — emotion words emit extra copies.",0.1799,0.2021,0.1700,0.1314,0.0775,0.0762,0.0768,0.0902
+UTS03,0.0764,0.3888,0.1258,185.7,success,FeatBag_v324_EmoBonus8,5.60e+07,"From v323, EMO_BONUS=8.",0.1801,0.2019,0.1700,0.1314,0.0775,0.0765,0.0769,0.0901
+UTS03,0.0764,0.3889,0.1258,188.3,success,FeatBag_v325_EmoBonus12,5.60e+07,"From v324, EMO_BONUS=12.",0.1802,0.2018,0.1699,0.1312,0.0773,0.0763,0.0769,0.0901
+UTS03,0.0764,0.3893,0.1256,192.8,success,FeatBag_v326_EmoBonus20,5.60e+07,"From v325, EMO_BONUS=20.",0.1799,0.2015,0.1697,0.1310,0.0771,0.0760,0.0771,0.0899
+UTS03,0.0765,0.3902,0.1256,195.0,success,FeatBag_v327_EmoBonus40,5.60e+07,"From v326, EMO_BONUS=40.",0.1807,0.2014,0.1698,0.1306,0.0766,0.0756,0.0776,0.0895
+UTS03,0.0761,0.3917,0.1255,181.5,success,FeatBag_v328_EmoBonus80,5.60e+07,"From v327, EMO_BONUS=80.",0.1800,0.1995,0.1683,0.1294,0.0752,0.0742,0.0775,0.0904
+UTS03,0.0764,0.3896,0.1256,176.3,success,FeatBag_v329_EmoBonus30,5.60e+07,"From v327, EMO_BONUS=30.",0.1805,0.2014,0.1692,0.1311,0.0769,0.0756,0.0774,0.0901
+UTS03,0.0763,0.3906,0.1254,192.0,success,FeatBag_v330_ValBonus4_on_EMO40,5.60e+07,"From v327, add VAL_BONUS=4 (sentiment word bonus).",0.1801,0.2012,0.1696,0.1304,0.0763,0.0755,0.0773,0.0893
+UTS03,0.0765,0.3902,0.1256,184.8,success,FeatBag_v331_BodyBonus8,5.60e+07,"From v327, BODY_BONUS=8 — body words emit extra copies.",0.1804,0.2013,0.1696,0.1306,0.0764,0.0759,0.0777,0.0894
+UTS03,0.0765,0.3904,0.1255,190.7,success,FeatBag_v332_BodyBonus20,5.60e+07,"From v331, BODY_BONUS=20.",0.1797,0.2012,0.1697,0.1305,0.0763,0.0752,0.0777,0.0901
+UTS03,0.0764,0.3903,0.1251,186.0,success,FeatBag_v333_BodyBonus40,5.60e+07,"From v332, BODY_BONUS=40.",0.1800,0.2009,0.1703,0.1298,0.0763,0.0758,0.0776,0.0896
+UTS03,0.0766,0.3904,0.1261,194.3,success,FeatBag_v334_MotionBonus8,5.60e+07,"From v331, MOTION_BONUS=8 — motion words emit extra copies.",0.1805,0.2015,0.1698,0.1303,0.0765,0.0746,0.0779,0.0890
+UTS03,0.0764,0.3913,0.1259,193.4,success,FeatBag_v335_MotionBonus20,5.60e+07,"From v334, MOTION_BONUS=20.",0.1800,0.2014,0.1696,0.1297,0.0763,0.0747,0.0773,0.0877
+UTS03,0.0766,0.3902,0.1260,195.6,success,FeatBag_v336_MotionBonus4,5.60e+07,"From v334, MOTION_BONUS=4.",0.1804,0.2013,0.1698,0.1305,0.0764,0.0750,0.0778,0.0890
+UTS03,0.0766,0.3902,0.1260,204.5,success,FeatBag_v337_PlaceBonus4,5.60e+07,"From v336, PLACE_BONUS=4 (RSC/PPA scene words).",0.1806,0.2014,0.1698,0.1304,0.0765,0.0751,0.0780,0.0892
+UTS03,0.0766,0.3903,0.1258,194.9,success,FeatBag_v338_PlaceBonus8,5.60e+07,"From v337, PLACE_BONUS=8.",0.1807,0.2014,0.1700,0.1304,0.0764,0.0751,0.0782,0.0893
+UTS03,0.0764,0.3908,0.1252,186.5,success,FeatBag_v339_PlaceBonus20,5.60e+07,"From v338, PLACE_BONUS=20.",0.1811,0.2014,0.1697,0.1300,0.0761,0.0752,0.0782,0.0891
+UTS03,0.0765,0.3904,0.1257,192.3,success,FeatBag_v340_PersonBonus4,5.60e+07,"From v337, PERSON_BONUS=4 (SEM_PERSON or SEM_KINSHIP).",0.1805,0.2012,0.1694,0.1306,0.0762,0.0752,0.0778,0.0892
+UTS03,0.0765,0.3903,0.1259,195.6,success,FeatBag_v341_PersonBonus2,5.60e+07,"From v337, PERSON_BONUS=2.",0.1806,0.2013,0.1695,0.1305,0.0762,0.0752,0.0779,0.0892
+UTS03,0.0766,0.3902,0.1257,195.2,success,FeatBag_v342_PercBonus4,5.60e+07,"From v337, PERCEPTION_BONUS=4 (sensory perception verbs).",0.1805,0.2013,0.1698,0.1302,0.0763,0.0749,0.0781,0.0894
+UTS03,0.0766,0.3902,0.1256,192.9,success,FeatBag_v343_PercBonus8,5.60e+07,"From v342, PERCEPTION_BONUS=8.",0.1803,0.2014,0.1696,0.1301,0.0764,0.0748,0.0781,0.0894
+UTS03,0.0766,0.3904,0.1255,194.8,success,FeatBag_v344_PercBonus20,5.60e+07,"From v343, PERCEPTION_BONUS=20.",0.1801,0.2013,0.1695,0.1296,0.0763,0.0746,0.0781,0.0897
+UTS03,0.0765,0.3908,0.1254,199.0,success,FeatBag_v345_PercBonus40,5.60e+07,"From v344, PERCEPTION_BONUS=40.",0.1804,0.2015,0.1693,0.1292,0.0765,0.0747,0.0778,0.0896
+UTS03,0.0766,0.3903,0.1257,193.9,success,FeatBag_v346_MentalBonus4,5.60e+07,"From v344, MENTAL_BONUS=4 (mental state verbs).",0.1807,0.2015,0.1692,0.1298,0.0763,0.0747,0.0779,0.0896
+UTS03,0.0766,0.3905,0.1258,202.7,success,FeatBag_v347_MentalBonus8,5.60e+07,"From v346, MENTAL_BONUS=8.",0.1807,0.2016,0.1693,0.1297,0.0762,0.0747,0.0777,0.0897
+UTS03,0.0766,0.3910,0.1259,200.8,success,FeatBag_v348_MentalBonus20,5.60e+07,"From v347, MENTAL_BONUS=20.",0.1814,0.2018,0.1693,0.1302,0.0765,0.0750,0.0775,0.0892
+UTS03,0.0764,0.3929,0.1262,197.5,success,FeatBag_v349_MentalBonus40,5.60e+07,"From v348, MENTAL_BONUS=40.",0.1815,0.2015,0.1689,0.1300,0.0765,0.0739,0.0770,0.0902
+UTS03,0.0765,0.3917,0.1257,204.1,success,FeatBag_v350_MentalBonus30,5.60e+07,"From v348, MENTAL_BONUS=30.",0.1814,0.2017,0.1692,0.1299,0.0762,0.0744,0.0774,0.0898
+UTS03,0.0767,0.3909,0.1264,198.9,success,FeatBag_v351_IntensityBonus4,5.60e+07,"From v348, INTENSITY_BONUS=4 (very, really, super).",0.1818,0.2021,0.1694,0.1306,0.0768,0.0750,0.0766,0.0893
+UTS03,0.0768,0.3911,0.1269,200.9,success,FeatBag_v352_IntensityBonus8,5.60e+07,"From v351, INTENSITY_BONUS=8.",0.1822,0.2022,0.1695,0.1308,0.0770,0.0752,0.0761,0.0896
+UTS03,0.0770,0.3919,0.1273,196.6,success,FeatBag_v353_IntensityBonus20,5.60e+07,"From v352, INTENSITY_BONUS=20.",0.1826,0.2026,0.1699,0.1318,0.0777,0.0757,0.0762,0.0911
+UTS03,0.0769,0.3936,0.1270,194.9,success,FeatBag_v354_IntensityBonus40,5.60e+07,"From v353, INTENSITY_BONUS=40.",0.1831,0.2026,0.1700,0.1311,0.0768,0.0753,0.0752,0.0917
+UTS03,0.0771,0.3924,0.1276,197.9,success,FeatBag_v355_IntensityBonus28,5.60e+07,"From v353, INTENSITY_BONUS=28.",0.1829,0.2026,0.1706,0.1318,0.0777,0.0753,0.0761,0.0918
+UTS03,0.0772,0.3921,0.1275,177.6,success,FeatBag_v356_IntensityBonus24,5.60e+07,"From v355, INTENSITY_BONUS=24.",0.1828,0.2028,0.1708,0.1321,0.0777,0.0757,0.0761,0.0916
+UTS03,0.0771,0.3921,0.1275,197.1,success,FeatBag_v357_IntensityBonus22,5.60e+07,"From v356, INTENSITY_BONUS=22.",0.1827,0.2028,0.1705,0.1320,0.0777,0.0756,0.0761,0.0914
+UTS03,0.0772,0.3922,0.1275,196.4,success,FeatBag_v358_IntensityBonus26,5.60e+07,"From v356, INTENSITY_BONUS=26.",0.1829,0.2027,0.1706,0.1319,0.0778,0.0754,0.0761,0.0917
+UTS03,0.0771,0.3920,0.1274,182.6,success,FeatBag_v359_DiscourseBonus4,5.60e+07,"From v356, DISCOURSE_BONUS=4 (because, so, then, etc.).",0.1824,0.2028,0.1704,0.1316,0.0772,0.0755,0.0758,0.0917
+UTS03,0.0772,0.3923,0.1278,195.1,success,FeatBag_v360_TimeBonus4,5.60e+07,"From v356, TIME_BONUS=4.",0.1826,0.2029,0.1710,0.1320,0.0777,0.0756,0.0761,0.0914
+UTS03,0.0772,0.3927,0.1278,188.9,success,FeatBag_v361_TimeBonus8,5.60e+07,"From v360, TIME_BONUS=8.",0.1826,0.2028,0.1707,0.1320,0.0776,0.0758,0.0762,0.0914
+UTS03,0.0769,0.3940,0.1273,202.4,success,FeatBag_v362_TimeBonus20,5.60e+07,"From v361, TIME_BONUS=20.",0.1822,0.2027,0.1707,0.1315,0.0776,0.0754,0.0761,0.0906
+UTS03,0.0770,0.3927,0.1273,197.4,success,FeatBag_v363_SpaceBonus4,5.60e+07,"From v361, SPACE_BONUS=4 (spatial markers).",0.1824,0.2027,0.1704,0.1319,0.0774,0.0756,0.0767,0.0912
+UTS03,0.0772,0.3926,0.1278,201.6,success,FeatBag_v364_QualityBonus4,5.60e+07,"From v361, QUALITY_BONUS=4.",0.1826,0.2027,0.1713,0.1321,0.0775,0.0758,0.0765,0.0915
+UTS03,0.0773,0.3925,0.1279,188.4,success,FeatBag_v365_QualityBonus8,5.60e+07,"From v364, QUALITY_BONUS=8.",0.1824,0.2029,0.1709,0.1322,0.0776,0.0760,0.0765,0.0919
+UTS03,0.0772,0.3928,0.1280,189.5,success,FeatBag_v366_QualityBonus20,5.60e+07,"From v365, QUALITY_BONUS=20.",0.1825,0.2027,0.1714,0.1325,0.0774,0.0759,0.0765,0.0920
+UTS03,0.0772,0.3925,0.1280,199.0,success,FeatBag_v367_QualityBonus12,5.60e+07,"From v365, QUALITY_BONUS=12.",0.1826,0.2029,0.1713,0.1321,0.0774,0.0759,0.0763,0.0916
+UTS03,0.0772,0.3920,0.1277,198.6,success,FeatBag_v368_QuantityBonus4,5.60e+07,"From v365, QUANTITY_BONUS=4.",0.1822,0.2030,0.1709,0.1319,0.0775,0.0761,0.0765,0.0910
+UTS03,0.0773,0.3923,0.1279,193.4,success,FeatBag_v369_CommBonus4,5.60e+07,"From v365, COMM_BONUS=4.",0.1826,0.2032,0.1713,0.1320,0.0775,0.0757,0.0764,0.0916
+UTS03,0.0773,0.3924,0.1279,200.7,success,FeatBag_v370_CommBonus8,5.60e+07,"From v369, COMM_BONUS=8.",0.1825,0.2033,0.1716,0.1319,0.0775,0.0759,0.0767,0.0914
+UTS03,0.0770,0.3930,0.1270,197.7,success,FeatBag_v371_CommBonus20,5.60e+07,"From v370, COMM_BONUS=20.",0.1820,0.2031,0.1711,0.1315,0.0770,0.0750,0.0765,0.0904
+UTS03,0.0773,0.3928,0.1277,194.2,success,FeatBag_v372_CommBonus12,5.60e+07,"From v370, COMM_BONUS=12.",0.1826,0.2034,0.1714,0.1316,0.0777,0.0758,0.0764,0.0908
+UTS03,0.0773,0.3923,0.1279,190.6,success,FeatBag_v373_LifeBonus4,5.60e+07,"From v370, LIFE_BONUS=4.",0.1827,0.2033,0.1716,0.1318,0.0775,0.0757,0.0767,0.0911
+UTS03,0.0773,0.3922,0.1279,204.7,success,FeatBag_v374_LifeBonus8,5.60e+07,"From v373, LIFE_BONUS=8.",0.1829,0.2033,0.1716,0.1319,0.0775,0.0756,0.0767,0.0911
+UTS03,0.0773,0.3922,0.1281,196.3,success,FeatBag_v375_ChangeBonus4,5.60e+07,"From v374, CHANGE_BONUS=4.",0.1832,0.2033,0.1716,0.1320,0.0777,0.0756,0.0766,0.0908
+UTS03,0.0773,0.3921,0.1279,194.4,success,FeatBag_v376_ChangeBonus8,5.60e+07,"From v375, CHANGE_BONUS=8.",0.1832,0.2032,0.1720,0.1319,0.0777,0.0759,0.0764,0.0906
+UTS03,0.0771,0.3929,0.1275,191.6,success,FeatBag_v377_ChangeBonus20,5.60e+07,"From v376, CHANGE_BONUS=20.",0.1828,0.2030,0.1718,0.1319,0.0775,0.0754,0.0763,0.0905
+UTS03,0.0771,0.3925,0.1276,196.9,success,FeatBag_v378_NegBonus4,5.60e+07,"From v376, NEG_BONUS=4 for negated content.",0.1828,0.2031,0.1716,0.1317,0.0776,0.0750,0.0763,0.0900
+UTS03,0.0772,0.3922,0.1276,196.1,success,FeatBag_v379_NegBonus2,5.60e+07,"From v376, NEG_BONUS=2.",0.1831,0.2032,0.1720,0.1318,0.0773,0.0749,0.0760,0.0901
+UTS03,0.0773,0.3921,0.1278,197.8,success,FeatBag_v380_SocialBonus4,5.60e+07,"From v376, SOCIAL_BONUS=4.",0.1831,0.2032,0.1716,0.1318,0.0776,0.0757,0.0763,0.0904
+UTS03,0.0773,0.3922,0.1279,193.4,success,FeatBag_v381_SocialBonus8,5.60e+07,"From v380, SOCIAL_BONUS=8.",0.1828,0.2032,0.1716,0.1319,0.0775,0.0755,0.0765,0.0903
+UTS03,0.0772,0.3924,0.1278,165.5,success,FeatBag_v382_SocialBonus20,5.60e+07,"From v381, SOCIAL_BONUS=20.",0.1826,0.2032,0.1715,0.1320,0.0776,0.0756,0.0765,0.0901
+UTS03,0.0771,0.3930,0.1275,198.4,success,FeatBag_v383_Intensity30,5.60e+07,"From v381, INTENSITY_BONUS=30.",0.1834,0.2033,0.1715,0.1314,0.0777,0.0750,0.0759,0.0897
+UTS03,0.0772,0.3918,0.1277,197.0,success,FeatBag_v384_Intensity20,5.60e+07,"From v381, INTENSITY_BONUS=20.",0.1827,0.2031,0.1717,0.1319,0.0777,0.0759,0.0767,0.0903
+UTS03,0.0772,0.3927,0.1277,194.0,success,FeatBag_v385_CB4,5.60e+07,"From v381, CONTENT_BONUS=4.",0.1823,0.2031,0.1711,0.1316,0.0777,0.0754,0.0759,0.0907
+UTS03,0.0770,0.3921,0.1273,201.7,success,FeatBag_v386_CB8,5.60e+07,"From v381, CONTENT_BONUS=8.",0.1827,0.2028,0.1708,0.1312,0.0775,0.0750,0.0764,0.0904
+UTS03,0.0771,0.3924,0.1277,193.3,success,FeatBag_v387_Rare8,5.60e+07,"From v381, RARE_BONUS=8.",0.1825,0.2030,0.1707,0.1318,0.0780,0.0755,0.0763,0.0910
+UTS03,0.0772,0.3925,0.1277,287.3,success,FeatBag_v388_Body4,5.60e+07,"From v381, BODY_BONUS=4.",0.1828,0.2032,0.1717,0.1319,0.0776,0.0755,0.0766,0.0899
+UTS03,0.0772,0.3919,0.1278,323.7,success,FeatBag_v389_Body12,5.60e+07,"From v381, BODY_BONUS=12.",0.1827,0.2030,0.1719,0.1319,0.0776,0.0758,0.0767,0.0905
+UTS03,0.0772,0.3919,0.1279,204.3,success,FeatBag_v390_Emo30,5.60e+07,"From v381, EMO_BONUS=30.",0.1825,0.2035,0.1720,0.1318,0.0783,0.0753,0.0759,0.0906
+UTS03,0.0770,0.3925,0.1275,387.8,success,FeatBag_v391_Emo50,5.60e+07,"From v381, EMO_BONUS=50.",0.1828,0.2025,0.1706,0.1311,0.0773,0.0748,0.0763,0.0904
+UTS03,0.0773,0.3921,0.1278,172.4,success,FeatBag_v392_Motion8,5.60e+07,"From v381, MOTION_BONUS=8.",0.1829,0.2031,0.1716,0.1318,0.0775,0.0755,0.0763,0.0904
+UTS03,0.0773,0.3965,0.1275,238.2,success,FeatBag_v393_LamMinus05,5.60e+07,"From v392, LAMBDAS=(-0.5,0,4,32) - stronger anti-recency.",0.1826,0.2038,0.1717,0.1325,0.0779,0.0754,0.0767,0.0905
+UTS03,0.0754,0.3866,0.1224,202.6,success,FeatBag_v394_Lam05,5.60e+07,"From v392, LAMBDAS=(-0.25,0.5,4,32).",0.1800,0.2031,0.1695,0.1311,0.0769,0.0755,0.0749,0.0882
+UTS03,0.0773,0.3921,0.1278,208.3,success,FeatBag_v395_Lam8,5.60e+07,"From v392, LAMBDAS=(-0.25,0,8,32).",0.1829,0.2031,0.1716,0.1318,0.0775,0.0755,0.0763,0.0904
+UTS03,0.0773,0.3921,0.1278,199.5,success,FeatBag_v396_Lam16,5.60e+07,"From v392, LAMBDAS=(-0.25,0,4,16).",0.1829,0.2031,0.1716,0.1318,0.0775,0.0755,0.0763,0.0904
+UTS03,0.0773,0.3921,0.1278,199.3,success,FeatBag_v397_Lam64,5.60e+07,"From v392, LAMBDAS=(-0.25,0,4,64).",0.1829,0.2031,0.1716,0.1318,0.0775,0.0755,0.0763,0.0904
+UTS03,0.0772,0.3923,0.1277,206.6,success,FeatBag_v398_Lam4_2,5.60e+07,"From v392, LAMBDAS=(-0.25,0,4,2).",0.1827,0.2030,0.1714,0.1319,0.0776,0.0755,0.0764,0.0904
+UTS03,0.0776,0.3921,0.1288,195.3,success,FeatBag_v400_FreqExpandCommon,5.60e+07,"From v392, FREQ_LIST adds common narrative words to remove them from FREQ_RARE.",0.1835,0.2039,0.1721,0.1321,0.0778,0.0752,0.0764,0.0910
+UTS03,0.0776,0.3920,0.1288,199.9,success,FeatBag_v401_FreqExpand2,5.60e+07,"From v400, FREQ_LIST adds discourse adverbs and common verbs.",0.1836,0.2040,0.1723,0.1321,0.0777,0.0750,0.0767,0.0909
+UTS03,0.0775,0.3923,0.1287,196.6,success,FeatBag_v402_Rare8,5.60e+07,"From v400, RARE_BONUS=8.",0.1837,0.2038,0.1710,0.1317,0.0779,0.0754,0.0768,0.0909
+UTS03,0.0773,0.3927,0.1283,190.4,success,FeatBag_v403_Rare2,5.60e+07,"From v400, RARE_BONUS=2.",0.1831,0.2038,0.1719,0.1315,0.0776,0.0750,0.0758,0.0904
+UTS03,0.0779,0.3946,0.1306,202.9,success,FeatBag_v404_IntExpand,5.60e+07,"From v400, expand SEM_INTENSITY with more emphasis words.",0.1833,0.2039,0.1718,0.1340,0.0788,0.0772,0.0782,0.0929
+UTS03,0.0768,0.3958,0.1286,208.2,success,FeatBag_v405_IntExpand2,5.60e+07,"From v404, expand SEM_INTENSITY even more with hedge/discourse adverbs.",0.1831,0.2035,0.1713,0.1337,0.0790,0.0761,0.0764,0.0898
+UTS03,0.0778,0.3933,0.1304,200.1,success,FeatBag_v406_Int16,5.60e+07,"From v404, INTENSITY_BONUS=16 (set expanded so try lower).",0.1829,0.2035,0.1712,0.1333,0.0790,0.0773,0.0785,0.0922
+UTS03,0.0777,0.3958,0.1306,201.8,success,FeatBag_v407_Int32,5.60e+07,"From v404, INTENSITY_BONUS=32.",0.1833,0.2038,0.1713,0.1334,0.0790,0.0767,0.0775,0.0923
+UTS03,0.0777,0.3951,0.1306,186.3,success,FeatBag_v408_Motion16,5.60e+07,"From v404, MOTION_BONUS=16.",0.1831,0.2038,0.1714,0.1335,0.0785,0.0764,0.0779,0.0922
+UTS03,0.0778,0.3943,0.1305,202.3,success,FeatBag_v409_Body16,5.60e+07,"From v404, BODY_BONUS=16.",0.1829,0.2037,0.1715,0.1340,0.0790,0.0772,0.0781,0.0929
+UTS03,0.0777,0.3949,0.1304,197.3,success,FeatBag_v410_Object4,5.60e+07,"From v404, OBJECT_BONUS=4.",0.1830,0.2038,0.1714,0.1338,0.0787,0.0770,0.0784,0.0925
+UTS03,0.0777,0.3944,0.1304,200.4,success,FeatBag_v411_Rec42,5.60e+07,"From v404, RECENCY_REPS=(4,2,1,...).",0.1833,0.2038,0.1714,0.1336,0.0790,0.0770,0.0781,0.0927
+UTS03,0.0778,0.3945,0.1306,196.9,success,FeatBag_v412_Rec32,5.60e+07,"From v404, RECENCY_REPS=(3,2,1,...).",0.1832,0.2039,0.1717,0.1339,0.0790,0.0772,0.0780,0.0927
+UTS03,0.0777,0.3952,0.1305,209.2,success,FeatBag_v413_CB4,5.60e+07,"From v404, CONTENT_BONUS=4.",0.1828,0.2036,0.1715,0.1332,0.0794,0.0765,0.0772,0.0922
+UTS03,0.0776,0.3955,0.1303,188.8,success,FeatBag_v414_Time16,5.60e+07,"From v404, TIME_BONUS=16.",0.1823,0.2035,0.1714,0.1336,0.0792,0.0770,0.0780,0.0919
+UTS03,0.0780,0.3946,0.1308,198.7,success,FeatBag_v415_MotionExpand,5.60e+07,"From v404, expand SEM_MOTION with more verbs.",0.1826,0.2039,0.1719,0.1342,0.0784,0.0771,0.0785,0.0941
+UTS03,0.0780,0.3946,0.1309,205.6,success,FeatBag_v416_SocialExpand,5.60e+07,"From v415, expand SEM_SOCIAL with more interaction verbs.",0.1814,0.2041,0.1711,0.1355,0.0796,0.0779,0.0783,0.0929
+UTS03,0.0776,0.3941,0.1298,199.8,success,FeatBag_v417_PlaceExpand,5.60e+07,"From v416, expand SEM_PLACE.",0.1815,0.2035,0.1704,0.1346,0.0790,0.0801,0.0793,0.0919
+UTS03,0.0779,0.3944,0.1305,203.3,success,FeatBag_v418_PercExpand,5.60e+07,"From v416, expand SEM_PERCEPTION.",0.1813,0.2038,0.1710,0.1350,0.0795,0.0776,0.0775,0.0919
+UTS03,0.0771,0.3965,0.1286,186.9,success,FeatBag_v419_EmoExpand,5.60e+07,"From v416, expand SEM_EMOTION_POS and SEM_EMOTION_NEG.",0.1809,0.2033,0.1689,0.1346,0.0785,0.0773,0.0775,0.0929
+UTS03,0.0779,0.3947,0.1310,201.7,success,FeatBag_v420_TimeExpand,5.60e+07,"From v416, expand SEM_TIME.",0.1816,0.2041,0.1711,0.1356,0.0796,0.0780,0.0782,0.0925
+UTS03,0.0779,0.3940,0.1304,199.2,success,FeatBag_v421_Int20,5.60e+07,"From v416, INTENSITY_BONUS=20.",0.1815,0.2039,0.1708,0.1353,0.0795,0.0778,0.0785,0.0923
+UTS03,0.0776,0.3946,0.1295,203.6,success,FeatBag_v422_CommExpand,5.60e+07,"From v416, expand SEM_COMMUNICATION.",0.1802,0.2037,0.1696,0.1345,0.0800,0.0774,0.0768,0.0916
+UTS03,0.0778,0.3948,0.1305,202.1,success,FeatBag_v423_Change16,5.60e+07,"From v416, CHANGE_BONUS=16.",0.1814,0.2039,0.1709,0.1353,0.0793,0.0773,0.0778,0.0926
+UTS03,0.0780,0.3939,0.1315,201.9,success,FeatBag_v424_Emo60,5.60e+07,"From v416, EMO_BONUS=60.",0.1813,0.2032,0.1701,0.1349,0.0790,0.0759,0.0774,0.0939
+UTS03,0.0778,0.3936,0.1308,204.3,success,FeatBag_v425_Emo80,5.60e+07,"From v424, EMO_BONUS=80.",0.1812,0.2022,0.1687,0.1351,0.0787,0.0755,0.0769,0.0954
+UTS03,0.0777,0.3933,0.1308,205.5,success,FeatBag_v426_Emo70,5.60e+07,"From v424, EMO_BONUS=70.",0.1813,0.2024,0.1691,0.1348,0.0789,0.0759,0.0777,0.0949
+UTS03,0.0779,0.3940,0.1313,190.3,success,FeatBag_v427_Mental30,5.60e+07,"From v424, MENTAL_BONUS=30.",0.1811,0.2028,0.1691,0.1348,0.0788,0.0753,0.0771,0.0942
+UTS03,0.0780,0.3943,0.1312,205.4,success,FeatBag_v428_Perc30,5.60e+07,"From v424, PERCEPTION_BONUS=30.",0.1811,0.2027,0.1698,0.1347,0.0792,0.0763,0.0777,0.0941
+UTS03,0.0780,0.3949,0.1312,203.4,success,FeatBag_v429_Perc40,5.60e+07,"From v428, PERCEPTION_BONUS=40.",0.1815,0.2027,0.1705,0.1345,0.0793,0.0760,0.0773,0.0939
+UTS03,0.0781,0.3950,0.1318,201.8,success,FeatBag_v430_Perc60,5.60e+07,"From v428, PERCEPTION_BONUS=60.",0.1809,0.2028,0.1704,0.1343,0.0798,0.0754,0.0780,0.0946
+UTS03,0.0779,0.3964,0.1312,197.7,success,FeatBag_v431_Perc80,5.60e+07,"From v430, PERCEPTION_BONUS=80.",0.1798,0.2028,0.1702,0.1338,0.0794,0.0744,0.0775,0.0933
+UTS03,0.0780,0.3952,0.1313,195.8,success,FeatBag_v432_Perc50,5.60e+07,"From v430, PERCEPTION_BONUS=50.",0.1812,0.2028,0.1703,0.1345,0.0799,0.0757,0.0775,0.0937
+UTS03,0.0780,0.3959,0.1317,205.7,success,FeatBag_v433_Int28,5.60e+07,"From v430, INTENSITY_BONUS=28.",0.1810,0.2027,0.1707,0.1344,0.0798,0.0753,0.0778,0.0942
+UTS03,0.0780,0.3953,0.1314,201.8,success,FeatBag_v434_Emo50,5.60e+07,"From v430, EMO_BONUS=50.",0.1816,0.2034,0.1705,0.1342,0.0798,0.0758,0.0788,0.0936
+UTS03,0.0780,0.3994,0.1312,204.8,success,FeatBag_v435_Lam05,5.60e+07,"From v430, LAMBDAS=(-0.5,0,4,32).",0.1804,0.2027,0.1713,0.1347,0.0797,0.0755,0.0779,0.0952
+UTS03,0.0784,0.3857,0.1323,202.6,success,FeatBag_v436_Lam01,5.60e+07,"From v430, LAMBDAS=(-0.1,0,4,32).",0.1815,0.2024,0.1711,0.1349,0.0793,0.0758,0.0779,0.0951
+UTS03,0.0784,0.3774,0.1318,208.5,success,FeatBag_v437_Lam005,5.60e+07,"From v436, LAMBDAS=(-0.05,0,4,32).",0.1808,0.2017,0.1712,0.1348,0.0788,0.0761,0.0778,0.0954
+UTS03,0.0782,0.3665,0.1303,199.3,success,FeatBag_v438_Lam00,5.60e+07,"From v436, LAMBDAS=(0,0,4,32).",0.1800,0.2011,0.1700,0.1342,0.0789,0.0756,0.0770,0.0954
+UTS03,0.0773,0.3881,0.1300,202.2,success,FeatBag_v439_Lam0101,5.60e+07,"From v436, LAMBDAS=(-0.1,0.1,4,32).",0.1813,0.2024,0.1707,0.1353,0.0785,0.0763,0.0774,0.0946
+UTS03,0.0783,0.3862,0.1321,206.9,success,FeatBag_v440_Lam2,5.60e+07,"From v436, LAMBDAS=(-0.1,0,2,32).",0.1813,0.2024,0.1703,0.1350,0.0794,0.0760,0.0778,0.0950
+UTS03,0.0784,0.3857,0.1323,199.6,success,FeatBag_v441_Lam8,5.60e+07,"From v436, LAMBDAS=(-0.1,0,8,32).",0.1815,0.2024,0.1711,0.1349,0.0793,0.0758,0.0779,0.0951
+UTS03,0.0784,0.3889,0.1320,203.0,success,FeatBag_v442_Lam1,5.60e+07,"From v436, LAMBDAS=(-0.1,0,1,32).",0.1812,0.2024,0.1706,0.1350,0.0797,0.0761,0.0785,0.0953
+UTS03,0.0784,0.3919,0.1332,201.5,success,FeatBag_v443_Lam02,5.60e+07,"From v436, LAMBDAS=(-0.1,0,0.2,32).",0.1817,0.2018,0.1708,0.1348,0.0793,0.0756,0.0791,0.0958
+UTS03,0.0784,0.3856,0.1334,200.9,success,FeatBag_v444_Lam005,5.60e+07,"From v436, LAMBDAS=(-0.1,0,0.05,32).",0.1815,0.2000,0.1693,0.1333,0.0791,0.0739,0.0781,0.0957
+UTS03,0.0783,0.4039,0.1337,202.7,success,FeatBag_v445_LamSplit,5.60e+07,"From v436, LAMBDAS=(-0.5,-0.1,0,32) redistribute saturated head.",0.1818,0.2011,0.1710,0.1333,0.0788,0.0740,0.0784,0.0957
+UTS03,0.0785,0.3920,0.1330,202.3,success,FeatBag_v446_Lam03,5.60e+07,"From v436, LAMBDAS=(-0.1,0,0.3,32).",0.1820,0.2023,0.1712,0.1349,0.0792,0.0761,0.0792,0.0958
+UTS03,0.0785,0.3914,0.1326,200.5,success,FeatBag_v447_Lam05,5.60e+07,"From v446, LAMBDAS=(-0.1,0,0.5,32).",0.1816,0.2025,0.1712,0.1349,0.0793,0.0759,0.0791,0.0959
+UTS03,0.0785,0.3905,0.1323,196.5,success,FeatBag_v448_Lam07,5.60e+07,"From v446, LAMBDAS=(-0.1,0,0.7,32).",0.1814,0.2023,0.1708,0.1349,0.0796,0.0761,0.0790,0.0957
+UTS03,0.0784,0.3959,0.1326,198.6,success,FeatBag_v449_Lam0_15,5.60e+07,"From v446, LAMBDAS=(-0.15,0,0.5,32).",0.1818,0.2028,0.1709,0.1347,0.0795,0.0757,0.0790,0.0953
+UTS03,0.0785,0.3914,0.1326,207.2,success,FeatBag_v450_Lam3_8,5.60e+07,"From v447, LAMBDAS=(-0.1,0,0.5,8).",0.1816,0.2025,0.1712,0.1349,0.0793,0.0759,0.0791,0.0959
+UTS03,0.0784,0.3915,0.1324,180.9,success,FeatBag_v451_BodyExpand,5.60e+07,"From v447, expand SEM_BODY.",0.1814,0.2023,0.1706,0.1345,0.0792,0.0758,0.0789,0.0953
+UTS03,0.0785,0.3919,0.1328,182.1,success,FeatBag_v452_Motion12,5.60e+07,"From v447, MOTION_BONUS=12.",0.1815,0.2023,0.1706,0.1346,0.0793,0.0757,0.0790,0.0953
+UTS03,0.0785,0.3919,0.1327,204.6,success,FeatBag_v453_Motion16,5.60e+07,"From v447, MOTION_BONUS=16.",0.1812,0.2023,0.1703,0.1342,0.0793,0.0755,0.0790,0.0951
+UTS03,0.0785,0.3914,0.1326,205.5,success,FeatBag_v454_NAppend15,5.60e+07,"From v447, N_APPEND_WORDS=15.",0.1816,0.2025,0.1712,0.1349,0.0793,0.0759,0.0791,0.0959
+UTS03,0.0774,0.3817,0.1296,200.1,success,FeatBag_v455_NAppend8,5.60e+07,"From v447, N_APPEND_WORDS=8.",0.1800,0.2021,0.1702,0.1344,0.0798,0.0762,0.0779,0.0934
+UTS03,0.0784,0.3905,0.1324,202.7,success,FeatBag_v456_Reps42,5.60e+07,"From v447, RECENCY_REPS=(4,2,1,...).",0.1816,0.2023,0.1710,0.1347,0.0792,0.0757,0.0789,0.0956
+UTS03,0.0786,0.3924,0.1329,207.9,success,FeatBag_v457_Reps2,5.60e+07,"From v447, RECENCY_REPS=(2,1,...) less last word.",0.1819,0.2025,0.1711,0.1348,0.0794,0.0761,0.0793,0.0959
+UTS03,0.0787,0.3937,0.1333,203.4,success,FeatBag_v458_Reps1,5.60e+07,"From v457, RECENCY_REPS=(1,1,...) flat.",0.1821,0.2025,0.1712,0.1349,0.0795,0.0762,0.0794,0.0960
+UTS03,0.0787,0.3943,0.1332,202.0,success,FeatBag_v459_Content4,5.60e+07,"From v458, CONTENT_BONUS=4.",0.1823,0.2026,0.1706,0.1348,0.0798,0.0761,0.0794,0.0957
+UTS03,0.0784,0.3937,0.1326,193.4,success,FeatBag_v460_Content8,5.60e+07,"From v458, CONTENT_BONUS=8.",0.1824,0.2021,0.1707,0.1343,0.0786,0.0761,0.0796,0.0955
+UTS03,0.0788,0.3947,0.1338,205.2,success,FeatBag_v461_Int32,5.60e+07,"From v458, INTENSITY_BONUS=32.",0.1824,0.2027,0.1710,0.1352,0.0790,0.0764,0.0796,0.0962
+UTS03,0.0790,0.3956,0.1346,197.0,success,FeatBag_v462_Int40,5.60e+07,"From v461, INTENSITY_BONUS=40.",0.1826,0.2030,0.1716,0.1354,0.0791,0.0761,0.0793,0.0976
+UTS03,0.0791,0.3958,0.1347,210.0,success,FeatBag_v463_Int48,5.60e+07,"From v462, INTENSITY_BONUS=48.",0.1828,0.2029,0.1714,0.1358,0.0795,0.0764,0.0786,0.0985
+UTS03,0.0790,0.3966,0.1345,206.1,success,FeatBag_v464_Int64,5.60e+07,"From v463, INTENSITY_BONUS=64.",0.1815,0.2025,0.1708,0.1369,0.0797,0.0769,0.0789,0.1001
+UTS03,0.0790,0.3965,0.1340,201.7,success,FeatBag_v465_Emo80,5.60e+07,"From v463, EMO_BONUS=80.",0.1826,0.2023,0.1717,0.1358,0.0788,0.0769,0.0785,0.0987
+UTS03,0.0791,0.3965,0.1346,199.7,success,FeatBag_v466_Perc80,5.60e+07,"From v463, PERCEPTION_BONUS=80.",0.1823,0.2030,0.1709,0.1354,0.0796,0.0762,0.0785,0.0975
+UTS03,0.0790,0.3962,0.1344,207.7,success,FeatBag_v467_Mental30,5.60e+07,"From v463, MENTAL_BONUS=30.",0.1829,0.2029,0.1715,0.1361,0.0793,0.0767,0.0787,0.0986
+UTS03,0.0791,0.3959,0.1346,200.2,success,FeatBag_v468_Social12,5.60e+07,"From v463, SOCIAL_BONUS=12.",0.1827,0.2029,0.1711,0.1357,0.0796,0.0767,0.0788,0.0986
+UTS03,0.0790,0.3959,0.1344,210.5,success,FeatBag_v469_Social16,5.60e+07,"From v463, SOCIAL_BONUS=16.",0.1826,0.2028,0.1714,0.1356,0.0793,0.0767,0.0787,0.0985
+UTS03,0.0791,0.3957,0.1345,171.2,success,FeatBag_v470_Body12,5.60e+07,"From v463, BODY_BONUS=12.",0.1828,0.2029,0.1714,0.1359,0.0795,0.0763,0.0787,0.0987
+UTS03,0.0791,0.3957,0.1348,217.5,success,FeatBag_v471_Quality16,5.60e+07,"From v463, QUALITY_BONUS=16.",0.1829,0.2028,0.1715,0.1362,0.0785,0.0760,0.0785,0.0991
+UTS03,0.0791,0.3952,0.1348,266.5,success,FeatBag_v472_Rare6,5.60e+07,"From v463, RARE_BONUS=6.",0.1827,0.2028,0.1712,0.1363,0.0796,0.0765,0.0788,0.0992
+UTS03,0.0792,0.3875,0.1341,243.3,success,FeatBag_v473_Lam005,5.60e+07,"From v463, LAMBDAS[0]=-0.05.",0.1821,0.2021,0.1713,0.1357,0.0797,0.0769,0.0788,0.0990
+UTS03,0.0788,0.3779,0.1324,219.9,success,FeatBag_v474_Lam00,5.60e+07,"From v473, LAMBDAS[0]=0.",0.1810,0.2015,0.1703,0.1354,0.0800,0.0765,0.0787,0.0979
+UTS03,0.0791,0.3923,0.1346,237.9,success,FeatBag_v475_Lam0075,5.60e+07,"From v473, LAMBDAS[0]=-0.075.",0.1826,0.2026,0.1715,0.1358,0.0792,0.0770,0.0786,0.0988
+UTS03,0.0790,0.3881,0.1343,216.8,success,FeatBag_v476_Lam03,5.60e+07,"From v473, LAMBDAS[2]=0.3.",0.1825,0.2019,0.1715,0.1357,0.0793,0.0768,0.0784,0.0986
+UTS03,0.0791,0.3866,0.1339,227.5,success,FeatBag_v477_Lam07,5.60e+07,"From v473, LAMBDAS[2]=0.7.",0.1816,0.2022,0.1712,0.1359,0.0796,0.0768,0.0787,0.0986
+UTS03,0.0792,0.3875,0.1341,265.0,success,FeatBag_v478_Lam16,5.60e+07,"From v473, LAMBDAS[3]=16.",0.1821,0.2021,0.1713,0.1357,0.0797,0.0769,0.0788,0.0990
