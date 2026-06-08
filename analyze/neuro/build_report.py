@@ -147,13 +147,15 @@ DATA = {f: load_run(f) for f in RUN_META}
 # ---------------------------------------------------------------------------
 WRITEUP = {
     "fmri-jun3-run1": {
-        "headline": "Hand-wired interpretable transformers with lexical feature tokens — the strongest trimmed run.",
+        "headline": "Hand-wired interpretable transformers with lexical feature tokens — a strong, compact "
+                    "feature-token circuit (just behind run 4's FeatBag ceiling).",
         "worked": "Tokenizing each word into interpretable feature tokens (function-word type, ~40 hand-curated "
                   "semantic categories, perceptual modality, concreteness, animacy, valence/arousal, "
                   "person-reference, morphology) and pooling them with multi-scale recency-weighted attention. "
-                  "The <code>LexFeat*</code> family steadily climbed to <b>0.076</b>, with small fixes "
-                  "(pronouns, past-tense morphology, spatial prepositions, first-word anchoring, well-formed "
-                  "categories) each nudging it up.",
+                  "The <code>LexFeat*</code> family steadily climbed to <b>0.079</b> (<code>DisfluencySuppress</code>), with "
+                  "small fixes (pronouns, past-tense morphology, spatial prepositions, first-word anchoring, "
+                  "frequency de-emphasis, graded repetition-suppression, other-/body-reference and agent-predicate "
+                  "boosts, name-pruning and disfluency-suppression) each nudging it up.",
         "failed": "Pure bag-of-character and raw semantic-category circuits (<code>RecencyBoC</code> 0.032, "
                   "<code>SemCatBoC</code> 0.034) were far behind — character-level information alone carries "
                   "little fMRI-relevant signal. Adding hand-curated lexical/semantic structure was what mattered.",
@@ -161,7 +163,7 @@ WRITEUP = {
     "fmri-jun03-run2": {
         "headline": "GPT-5.5 brute-forced a large lexicon search — many iterations, modest ceiling.",
         "worked": "A 'semantic best-lexicon' approach that greedily adds/drops individual high-value content words "
-                  "(love, old, little, time, face, …) with a tail/context window. With 600+ iterations it reached "
+                  "(love, old, little, time, face, …) with a tail/context window. With 4,100+ iterations it reached "
                   "<b>0.063</b> using only ~7k parameters.",
         "failed": "Char-only and multi-decay structural variants (<code>char_only_rec90</code> 0.028, "
                   "<code>structure_multidecay</code> 0.030) underperformed. The search spent enormous effort on "
@@ -186,28 +188,28 @@ WRITEUP = {
     },
     "fmri-jun03-run4": {
         "headline": "Claude Opus 4.7 converged fast (within ~10 iterations) on a compact feature-bag transformer, "
-                    "then spent 360+ more iterations expanding lexicons for tiny gains.",
+                    "then spent 1,500+ more iterations expanding lexicons for tiny gains.",
         "worked": "The <code>FeatBag</code> family — a single hand-wired attention layer pooling interpretable "
                   "feature tokens over the 10-gram at four position time-scales (λ = −2, 0, 4, 16: primacy + global "
                   "mean + two recency heads), with negation flipping valence — crossed <b>0.070</b> by iteration 10 "
-                  "and crept to <b>0.077</b>. Restoring extra semantic categories (motor, names, places) and adding "
-                  "heads helped most; the long tail of <code>FeatBag_v3xx_*Bonus*</code> lexicon expansions added "
-                  "only ~0.007 over 360+ iterations.",
+                  "and crept to <b>0.081</b> (<code>FeatBag_v1116_Emo40</code>, tuning the emotion-lexicon size). Restoring "
+                  "extra semantic categories (motor, names, places) and adding heads helped most; the long tail of "
+                  "<code>FeatBag_v3xx–v11xx_*Bonus/Emo*</code> lexicon and λ expansions added only ~0.011 over 1,500+ iterations.",
         "failed": "Stripping the semantic features back (<code>FeatBag_v9_LambdaSweep</code> 0.041, "
                   "<code>FeatBag_v2_WordID</code> 0.055) or randomizing the MLP hurt. The win came from richer "
                   "hand-curated semantics, not from architectural search.",
     },
     "fmri-jun04-run1": {
-        "headline": "Claude Opus 4.8 (xhigh) resumed run 4's FeatBag circuit and probed morphology / frequency / "
-                    "length features — a short run that confirmed the ~0.075 ceiling.",
+        "headline": "Claude Opus 4.8 (xhigh) resumed run 4's FeatBag circuit and probed reference / emotion / "
+                    "concreteness features — a short run that nudged the FeatBag ceiling to ~0.079.",
         "worked": "Starting from a reproduced <code>FeatBag</code> interpretable feature-bag transformer "
-                  "(<code>S1_FeatBag_Repro</code> at <b>0.075</b>), the strongest tweaks added speech-act verb "
-                  "inflections and possession morphology — but none beat the starting point, so the run tops out at "
-                  "<b>0.075</b>, in line with run 4's FeatBag family.",
+                  "(<code>S1_FeatBag_Repro</code> at <b>0.075</b>), the strongest variant — a 3-head FeatBag adding "
+                  "emotion-intensity and a concreteness category (<code>FeatBag3Head_EmoInt_ConcCat</code>) — lifted "
+                  "the run to <b>0.079</b>, just behind run 4's 0.081 FeatBag ceiling.",
         "failed": "Stripping to content words only (<code>E24_ContentOnly</code> 0.061) hurt most; graded "
                   "word-length + finer frequency buckets (<code>S2_LenFreqBuckets</code> 0.072) and morphological "
-                  "backoff for out-of-lexicon words (<code>S3_MorphBackoff</code> 0.072) did not help. In 21 "
-                  "iterations the run could not push past the hand-wired FeatBag ceiling.",
+                  "backoff for out-of-lexicon words (<code>S3_MorphBackoff</code> 0.072) did not help. In ~50 "
+                  "iterations the run modestly improved on the hand-wired FeatBag ceiling it started from.",
     },
     "fmri-may27-run1": {
         "headline": "Claude Opus 4.7 (untrimmed) — the only run to beat GPT-2 XL, but on an easier (untrimmed) metric.",

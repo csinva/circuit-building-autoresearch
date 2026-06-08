@@ -61,34 +61,49 @@ _stoi = {c: i for i, c in enumerate(_BASE_CHARS)}
 # Multi-scale recency lambdas for the per-head position-keyed attention scores.
 # lambda<0 -> primacy (look at the front of the n-gram), 0 -> uniform mean,
 # >0 -> recency (the larger, the more concentrated on the last word).
-LAMBDAS = (-0.05, 0.05, 0.5, 32.0)  # v479
+LAMBDAS = (-0.094, -0.096, 0.4, 32.0)  # v1443 split lam0/lam1
 
 # Words actually consumed from the end of the n-gram (10-gram).
-N_APPEND_WORDS = 12
+N_APPEND_WORDS = 12  # v994 saturated
+RECENCY_REPS = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)  # v458 flat
 
 # Each word emits 'reps' copies of its feature tokens. Final-word emphasis
 # increases its weight in the uniform-mean head (lambda=0).
-RECENCY_REPS = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)  # v458
+RECENCY_REPS_DUMMY_REMOVE = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)  # v458 flat
 # Content words emit features CONTENT_BONUS extra times on top of RECENCY_REPS
 # (so the lambda=0 "global mean" head is biased toward content over function).
-CONTENT_BONUS = 6  # v458 base
-RARE_BONUS = 4  # v463 base
-EMO_BONUS = 60  # v463 base
-BODY_BONUS = 8  # v463 base
-MOTION_BONUS = 8  # v392
-PLACE_BONUS = 4  # v337: place words (RSC/PPA)
-PERCEPTION_BONUS = 60  # v463 base
-MENTAL_BONUS = 20  # v463 base
-INTENSITY_BONUS = 48  # v463 base
-DISCOURSE_BONUS = 0  # v359 reverted
-TIME_BONUS = 8  # v361
-SPACE_BONUS = 0  # v363 reverted
-QUALITY_BONUS = 8  # v463 base
-QUANTITY_BONUS = 0  # v368 reverted
-COMM_BONUS = 8  # v370
-LIFE_BONUS = 8  # v374
-CHANGE_BONUS = 8  # v376
-SOCIAL_BONUS = 8  # v463 base
+CONTENT_BONUS = 5  # v644 sweet spot
+RARE_BONUS = 6  # v955 sweet spot
+EMO_BONUS = 42  # v1118 BEST
+BODY_BONUS = 4  # v1088 BEST
+MOTION_BONUS = 10  # v1122 sweet spot
+PLACE_BONUS = 4  # v337 sweet spot
+PERCEPTION_BONUS = 60
+MENTAL_BONUS = 30  # v1091 BEST
+INTENSITY_BONUS = 59  # v1350 BEST
+DISCOURSE_BONUS = 0
+TIME_BONUS = 4  # v880 sweet spot
+SPACE_BONUS = 0  # reverted
+QUALITY_BONUS = 37  # v1290 NEW BEST
+QUANTITY_BONUS = 0  # reverted
+COMM_BONUS = 0
+LIFE_BONUS = 5  # v1419 alt
+CHANGE_BONUS = 2  # v1344 BEST top5%
+SOCIAL_BONUS = 0  # v876 best
+NATURE_BONUS = 56  # v897 sweet spot
+CONC_BONUS = 0  # reverted (hurt)
+CONC_LOW_BONUS = 0  # reverted
+OTHER_REF_BONUS = 16  # v913 best
+POSSESSION_BONUS = 14  # v1283 NEW BEST
+KINSHIP_BONUS = 0  # v853 sweet spot
+ANIMAL_BONUS = 62  # v1195 sweet spot
+FOOD_BONUS = 4  # v856 sweet spot
+WORK_BONUS = 28  # v926 best
+HEALTH_BONUS = 8  # v1010 sweet spot
+TECH_BONUS = 0  # reverted
+COLOR_BONUS = 0  # COLOR has no effect at any value (4, 8, 16 all identical metrics)
+CLOTHING_BONUS = 26  # v1137
+VEHICLE_BONUS = 0  # reverted
 
 USE_CHAR_CONTENT = False  # reverted in v11 (random char hurt heavily)
 CHAR_CONTENT_STD = 1.0
@@ -110,8 +125,8 @@ _SEM_CATEGORIES = {
     "EMOTION_POS": "happy happily happiness joy joyful joys glad gladly love loved loves loving like liked likes enjoy enjoyed enjoying enjoys excited exciting excitement wonderful wonderfully great greatness amazing amazingly beautiful beautifully pleasure pleasures pleasant smile smiled smiles smiling laugh laughs laughed laughing proud proudly pride hope hoped hoping hopes hopeful delight delighted delights delightful cheerful cheerfully cheered pleased grateful gratitude relief relieved calm calmly thrill thrilled thrilling thrills euphoric ecstatic content contented contentment satisfaction satisfied jubilant elated overjoyed".split(),
     "EMOTION_NEG": "sad sadness angry anger afraid afraidly fear fears feared scared scarier frightened frightens frightening worried worry worries worrying cry cried cries crying pain pains painful hurt hurts terrible awful awfully horrible hate hated hates hating disgust disgusts disgusted grief griefs sorrow lonely loneliness nervous nervously anxious anxiously upset miserable misery depressed depression guilt guilty shame jealous jealousy fears scares scared fearful sadly sadder sorrow sorrows grieve grieving grieved cries crying sorrowful angered jealousy resentful bitter bitterly miserably wept weep weeping mournful frustrated frustration shame shameful regret regretted regretting fury furious annoyed annoying anguish anguished dreaded dread despair desperate".split(),
     "COMMUNICATION": "say said says saying tell told telling tells speak spoke spoken speaking talk talked talking talks ask asked asking asks answer answers answered answering call called calling calls shout shouts shouted shouting yell yelled whisper whispers whispered word words voice voices question questions story stories explain explained explains read reads write wrote writing writes letter letters book books reply replies replied discuss discussed mention mentioned mentions describe described describes name names news conversation conversations promise promised promises thank thanks thanked thanking announce announced state stated".split(),
-    "MENTAL": "think thought thinks thinking know knew known knows believe believed believes believing remember remembered remembers remembering forget forgot forgotten forgets forgetting understand understood understands understanding realize realized realizes realizing wonder wondered wonders wondering imagine imagined imagines imagining guess guessed guesses guessing idea ideas mind learn learned learns learning dream dreamed dreams dreaming decide decided decides deciding suppose supposed supposing consider considered considering considers expect expected expects expecting assume assumed assumes doubt doubted doubts notice noticed notices noticing want wanted wants wanting wish wished wishes need needed needs needing hope hoped hopes hoping mean meant means meaning figure figured figures figuring plan planned plans planning try tried tries trying care cared cares caring teach taught teaches teaching experience experienced experiences truth knows believes thinks remembers forgets understands realizes wonders imagines guesses thinking knowing believing remembering forgetting understanding decision decisions choice choices opinion opinions reflect reflected reflecting reflects meditate meditates meditated considering pondering ponder pondered recall recalled recalls recalling perceive perceived perceives".split(),
-    "PERCEPTION": "see saw seen seeing look looked looking looks watch watched watching watches hear heard hears hearing listen listened listens listening smell smelled smells smelling taste tasted tastes tasting touch touched touches touching feel felt feels feeling notice noticed notices noticing stare stared stares staring glance glanced glances observe observed observes observing gaze gazed gazes gazing peer peered peering glimpse glimpsed sniff sniffed peeking peeked peek".split(),
+    "MENTAL": "think thought thinks thinking know knew known knows believe believed believes believing remember remembered remembers remembering forget forgot forgotten forgets forgetting understand understood understands understanding realize realized realizes realizing wonder wondered wonders wondering imagine imagined imagines imagining guess guessed guesses guessing idea ideas mind learn learned learns learning dream dreamed dreams dreaming decide decided decides deciding suppose supposed supposing consider considered considering considers expect expected expects expecting assume assumed assumes doubt doubted doubts notice noticed notices noticing want wanted wants wanting wish wished wishes need needed needs needing hope hoped hopes hoping mean meant means meaning figure figured figures figuring plan planned plans planning try tried tries trying care cared cares caring teach taught teaches teaching experience experienced experiences truth knows believes thinks remembers forgets understands realizes wonders imagines guesses thinking knowing believing remembering forgetting understanding decision decisions choice choices opinion opinions reflect reflected reflecting reflects meditate meditates meditated considering pondering ponder pondered recall recalled recalls recalling perceive perceived perceives conclude concluded concludes concluding judge judged judges judging trust trusted trusts trusting evaluate evaluated evaluates analyze analyzed analyzes intend intended intends intending crave craved craves craving prefer preferred prefers preferring choose chose chosen chooses choosing reason reasoned reasons reasoning rationalize rationalized determine determined determines question questioned questions questioning interpret interpreted interprets concept concepts thought thoughts mindful mindfully aware unaware awareness".split(),
+    "PERCEPTION": "see saw seen seeing look looked looking looks watch watched watching watches hear heard hears hearing listen listened listens listening smell smelled smells smelling taste tasted tastes tasting touch touched touches touching feel felt feels feeling notice noticed notices noticing stare stared stares staring glance glanced glances observe observed observes observing gaze gazed gazes gazing peer peered peering glimpse glimpsed sniff sniffed peeking peeked peek peeks view viewed views viewing eyed eyeing spotted spots spotting blink blinked blinks blinking squint squinted squints spy spied spies spying overhear overheard overhears detect detected detects detecting sense sensed senses sensing perceive perceived perceives perceiving recognize recognized recognizes recognizing scent scenting scented savor savored savors savoring witnessed witness witnesses witnessing".split(),
     "FOOD": "eat ate eaten eating eats food foods drink drank drinking drunk drinks water bread breads meat meats fruit fruits apple apples orange oranges meal meals breakfast breakfasts lunch lunches dinner dinners cook cooked cooking cooks hungry thirsty sweet bitter sour salt sugar coffee tea wine beer milk egg eggs cheese cheeses cake cakes soup soups rice cookies cookie pizza pizzas burger burgers pasta noodles salad salads sandwich sandwiches dessert desserts chocolate candy candies snack snacks butter sauce sauces juice juices yogurt cereal pancakes waffles bacon ham turkey chicken vegetable vegetables potato potatoes tomato tomatoes onion onions garlic carrot carrots peach peaches berry berries strawberry strawberries banana bananas grape grapes lemon lemons mushroom mushrooms".split(),
     "PLACE": "house home homes room rooms door doors window windows wall walls floor street streets road roads city cities town towns country school church store shop office building park garden field forest mountain river ocean sea lake beach sky world land farm village ground cabin central downtown".split(),
     "OBJECT": "thing things stuff box book books table chair bed car cars key keys money paper bag bottle cup phone clock machine tool tools wheel stone wood metal glass cloth knife pen door chain rope ball gun camera computer screen coin coins triangle".split(),
@@ -441,7 +456,7 @@ NFEAT_BASE = len(FEATURE_NAMES)
 # distinct meaning beyond their parts (e.g., "going to" = future tense,
 # "i think" = epistemic stance). Each match in the recent window emits a
 # dedicated bigram-pattern feature, appended to the feature vocab.
-BIGRAM_PATTERNS: List[Tuple[str, str, str]] = []  # disabled (hurt in v7)
+BIGRAM_PATTERNS: List[Tuple[str, str, str]] = []  # disabled (hurt in v7, v611)
 _BIGRAM_NAMES = sorted({p[2] for p in BIGRAM_PATTERNS})
 FEATURE_NAMES = FEATURE_NAMES + _BIGRAM_NAMES
 NFEAT = len(FEATURE_NAMES)
@@ -451,23 +466,12 @@ _FEAT2IDX = {n: i for i, n in enumerate(FEATURE_NAMES)}
 # detected as a soft-AND co-occurrence in the uniform-mean pooled context and
 # written to a new unused residual slot, so the ridge can read off feature
 # interactions the linear feature bag cannot capture.
-MLP_COMPOSITIONS: List[Tuple[str, str]] = [
-    ("NEG_SCOPE", "VAL_POS"),               # negated positive
-    ("NEG_SCOPE", "VAL_NEG"),               # negated negative
-    ("SEM_BODY", "MOD_MOTOR"),              # embodied action
-    ("SELF_REF", "SEM_EMOTION_NEG"),        # self-directed distress
-    ("SELF_REF", "SEM_EMOTION_POS"),        # self-directed joy
-    ("MOD_SOUND", "SEM_COMMUNICATION"),     # speech perception
-    ("VAL_NEG_INT", "ANIMATE"),             # someone hurt/killed
-    ("AROUSAL_HIGH", "MOD_MOTOR"),          # violent action
-    ("SEM_KINSHIP", "SEM_EMOTION_POS"),     # warm family
-    ("SEM_KINSHIP", "SEM_EMOTION_NEG"),     # family conflict
-    ("MOD_VISION", "SEM_COLOR"),            # color perception
-    ("SEM_PLACE", "SEM_SELF_MOTION"),       # going somewhere
-    ("FUNC_NEG", "MOD_MOTOR"),              # not doing
-    ("FUNC_AUX", "SEM_MENTAL"),             # modal thinking (could/should think)
-    ("SEM_TIME", "SEM_CHANGE"),             # temporal change
-]
+MLP_COMPOSITIONS: List[Tuple[str, str]] = [("SEM_MENTAL", "SEM_SOCIAL"), ("SEM_MENTAL", "SEM_LIFE_DEATH"), ("SEM_SOCIAL", "SEM_LIFE_DEATH"), ("SEM_MENTAL", "SEM_EMOTION_POS"), ("SEM_EMOTION_POS", "SEM_LIFE_DEATH"), ("SEM_MENTAL", "SEM_TIME"), ("SEM_SOCIAL", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_TIME"), ("SEM_MENTAL", "SEM_NATURE")]  # v1557
+
+# v669 MLP composition tunables.
+MLP_POOL_HEAD = 0     # head index whose attn output is read
+MLP_COMP_THRESHOLD = -0.03  # v1546
+MLP_COMP_SCALE = 25.0  # back to default
 
 
 def _bigram_match(w1: str, w2: str) -> List[str]:
@@ -545,7 +549,7 @@ _WORD2IDTOK = {w: WORD_ID_TOKEN_BASE + i for i, w in enumerate(WORD_ID_VOCAB)}
 N_WORD_ID = len(WORD_ID_VOCAB)
 
 # Optional hashed-word identity dimension (overfits heavily; off by default).
-USE_WORD_ID = False
+USE_WORD_ID = False  # reverted, overfits
 WORD_ID_STD = 0.25
 WORD_HASH_SIZE = 16384
 WORD_HASH_BASE = WORD_ID_TOKEN_BASE + N_WORD_ID
@@ -744,6 +748,45 @@ class InterpretableEmbedder:
             # v380: social interaction verbs.
             if "SEM_SOCIAL" in wf:
                 reps = reps + SOCIAL_BONUS
+            # v497: nature/scene words help PPA/RSC.
+            if "SEM_NATURE" in wf:
+                reps = reps + NATURE_BONUS
+            # v515: concrete words drive sensory cortex.
+            if "CONC_HIGH" in wf:
+                reps = reps + CONC_BONUS
+            # v516: abstract words.
+            if "CONC_LOW" in wf:
+                reps = reps + CONC_LOW_BONUS
+            # v517: other-ref pronouns.
+            if "OTHER_REF" in wf:
+                reps = reps + OTHER_REF_BONUS
+            # v682: possession verbs (have/get/give/take/hold).
+            if "SEM_POSSESSION" in wf:
+                reps = reps + POSSESSION_BONUS
+            # v686: kinship words.
+            if "SEM_KINSHIP" in wf:
+                reps = reps + KINSHIP_BONUS
+            # v688: animal words.
+            if "SEM_ANIMAL" in wf:
+                reps = reps + ANIMAL_BONUS
+            # v689: food words.
+            if "SEM_FOOD" in wf:
+                reps = reps + FOOD_BONUS
+            # v691: work/money words.
+            if "SEM_WORK_MONEY" in wf:
+                reps = reps + WORK_BONUS
+            # v692: health words.
+            if "SEM_HEALTH" in wf:
+                reps = reps + HEALTH_BONUS
+            # v705: clothing words (new try)
+            if "SEM_CLOTHING" in wf:
+                reps = reps + CLOTHING_BONUS
+            # v706: vehicle words (new try)
+            if "SEM_VEHICLE" in wf:
+                reps = reps + VEHICLE_BONUS
+            # v707: tech words (new try)
+            if "SEM_TECH" in wf:
+                reps = reps + TECH_BONUS
             feat_ids = [FEAT_TOKEN_BASE + _FEAT2IDX[f] for f in (wf + extra)]
             if USE_CONTENT_WORD_ID and "CONTENT" in wf:
                 lookup = w.replace("'", "")
@@ -868,6 +911,25 @@ def write_weights(model: SimpleTransformer) -> None:
         # zeroed again to act as identity-add.
         blk.mlp.fc1.weight.zero_(); blk.mlp.fc1.bias.zero_()
         blk.mlp.fc2.weight.zero_(); blk.mlp.fc2.bias.zero_()
+        # v669: hand-coded MLP composition rows. Each row r detects soft-AND
+        # of two features pooled by MLP_POOL_HEAD (slice MLP_POOL_HEAD's
+        # feature slot), writes magnitude MLP_COMP_SCALE * ReLU(x_a + x_b -
+        # MLP_COMP_THRESHOLD) into an unused dim in the same head slice.
+        n_comps = 0
+        for r, (fa, fb) in enumerate(MLP_COMPOSITIONS):
+            if fa not in _FEAT2IDX or fb not in _FEAT2IDX:
+                continue
+            ia = _FEAT2IDX[fa]; ib = _FEAT2IDX[fb]
+            in_slot_a = MLP_POOL_HEAD * dh + CAT_OFFSET + ia
+            in_slot_b = MLP_POOL_HEAD * dh + CAT_OFFSET + ib
+            blk.mlp.fc1.weight[r, in_slot_a] = 1.0
+            blk.mlp.fc1.weight[r, in_slot_b] = 1.0
+            blk.mlp.fc1.bias[r] = -MLP_COMP_THRESHOLD
+            out_slot = MLP_POOL_HEAD * dh + CAT_OFFSET + NFEAT + r
+            assert out_slot < (MLP_POOL_HEAD + 1) * dh, \
+                "MLP comp output dim overflows pool head slice"
+            blk.mlp.fc2.weight[out_slot, r] = MLP_COMP_SCALE
+            n_comps += 1
         # v21: revert v20 LN, keep final_ln as Identity (the original).
         model.final_ln = nn.Identity()
 
@@ -876,8 +938,8 @@ def write_weights(model: SimpleTransformer) -> None:
 # Identity + description
 # ---------------------------------------------------------------------------
 
-model_shorthand_name = "FeatBag_v479_Lam105"
-model_description = "From v473, LAMBDAS[1]=0.05 mild recency."
+model_shorthand_name = "FeatBag_v1557_combo_MLP_9comps_MentalNature"
+model_description = "v1555 + MENTAL+NATURE 9th comp."
 
 
 # ---------------------------------------------------------------------------

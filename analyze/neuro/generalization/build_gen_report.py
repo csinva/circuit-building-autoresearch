@@ -71,8 +71,12 @@ for r in rows:
     elif r["setting"] == "newstory":
         m["newstory"] = corr
 
-# short label per model
+# short label per model. Snapshot files sometimes carry a trailing date/status tag
+# (e.g. "FeatBag_v1116_Emo40_0810_CEILING_BREAK"); strip it for a clean display name.
+import re as _re  # noqa: E402
+
 def short(model):
+    model = _re.sub(r"_\d{4}_[A-Za-z0-9_.]+$", "", model)
     return model if len(model) <= 26 else model[:24] + "…"
 
 DATA = []

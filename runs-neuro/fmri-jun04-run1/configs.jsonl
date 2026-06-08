@@ -1,0 +1,24 @@
+{"name": "w1_names_base", "env": {}}
+{"name": "w1_nonames", "env": {"USE_NAMES": 0}}
+{"name": "w1_person4", "env": {"PERSON_BONUS": 4}}
+{"name": "w1_person8", "env": {"PERSON_BONUS": 8}}
+{"name": "w1_person12", "env": {"PERSON_BONUS": 12}}
+{"name": "w1_person16", "env": {"PERSON_BONUS": 16}}
+{"name": "w1_person20", "env": {"PERSON_BONUS": 20}}
+{"name": "w1_person24", "env": {"PERSON_BONUS": 24}}
+{"name": "w1_person32", "env": {"PERSON_BONUS": 32}}
+{"name": "w1_person40", "env": {"PERSON_BONUS": 40}}
+{"name": "w1_person48", "env": {"PERSON_BONUS": 48}}
+{"name": "w1_person64", "env": {"PERSON_BONUS": 64}}
+{"name": "w1_place0", "env": {"PLACE_BONUS": 0}}
+{"name": "w1_place8", "env": {"PLACE_BONUS": 8}}
+{"name": "w1_place12", "env": {"PLACE_BONUS": 12}}
+{"name": "w1_place16", "env": {"PLACE_BONUS": 16}}
+{"name": "w1_place24", "env": {"PLACE_BONUS": 24}}
+{"name": "w1_place32", "env": {"PLACE_BONUS": 32}}
+{"name": "w1_p8_pl8", "env": {"PERSON_BONUS": 8, "PLACE_BONUS": 8}}
+{"name": "w1_p8_pl16", "env": {"PERSON_BONUS": 8, "PLACE_BONUS": 16}}
+{"name": "w1_p16_pl8", "env": {"PERSON_BONUS": 16, "PLACE_BONUS": 8}}
+{"name": "w1_p16_pl16", "env": {"PERSON_BONUS": 16, "PLACE_BONUS": 16}}
+{"name": "w1_p24_pl8", "env": {"PERSON_BONUS": 24, "PLACE_BONUS": 8}}
+{"name": "w1_p24_pl16", "env": {"PERSON_BONUS": 24, "PLACE_BONUS": 16}}
