@@ -12,4 +12,6 @@ Style everything including the code as a white-background, clean design.
 
 At the top, show a summary plot that has all the datasets in one plot for trimmed runs and another for non-trimmed runs. The points for each run should be connected as a line.
 
+At the bottom of the page, give detailed explanations on some of the best hand-engineered features, how they were implemented, and how they contributed to the results. Include code snippets and visualizations where relevant.
+
 Check the rendering at the end and make sure that things are non-overlapping and readable, even when things are clicked. If not, make adjustments to the layout and spacing.

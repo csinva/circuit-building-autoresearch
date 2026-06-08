@@ -64,7 +64,7 @@ _stoi = {c: i for i, c in enumerate(_BASE_CHARS)}
 LAMBDAS = (-0.094, -0.096, 0.4, 32.0)  # v1443 split lam0/lam1
 
 # Words actually consumed from the end of the n-gram (10-gram).
-N_APPEND_WORDS = 12  # v994 saturated
+N_APPEND_WORDS = 12  # back to default
 RECENCY_REPS = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)  # v458 flat
 
 # Each word emits 'reps' copies of its feature tokens. Final-word emphasis
@@ -75,7 +75,7 @@ RECENCY_REPS_DUMMY_REMOVE = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)  # v458 flat
 CONTENT_BONUS = 5  # v644 sweet spot
 RARE_BONUS = 6  # v955 sweet spot
 EMO_BONUS = 42  # v1118 BEST
-BODY_BONUS = 4  # v1088 BEST
+BODY_BONUS = 4  # back to default
 MOTION_BONUS = 10  # v1122 sweet spot
 PLACE_BONUS = 4  # v337 sweet spot
 PERCEPTION_BONUS = 60
@@ -87,7 +87,7 @@ SPACE_BONUS = 0  # reverted
 QUALITY_BONUS = 37  # v1290 NEW BEST
 QUANTITY_BONUS = 0  # reverted
 COMM_BONUS = 0
-LIFE_BONUS = 5  # v1419 alt
+LIFE_BONUS = 5  # back to default
 CHANGE_BONUS = 2  # v1344 BEST top5%
 SOCIAL_BONUS = 0  # v876 best
 NATURE_BONUS = 56  # v897 sweet spot
@@ -95,7 +95,7 @@ CONC_BONUS = 0  # reverted (hurt)
 CONC_LOW_BONUS = 0  # reverted
 OTHER_REF_BONUS = 16  # v913 best
 POSSESSION_BONUS = 14  # v1283 NEW BEST
-KINSHIP_BONUS = 0  # v853 sweet spot
+KINSHIP_BONUS = 0  # back to default
 ANIMAL_BONUS = 62  # v1195 sweet spot
 FOOD_BONUS = 4  # v856 sweet spot
 WORK_BONUS = 28  # v926 best
@@ -466,12 +466,17 @@ _FEAT2IDX = {n: i for i, n in enumerate(FEATURE_NAMES)}
 # detected as a soft-AND co-occurrence in the uniform-mean pooled context and
 # written to a new unused residual slot, so the ridge can read off feature
 # interactions the linear feature bag cannot capture.
-MLP_COMPOSITIONS: List[Tuple[str, str]] = [("SEM_MENTAL", "SEM_SOCIAL"), ("SEM_MENTAL", "SEM_LIFE_DEATH"), ("SEM_SOCIAL", "SEM_LIFE_DEATH"), ("SEM_MENTAL", "SEM_EMOTION_POS"), ("SEM_EMOTION_POS", "SEM_LIFE_DEATH"), ("SEM_MENTAL", "SEM_TIME"), ("SEM_SOCIAL", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_TIME"), ("SEM_MENTAL", "SEM_NATURE")]  # v1557
+MLP_COMPOSITIONS: List[Tuple[str, str]] = [("SEM_SOCIAL", "SEM_LIFE_DEATH"), ("SEM_SOCIAL", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_NATURE"), ("SEM_LIFE_DEATH", "SEM_BODY"), ("SEM_TIME", "SEM_BODY"), ("SEM_LIFE_DEATH", "SEM_MOTION"), ("SEM_LIFE_DEATH", "SEM_EMOTION_POS"), ("SEM_LIFE_DEATH", "SEM_KINSHIP"), ("SEM_LIFE_DEATH", "SEM_HEALTH"), ("SEM_LIFE_DEATH", "SEM_INTENSITY"), ("SEM_LIFE_DEATH", "SEM_COMMUNICATION")]  # v1629 swap WORK→INT
 
 # v669 MLP composition tunables.
 MLP_POOL_HEAD = 0     # head index whose attn output is read
-MLP_COMP_THRESHOLD = -0.03  # v1546
+MLP_COMP_THRESHOLD = -0.03  # back to default
 MLP_COMP_SCALE = 25.0  # back to default
+
+# v1615: triple compositions — three-way ReLU(x_a + x_b + x_c + |thresh|) * scale.
+MLP_TRIPLES: List[Tuple[str, str, str]] = []
+MLP_TRIPLE_THRESHOLD = -0.03
+MLP_TRIPLE_SCALE = 10.0
 
 
 def _bigram_match(w1: str, w2: str) -> List[str]:
@@ -930,6 +935,25 @@ def write_weights(model: SimpleTransformer) -> None:
                 "MLP comp output dim overflows pool head slice"
             blk.mlp.fc2.weight[out_slot, r] = MLP_COMP_SCALE
             n_comps += 1
+        # v1615: triple compositions. Each triple uses a fresh fc1 row appended
+        # after the pair rows, and writes to a slot AFTER the pair output slots.
+        n_pair = n_comps
+        for r3, (fa, fb, fc) in enumerate(MLP_TRIPLES):
+            if fa not in _FEAT2IDX or fb not in _FEAT2IDX or fc not in _FEAT2IDX:
+                continue
+            row = n_pair + r3
+            ia = _FEAT2IDX[fa]; ib = _FEAT2IDX[fb]; ic = _FEAT2IDX[fc]
+            in_slot_a = MLP_POOL_HEAD * dh + CAT_OFFSET + ia
+            in_slot_b = MLP_POOL_HEAD * dh + CAT_OFFSET + ib
+            in_slot_c = MLP_POOL_HEAD * dh + CAT_OFFSET + ic
+            blk.mlp.fc1.weight[row, in_slot_a] = 1.0
+            blk.mlp.fc1.weight[row, in_slot_b] = 1.0
+            blk.mlp.fc1.weight[row, in_slot_c] = 1.0
+            blk.mlp.fc1.bias[row] = -MLP_TRIPLE_THRESHOLD
+            out_slot = MLP_POOL_HEAD * dh + CAT_OFFSET + NFEAT + len(MLP_COMPOSITIONS) + r3
+            assert out_slot < (MLP_POOL_HEAD + 1) * dh, \
+                "MLP triple output dim overflows pool head slice"
+            blk.mlp.fc2.weight[out_slot, row] = MLP_TRIPLE_SCALE
         # v21: revert v20 LN, keep final_ln as Identity (the original).
         model.final_ln = nn.Identity()
 
@@ -938,8 +962,8 @@ def write_weights(model: SimpleTransformer) -> None:
 # Identity + description
 # ---------------------------------------------------------------------------
 
-model_shorthand_name = "FeatBag_v1557_combo_MLP_9comps_MentalNature"
-model_description = "v1555 + MENTAL+NATURE 9th comp."
+model_shorthand_name = "FeatBag_v1629_v1605_swapWorkInt"
+model_description = "v1605 swap WORK→INTENSITY."
 
 
 # ---------------------------------------------------------------------------

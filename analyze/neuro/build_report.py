@@ -10,6 +10,7 @@ UTS03; GPT-2 XL rows are pretrained baselines. Model / thinking-effort per run
 is read from each run folder's metadata.json (recovered from the copilot CLI
 logs the first time, then persisted there).
 """
+import base64
 import csv
 import glob
 import html
@@ -17,9 +18,18 @@ import json
 import os
 import re
 
-REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+HERE = os.path.dirname(__file__)
+REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 RUNS_DIR = os.path.join(REPO, "runs-neuro")
-OUT = os.path.join(os.path.dirname(__file__), "report.html")
+OUT = os.path.join(HERE, "report.html")
+MAY27_ANALYSIS = os.path.join(RUNS_DIR, "fmri-may27-run1", "analysis")
+ASSETS = os.path.join(HERE, "assets")
+
+
+def img_b64(path):
+    """Embed a PNG as a self-contained data URI (keeps report.html portable)."""
+    with open(path, "rb") as f:
+        return "data:image/png;base64," + base64.b64encode(f.read()).decode("ascii")
 
 # ---------------------------------------------------------------------------
 # Flagging.  The premise is that the agent hand-writes the weights of a small
@@ -163,7 +173,7 @@ WRITEUP = {
     "fmri-jun03-run2": {
         "headline": "GPT-5.5 brute-forced a large lexicon search — many iterations, modest ceiling.",
         "worked": "A 'semantic best-lexicon' approach that greedily adds/drops individual high-value content words "
-                  "(love, old, little, time, face, …) with a tail/context window. With 4,100+ iterations it reached "
+                  "(love, old, little, time, face, …) with a tail/context window. With 4,300+ iterations it reached "
                   "<b>0.063</b> using only ~7k parameters.",
         "failed": "Char-only and multi-decay structural variants (<code>char_only_rec90</code> 0.028, "
                   "<code>structure_multidecay</code> 0.030) underperformed. The search spent enormous effort on "
@@ -188,24 +198,25 @@ WRITEUP = {
     },
     "fmri-jun03-run4": {
         "headline": "Claude Opus 4.7 converged fast (within ~10 iterations) on a compact feature-bag transformer, "
-                    "then spent 1,500+ more iterations expanding lexicons for tiny gains.",
+                    "then spent 1,580+ more iterations expanding lexicons for tiny gains.",
         "worked": "The <code>FeatBag</code> family — a single hand-wired attention layer pooling interpretable "
                   "feature tokens over the 10-gram at four position time-scales (λ = −2, 0, 4, 16: primacy + global "
                   "mean + two recency heads), with negation flipping valence — crossed <b>0.070</b> by iteration 10 "
-                  "and crept to <b>0.081</b> (<code>FeatBag_v1116_Emo40</code>, tuning the emotion-lexicon size). Restoring "
-                  "extra semantic categories (motor, names, places) and adding heads helped most; the long tail of "
-                  "<code>FeatBag_v3xx–v11xx_*Bonus/Emo*</code> lexicon and λ expansions added only ~0.011 over 1,500+ iterations.",
+                  "and crept to <b>0.082</b> (<code>FeatBag_v1603_…addLifeHealth</code>, adding life/health lexicons) — "
+                  "now within <b>~0.001</b> of the GPT-2 XL baseline. Restoring extra semantic categories (motor, names, "
+                  "places, life/health) and adding heads helped most; the long tail of "
+                  "<code>FeatBag_v3xx–v16xx_*Bonus/Emo*</code> lexicon and λ expansions added only ~0.012 over 1,580+ iterations.",
         "failed": "Stripping the semantic features back (<code>FeatBag_v9_LambdaSweep</code> 0.041, "
                   "<code>FeatBag_v2_WordID</code> 0.055) or randomizing the MLP hurt. The win came from richer "
                   "hand-curated semantics, not from architectural search.",
     },
     "fmri-jun04-run1": {
-        "headline": "Claude Opus 4.8 (xhigh) resumed run 4's FeatBag circuit and probed reference / emotion / "
-                    "concreteness features — a short run that nudged the FeatBag ceiling to ~0.079.",
+        "headline": "Claude Opus 4.8 (xhigh) resumed run 4's FeatBag circuit and probed reference / emotion / name "
+                    "features — a short run that nudged the FeatBag ceiling to ~0.080.",
         "worked": "Starting from a reproduced <code>FeatBag</code> interpretable feature-bag transformer "
-                  "(<code>S1_FeatBag_Repro</code> at <b>0.075</b>), the strongest variant — a 3-head FeatBag adding "
-                  "emotion-intensity and a concreteness category (<code>FeatBag3Head_EmoInt_ConcCat</code>) — lifted "
-                  "the run to <b>0.079</b>, just behind run 4's 0.081 FeatBag ceiling.",
+                  "(<code>S1_FeatBag_Repro</code> at <b>0.075</b>), the strongest variant — a 3-head FeatBag with "
+                  "denser name lexicons and a wider emotion category (<code>FeatBag3Head_NamesDense_Emo44</code>) — lifted "
+                  "the run to <b>0.080</b>, just behind run 4's 0.082 FeatBag ceiling.",
         "failed": "Stripping to content words only (<code>E24_ContentOnly</code> 0.061) hurt most; graded "
                   "word-length + finer frequency buckets (<code>S2_LenFreqBuckets</code> 0.072) and morphological "
                   "backoff for out-of-lexicon words (<code>S3_MorphBackoff</code> 0.072) did not help. In ~50 "
@@ -340,6 +351,185 @@ def run_card(run, idx):
 cards_trimmed = "\n".join(run_card(DATA[f], i) for i, f in enumerate(TRIMMED_ORDER))
 card_untrimmed = run_card(DATA[UNTRIMMED], 0)
 
+# ---------------------------------------------------------------------------
+# Bottom-of-page deep dives.
+#   (1) Detailed explanations of the best hand-engineered features (code + viz).
+#   (2) Why the story ends are trimmed (from fmri-may27-run1/analysis/report.md).
+# ---------------------------------------------------------------------------
+
+def code_block(src):
+    return f'<pre class="code">{html.escape(src.strip(chr(10)))}</pre>'
+
+
+# --- snippets (lightly abbreviated from the real snapshots, faithful to logic) ---
+FEATBAG_TOKENIZE = r'''
+def word_features(w):                    # runs-neuro/fmri-jun03-run4/interpretable_transformer.py
+    """The one-hot feature tokens a single word emits."""
+    feats = [freq_bucket(w)]                      # FREQ_RARE / FREQ_MID / FREQ_COMMON
+    ft = func_type(w)                             # pronoun / prep / aux / neg / wh / ...
+    feats.append("FUNC_" + ft if ft else "CONTENT")
+    for c in _WORD2CATS.get(w, []):               # ~40 hand-curated semantic categories:
+        feats.append("SEM_" + _CAT_NAMES[c])      #   SEM_EMOTION_POS, SEM_BODY, SEM_PLACE, ...
+    for m in _WORD2MOD.get(w, []):                # perceptual modality of the referent:
+        feats.append("MOD_" + _MOD_NAMES[m])      #   MOD_VISION, MOD_SOUND, MOD_TOUCH, ...
+    if w in _SELF_REF:  feats.append("SELF_REF")  # I / me / my  (vs OTHER_REF: he/she/they)
+    if w in _VAL_POS:   feats.append("VAL_POS")   # affective valence
+    if w in _VAL_NEG:   feats.append("VAL_NEG")
+    return feats
+'''
+
+FEATBAG_ATTN = r'''
+# write_weights(): hand-set the single attention layer so each head is a fixed
+# recency time-scale.  Position j is stored in POS_DIM of every token; BIAS_DIM
+# holds a constant 1.  Per head the query reads BIAS_DIM and the key reads
+# POS_DIM * lambda_h, so the score is  q . k = lambda_h * j  — it depends ONLY on
+# position, never on token content.  softmax_j then gives a fixed weighting:
+LAMBDAS = (-0.094, -0.096, 0.4, 32.0)    # primacy, primacy, mild-recency, last-word
+for h, lam in enumerate(LAMBDAS):
+    attn.W_q.weight[h*dh, BIAS_DIM] = 1.0
+    attn.W_k.weight[h*dh, POS_DIM]  = lam * math.sqrt(dh)
+attn.W_v.weight.copy_(eye)               # value = identity, so each head's output
+attn.W_o.weight.copy_(eye)               # is a lambda-weighted BAG of feature tokens
+
+# salient words emit EXTRA copies of their tokens -> up-weighted in the mean head:
+if "CONTENT" in wf:    reps += CONTENT_BONUS
+if "SEM_BODY" in wf:   reps += BODY_BONUS      # motor / somatosensory cortex
+if "SEM_MOTION" in wf: reps += MOTION_BONUS
+if "SEM_PLACE" in wf:  reps += PLACE_BONUS      # RSC / PPA scene network
+'''
+
+STORYARC = r'''
+def _multibasis_pos_block(N):    # runs-neuro/fmri-may27-run1/.../WordNetMorphLingStoryArc.py
+    """108-dim positional code per ngram i; depends ONLY on position p=(i+.5)/N."""
+    p = (np.arange(N) + 0.5) / N
+    x = 2 * p - 1
+    parts = []
+    for k in range(1, 11):                                   # Fourier        (20 dims)
+        parts += [np.sin(2*np.pi*p*k), np.cos(2*np.pi*p*k)]
+    for k in range(1, 11):                                   # Chebyshev T_k   (10 dims)
+        parts.append(np.cos(k * np.arccos(np.clip(x, -1, 1))))
+    for k in range(1, 11):                                   # Legendre  P_k   (10 dims)
+        parts.append(_norm_var(legval(x, _onehot(k)), 0.5))
+    for cnt, sig in [(20,.5), (20,1.), (20,2.), (5,.2)]:     # multi-width RBFs (65 dims)
+        for c in np.linspace(0, 1, cnt):
+            parts.append(_norm_var(np.exp(-(p-c)**2 / (2*(sig/(cnt+1))**2)), 0.5))
+    parts += [_norm_var(np.log1p(idx), .5),                  # log / linear    ( 3 dims)
+              _norm_var(np.log1p(N-1-idx), .5), _norm_var(p-0.5, .5)]
+    return np.stack(parts, axis=1)        # word identity & semantics NEVER enter here
+'''
+
+# Embed images (FeatBag figure generated into assets/; story-arc figures come
+# straight from the may27 analysis folder).
+IMG_FEATBAG = img_b64(os.path.join(ASSETS, "featbag_attention.png"))
+IMG_ARC_CURVES = img_b64(os.path.join(MAY27_ANALYSIS, "storyarc_curves.png"))
+IMG_ARC_RESPONSE = img_b64(os.path.join(MAY27_ANALYSIS, "storyarc_vs_response.png"))
+
+DEEPDIVE = f'''
+  <h2>Deep dive — the best hand-engineered features</h2>
+  <p class="lead">Every model here is a <b>circuit hand-wired by the agent</b>: no gradients, no
+  pretraining, no corpus statistics. Three feature families did most of the work. Below is how each
+  was implemented and what it bought, with code lifted (lightly abbreviated) from the actual snapshots.</p>
+
+  <div class="feat">
+    <h3>1 · FeatBag interpretable feature tokens <span class="tag">trimmed-run workhorse · run 4 → 0.082</span></h3>
+    <p class="sub">runs-neuro/fmri-jun03-run4 (and the closely related <code>LexFeat</code> of run 1,
+    <code>FeatBag3Head</code> of jun-04). The strongest legitimate models on the trimmed metric.</p>
+    <p>Each word is tokenized into a handful of <b>one-hot "feature tokens"</b> — its function-word type
+    or <code>CONTENT</code>, ~40 hand-curated semantic categories (emotion, body, motion, place, …),
+    perceptual modality, person-reference and valence. There is <b>no learned embedding table</b>: every
+    feature owns one dedicated dimension that ridge can weight on its own.</p>
+    {code_block(FEATBAG_TOKENIZE)}
+    <p>A single attention layer then pools those tokens over the 10-gram at <b>four hand-set recency
+    time-scales</b>. The weights are wired by hand so that each head's attention score is exactly
+    <code>λ<sub>h</sub>·j</code> (j = position in the n-gram) — a content-free position kernel. The value
+    matrix is the identity, so each head returns a <b>λ-weighted bag</b> of the feature tokens:
+    a primacy head (front of the n-gram), a uniform "global mean" head, a mild-recency head, and a sharp
+    last-word head. Salient words (content, body, motion, place) emit extra token copies, biasing the
+    mean head toward meaning-bearing words.</p>
+    {code_block(FEATBAG_ATTN)}
+    <figure class="fig"><img src="{IMG_FEATBAG}" alt="FeatBag attention heads">
+      <figcaption>The four hand-set heads as functions of position in the 10-gram. Because the score is
+      <code>softmax<sub>j</sub>(λ·j)</code>, λ&lt;0 looks at the oldest word (primacy), λ=0 is a flat mean,
+      and large λ concentrates on the current word. Concatenating the four heads gives the model
+      short- and long-range context simultaneously — the single most important architectural choice in
+      the trimmed runs.</figcaption></figure>
+    <p><b>What it bought:</b> richer hand-curated semantics was the dominant lever — stripping the
+    semantic categories back to word-identity only (<code>FeatBag_v9_LambdaSweep</code>) collapsed run 4
+    from 0.082 to 0.041, while architectural search (more heads, λ sweeps) moved it by &lt;0.01. The
+    feature <i>vocabulary</i>, not the pooling, is where the signal lives.</p>
+  </div>
+
+  <div class="feat">
+    <h3>2 · Multi-basis story-arc positional encoding <span class="tag">biggest single jump · +0.037</span></h3>
+    <p class="sub">runs-neuro/fmri-may27-run1 — the largest one-step gain of any run (0.066 → 0.104).</p>
+    <p>This block maps each n-gram to a 108-dim vector that is a deterministic function of its
+    <b>normalized position</b> <code>p = (i+½)/N</code> in the story — and nothing else (no word identity,
+    no semantics). It stacks several orthogonal function bases so ridge can compose an arbitrary smooth
+    profile over story-position: 10 Fourier harmonics, 10 Chebyshev and 10 Legendre polynomials,
+    65 multi-width Gaussian bumps, and 3 log/linear channels.</p>
+    {code_block(STORYARC)}
+    <figure class="fig"><img src="{IMG_ARC_CURVES}" alt="story-arc basis channels">
+      <figcaption>Representative basis channels vs. normalized position <code>p∈[0,1]</code> (one Fourier
+      sine, a higher-frequency cosine, a Chebyshev and a Legendre polynomial, a mid-width RBF near the
+      middle, and the linear <code>p−½</code> channel). Each is a fixed function of position, so the
+      same shapes transfer identically from train to test stories — only the number of samples (story
+      length N) changes.</figcaption></figure>
+    <p><b>What it bought:</b> position-only features reach <b>test_corr ≈ 0.090 by themselves</b> — already
+    above the GPT-2 XL baseline — because the BOLD signal carries strong story-position-locked structure
+    (see the trimming note below). This is also exactly why the may-27 run is shown separately: it did not
+    trim the story ends, so it benefits most from this content-free positional prior.</p>
+  </div>
+
+  <div class="feat">
+    <h3>3 · WordNet supersense + perceptual-modality lexicons <span class="tag">content backbone</span></h3>
+    <p class="sub">runs-neuro/fmri-may27-run1 — the semantic side that the story-arc was added on top of.</p>
+    <p>The content backbone counts, for each 10-gram, how many words fall into each <b>WordNet
+    supersense</b> (45 categories: nouns 4–29, verbs 30–44) and into six hand-coded <b>perceptual
+    modality</b> lexicons (vision 79, audition 90, touch 83, taste 55, smell 30, motor 129 words —
+    Lynott &amp; Connell-inspired). Crucially the match is <b>n-gram-wide</b>, not last-word-only — a
+    common pitfall, since each input string is the whole 10-gram:</p>
+    {code_block("""# texts[i] is the i-th 10-gram (10 space-joined words), NOT a single word.
+for t in texts:                          # WRONG: `t in LEX` matches the whole 10-gram -> always 0
+    counts = [0] * len(MODALITIES)
+    for w in t.split():                  # RIGHT: scan each word in the n-gram
+        for m, LEX in enumerate(MODALITIES):
+            if w in LEX: counts[m] += 1   # + windowed density + EW running average at tau in {8,30}""")}
+    <p><b>What it bought:</b> the supersense vector alone scored 0.054; adding morphology, hypernym depth
+    and multi-τ cumulative averaging lifted it to 0.066, and the six-modality perceptual block added a
+    final +0.001 (auditory cortex was the ROI most improved, 0.20 → 0.30). Hand-curated lexical semantics
+    — not n-gram hashing — is what consistently separated the strong runs from the weak ones.</p>
+  </div>
+'''
+
+TRIMMING = f'''
+  <h2>Why the story ends are trimmed (and why may-27 is not comparable)</h2>
+  <p class="lead">All trimmed runs drop <b>30 TRs (~60&nbsp;s) off each end of every story</b> before
+  fitting and scoring; the may-27 run did not. This note explains why that 30-TR trim matters, drawing on
+  the analysis in <code>runs-neuro/fmri-may27-run1/analysis/report.md</code>.</p>
+  <div class="feat">
+    <p>The mean fMRI response (averaged over all ~95k voxels) has a large, content-free
+    <b>story-onset / offset arc</b>: a strong positive deflection in the first few TRs, a fast decay over
+    the first ~10% of the story, and a second swing at the very end. This long-timescale shape is the
+    <i>same</i> in train and test stories and has little to do with the individual words — it reflects
+    arousal/attention and onset transients locked to story position.</p>
+    <figure class="fig"><img src="{IMG_ARC_RESPONSE}" alt="mean response vs story-arc bases">
+      <figcaption>For each of 6 stories: the z-scored mean fMRI response (grey raw, black smoothed) with
+      two story-arc bases overlaid — the fundamental Fourier sine (red) and the linear <code>p−½</code>
+      channel (blue). The smoothed response is dominated by the onset spike and end-swing; single
+      positional bases already correlate <code>|r| = 0.58–0.79</code> with it. (Figure from the may-27
+      analysis.)</figcaption></figure>
+    <p>This is a problem for evaluation: a model can score <b>above the GPT-2 XL baseline using
+    position alone</b> (~0.090) — predicting the onset/offset arc without encoding any language. The
+    untrimmed metric therefore rewards a trivial, content-free signal concentrated at the story edges.
+    <b>Trimming 30 TRs off each end removes those edges</b>, so the remaining metric reflects genuine
+    word-by-word language encoding rather than the onset/offset transient.</p>
+    <p>That is precisely why the <b>may-27 run is presented separately and not compared head-to-head</b>:
+    its 0.115 (and its 0.079 GPT-2 XL reference) are computed on the easier, untrimmed signal, whereas
+    every other run's ~0.06–0.08 is on the harder trimmed signal (GPT-2 XL = 0.083). The two number
+    scales are not interchangeable.</p>
+  </div>
+'''
+
 # JSON payload for Plotly (only the fields the front-end needs).
 def js_payload(run):
     nb = [r for r in run["rows"] if not r["base"]]
@@ -456,6 +646,25 @@ HTML = f'''<!doctype html>
   .legend-note {{ font-size:13px; color:var(--dim); margin-top:10px; }}
   footer {{ margin-top:60px; color:var(--dim); font-size:12.5px;
     border-top:1px solid var(--line); padding-top:18px; }}
+  /* deep-dive feature explanations */
+  .feat {{ border:1px solid var(--line); border-radius:14px; padding:20px 22px;
+    margin:20px 0; background:var(--bg); }}
+  .feat h3 {{ font-size:16px; margin:0 0 2px; }}
+  .feat .sub {{ color:var(--dim); font-size:13px; margin:0 0 12px; }}
+  .feat .tag {{ display:inline-block; font-size:11px; font-weight:600; border-radius:999px;
+    padding:2px 9px; margin-left:8px; background:var(--goodbg); color:var(--good);
+    vertical-align:middle; }}
+  .feat p {{ font-size:14px; }}
+  pre.code {{ background:#fbfbfd; border:1px solid var(--line); border-radius:10px;
+    padding:13px 15px; overflow:auto; font-size:12px; line-height:1.5;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; color:#1f2937;
+    margin:12px 0; white-space:pre; }}
+  pre.code .cmt {{ color:#94a3b8; }} pre.code .kw {{ color:#7c3aed; }}
+  pre.code .str {{ color:#15803d; }}
+  figure.fig {{ margin:14px 0 4px; text-align:center; }}
+  figure.fig img {{ max-width:100%; height:auto; border:1px solid var(--line);
+    border-radius:10px; background:#fff; }}
+  figure.fig figcaption {{ color:var(--dim); font-size:12px; margin-top:7px; text-align:left; }}
 </style>
 </head>
 <body>
@@ -510,6 +719,8 @@ HTML = f'''<!doctype html>
   <p class="lead">These five runs share an identical evaluation and baseline (GPT-2 XL = 0.083),
   so their curves are directly comparable.</p>
   {cards_trimmed}
+  {DEEPDIVE}
+  {TRIMMING}
 
   <footer>
     Generated from <code>runs-neuro/*/results/overall_results.csv</code>. Model / effort labels

@@ -71,12 +71,15 @@ for r in rows:
     elif r["setting"] == "newstory":
         m["newstory"] = corr
 
-# short label per model. Snapshot files sometimes carry a trailing date/status tag
+# Snapshot files sometimes carry a trailing date/status tag
 # (e.g. "FeatBag_v1116_Emo40_0810_CEILING_BREAK"); strip it for a clean display name.
 import re as _re  # noqa: E402
 
+def clean_name(model):
+    return _re.sub(r"_\d{4}_[A-Za-z0-9_.]+$", "", model)
+
 def short(model):
-    model = _re.sub(r"_\d{4}_[A-Za-z0-9_.]+$", "", model)
+    model = clean_name(model)
     return model if len(model) <= 26 else model[:24] + "…"
 
 DATA = []
@@ -140,7 +143,7 @@ def recap_rows():
     for run in seen:
         meta = RUN_META.get(run, {})
         ds = [d for d in DATA if d["run"] == run]
-        names = ", ".join(html.escape(d["model"]) for d in ds)
+        names = ", ".join(html.escape(clean_name(d["model"])) for d in ds)
         out.append(
             f'<tr><td><span class="dot" style="background:{PALETTE.get(run,"#555")}"></span>'
             f'{html.escape(meta.get("label", run))}</td>'

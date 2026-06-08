@@ -42,14 +42,14 @@ SELECTED = [
     ("fmri-jun03-run3", "Deep_EnsembleWB_Tuned", 0.0370, "tuned deep ensemble"),
     ("fmri-jun03-run3", "MultiScale_Temporal_Pool", 0.0362, "multiscale temporal pooling"),
     # Jun03 run4 — Claude Opus 4.7 (xhigh). FeatBag interpretable feature-bag transformer.
-    ("fmri-jun03-run4", "FeatBag_v1116_Emo40_0810_CEILING_BREAK", 0.0810, "current FeatBag ceiling (emotion-lexicon tuned)"),
+    ("fmri-jun03-run4", "FeatBag_v1116_Emo40_0810_CEILING_BREAK", 0.0810, "near-ceiling FeatBag (emotion-lexicon tuned; run later reached 0.082 with same family)"),
     ("fmri-jun03-run4", "FeatBag_v11_MoreSEM", 0.0702, "earlier best FeatBag (rich semantics)"),
     ("fmri-jun03-run4", "FeatBag_v2_WordID", 0.0550, "ablated FeatBag (word-id)"),
     # May27 run1 — Claude Opus 4.7 (xhigh), UNTRIMMED original eval. WordNet+morphology+perceptual.
     ("fmri-may27-run1", "WordNetMorphLingPerceptual", 0.1146, "best (UNTRIMMED orig eval)"),
     ("fmri-may27-run1", "WordNetMorphLingMultiTau", 0.0665, "simpler multi-tau content"),
     # Jun04 run1 — Claude Opus 4.8 (xhigh). Resumed run4's FeatBag (was given all prior runs' results).
-    ("fmri-jun04-run1", "FeatBag3Head_EmoInt_ConcCat", 0.0792, "current best 3-head FeatBag (emotion-intensity + concreteness)"),
+    ("fmri-jun04-run1", "FeatBag3Head_EmoInt_ConcCat", 0.0792, "near-best 3-head FeatBag (emotion-intensity + concreteness; run later reached 0.080 with same family)"),
     ("fmri-jun04-run1", "N3_OtherRefBonus8", 0.0774, "earlier FeatBag refinement (other-reference bonus)"),
     ("fmri-jun04-run1", "E24_ContentOnly", 0.0609, "ablated FeatBag (content words only)"),
 ]
