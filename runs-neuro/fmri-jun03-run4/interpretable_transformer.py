@@ -74,36 +74,37 @@ RECENCY_REPS_DUMMY_REMOVE = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)  # v458 flat
 # (so the lambda=0 "global mean" head is biased toward content over function).
 CONTENT_BONUS = 5  # v644 sweet spot
 RARE_BONUS = 6  # v955 sweet spot
-EMO_BONUS = 42  # v1118 BEST
-BODY_BONUS = 4  # back to default
-MOTION_BONUS = 10  # v1122 sweet spot
-PLACE_BONUS = 4  # v337 sweet spot
-PERCEPTION_BONUS = 60
-MENTAL_BONUS = 30  # v1091 BEST
+EMO_BONUS = 48
+BODY_BONUS = 8  # back to default
+MOTION_BONUS = 12  # v2091 base
+PLACE_BONUS = 0  # v337 sweet spot
+PERCEPTION_BONUS = 57
+MENTAL_BONUS = 31  # v2109 base
 INTENSITY_BONUS = 59  # v1350 BEST
 DISCOURSE_BONUS = 0
-TIME_BONUS = 4  # v880 sweet spot
+TIME_BONUS = 2  # v880 sweet spot
 SPACE_BONUS = 0  # reverted
-QUALITY_BONUS = 37  # v1290 NEW BEST
+QUALITY_BONUS = 49  # v1290 NEW BEST
 QUANTITY_BONUS = 0  # reverted
 COMM_BONUS = 0
-LIFE_BONUS = 5  # back to default
+LIFE_BONUS = 2  # v2091 base
 CHANGE_BONUS = 2  # v1344 BEST top5%
 SOCIAL_BONUS = 0  # v876 best
 NATURE_BONUS = 56  # v897 sweet spot
 CONC_BONUS = 0  # reverted (hurt)
 CONC_LOW_BONUS = 0  # reverted
-OTHER_REF_BONUS = 16  # v913 best
-POSSESSION_BONUS = 14  # v1283 NEW BEST
-KINSHIP_BONUS = 0  # back to default
+OTHER_REF_BONUS = 12  # v913 best (back)
+POSSESSION_BONUS = 14  # v1283 NEW BEST (back)
+KINSHIP_BONUS = 0  # back to v2205
 ANIMAL_BONUS = 62  # v1195 sweet spot
-FOOD_BONUS = 4  # v856 sweet spot
-WORK_BONUS = 28  # v926 best
-HEALTH_BONUS = 8  # v1010 sweet spot
+FOOD_BONUS = 8  # v1689 new sweet spot
+WORK_BONUS = 26  # v1783 sweet spot (back)
+HEALTH_BONUS = 20  # v1732 sweet spot
 TECH_BONUS = 0  # reverted
 COLOR_BONUS = 0  # COLOR has no effect at any value (4, 8, 16 all identical metrics)
 CLOTHING_BONUS = 26  # v1137
 VEHICLE_BONUS = 0  # reverted
+SCHOOL_BONUS = 0  # reverted
 
 USE_CHAR_CONTENT = False  # reverted in v11 (random char hurt heavily)
 CHAR_CONTENT_STD = 1.0
@@ -466,17 +467,23 @@ _FEAT2IDX = {n: i for i, n in enumerate(FEATURE_NAMES)}
 # detected as a soft-AND co-occurrence in the uniform-mean pooled context and
 # written to a new unused residual slot, so the ridge can read off feature
 # interactions the linear feature bag cannot capture.
-MLP_COMPOSITIONS: List[Tuple[str, str]] = [("SEM_SOCIAL", "SEM_LIFE_DEATH"), ("SEM_SOCIAL", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_NATURE"), ("SEM_LIFE_DEATH", "SEM_BODY"), ("SEM_TIME", "SEM_BODY"), ("SEM_LIFE_DEATH", "SEM_MOTION"), ("SEM_LIFE_DEATH", "SEM_EMOTION_POS"), ("SEM_LIFE_DEATH", "SEM_KINSHIP"), ("SEM_LIFE_DEATH", "SEM_HEALTH"), ("SEM_LIFE_DEATH", "SEM_INTENSITY"), ("SEM_LIFE_DEATH", "SEM_COMMUNICATION")]  # v1629 swap WORK→INT
+MLP_COMPOSITIONS: List[Tuple[str, str]] = [("SEM_SOCIAL", "SEM_LIFE_DEATH"), ("SEM_SOCIAL", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_NATURE"), ("SEM_TIME", "SEM_BODY"), ("SEM_LIFE_DEATH", "SEM_MOTION"), ("SEM_LIFE_DEATH", "SEM_HEALTH"), ("SEM_LIFE_DEATH", "SEM_COMMUNICATION"), ("SEM_MENTAL", "SEM_COMMUNICATION")]  # v2209 base
 
 # v669 MLP composition tunables.
-MLP_POOL_HEAD = 0     # head index whose attn output is read
-MLP_COMP_THRESHOLD = -0.03  # back to default
-MLP_COMP_SCALE = 25.0  # back to default
+MLP_POOL_HEAD = 0     # back to base
+MLP_COMP_THRESHOLD = -0.03  # v2238 base
+MLP_COMP_SCALE = 25.0  # v2109 base
 
 # v1615: triple compositions — three-way ReLU(x_a + x_b + x_c + |thresh|) * scale.
-MLP_TRIPLES: List[Tuple[str, str, str]] = []
-MLP_TRIPLE_THRESHOLD = -0.03
-MLP_TRIPLE_SCALE = 10.0
+MLP_TRIPLES: List[Tuple[str, str, str]] = [("SEM_LIFE_DEATH", "SEM_HEALTH", "SEM_WORK_MONEY"), ("SEM_HEALTH", "SEM_KINSHIP", "SEM_COMMUNICATION"), ("SEM_HEALTH", "SEM_COMMUNICATION", "SEM_MOTION"), ("SEM_HEALTH", "SEM_KINSHIP", "SEM_WORK_MONEY"), ("SEM_HEALTH", "SEM_EMOTION_POS", "SEM_MOTION"), ("SEM_HEALTH", "SEM_EMOTION_POS", "SEM_LIFE_DEATH"), ("SEM_HEALTH", "SEM_LIFE_DEATH", "SEM_COMMUNICATION"), ("SEM_LIFE_DEATH", "SEM_KINSHIP", "SEM_COMMUNICATION")]  # v2238 base
+MLP_TRIPLE_THRESHOLD = 0.020  # v2238 base
+MLP_TRIPLE_SCALE = 8.0  # v2259 (was 10)
+
+# v1660: subtractive compositions — ReLU(x_a - x_b + |thresh|) * scale.
+# "A but NOT B" pattern: fires when feature A is present but B is absent.
+MLP_SUBTRACTS: List[Tuple[str, str]] = []
+MLP_SUBTRACT_THRESHOLD = -0.03
+MLP_SUBTRACT_SCALE = 20.0
 
 
 def _bigram_match(w1: str, w2: str) -> List[str]:
@@ -792,6 +799,9 @@ class InterpretableEmbedder:
             # v707: tech words (new try)
             if "SEM_TECH" in wf:
                 reps = reps + TECH_BONUS
+            # v2026: school words.
+            if "SEM_SCHOOL" in wf:
+                reps = reps + SCHOOL_BONUS
             feat_ids = [FEAT_TOKEN_BASE + _FEAT2IDX[f] for f in (wf + extra)]
             if USE_CONTENT_WORD_ID and "CONTENT" in wf:
                 lookup = w.replace("'", "")
@@ -954,6 +964,24 @@ def write_weights(model: SimpleTransformer) -> None:
             assert out_slot < (MLP_POOL_HEAD + 1) * dh, \
                 "MLP triple output dim overflows pool head slice"
             blk.mlp.fc2.weight[out_slot, row] = MLP_TRIPLE_SCALE
+        # v1660: subtractive compositions. Each subtract uses a fresh fc1 row appended
+        # after the triple rows, and writes to a slot AFTER the triple output slots.
+        n_triple = len([t for t in MLP_TRIPLES
+                         if all(f in _FEAT2IDX for f in t)])
+        for rs, (fa, fb) in enumerate(MLP_SUBTRACTS):
+            if fa not in _FEAT2IDX or fb not in _FEAT2IDX:
+                continue
+            row = n_pair + n_triple + rs
+            ia = _FEAT2IDX[fa]; ib = _FEAT2IDX[fb]
+            in_slot_a = MLP_POOL_HEAD * dh + CAT_OFFSET + ia
+            in_slot_b = MLP_POOL_HEAD * dh + CAT_OFFSET + ib
+            blk.mlp.fc1.weight[row, in_slot_a] = 1.0
+            blk.mlp.fc1.weight[row, in_slot_b] = -1.0
+            blk.mlp.fc1.bias[row] = -MLP_SUBTRACT_THRESHOLD
+            out_slot = MLP_POOL_HEAD * dh + CAT_OFFSET + NFEAT + len(MLP_COMPOSITIONS) + len(MLP_TRIPLES) + rs
+            assert out_slot < (MLP_POOL_HEAD + 1) * dh, \
+                "MLP subtract output dim overflows pool head slice"
+            blk.mlp.fc2.weight[out_slot, row] = MLP_SUBTRACT_SCALE
         # v21: revert v20 LN, keep final_ln as Identity (the original).
         model.final_ln = nn.Identity()
 
@@ -962,8 +990,8 @@ def write_weights(model: SimpleTransformer) -> None:
 # Identity + description
 # ---------------------------------------------------------------------------
 
-model_shorthand_name = "FeatBag_v1629_v1605_swapWorkInt"
-model_description = "v1605 swap WORK→INTENSITY."
+model_shorthand_name = "FeatBag_v2259_v2238_TS8"
+model_description = "v2238 + MLP_TRIPLE_SCALE=8 (was 10)."
 
 
 # ---------------------------------------------------------------------------

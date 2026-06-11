@@ -49,7 +49,10 @@ SELECTED = [
     ("fmri-may27-run1", "WordNetMorphLingPerceptual", 0.1146, "best (UNTRIMMED orig eval)"),
     ("fmri-may27-run1", "WordNetMorphLingMultiTau", 0.0665, "simpler multi-tau content"),
     # Jun04 run1 — Claude Opus 4.8 (xhigh). Resumed run4's FeatBag (was given all prior runs' results).
-    ("fmri-jun04-run1", "FeatBag3Head_EmoInt_ConcCat", 0.0792, "near-best 3-head FeatBag (emotion-intensity + concreteness; run later reached 0.080 with same family)"),
+    # NOTE: this run's single highest scores (~0.088) used corpus statistics (n-gram surprisal LM + LSA),
+    # which are disallowed; those are excluded here. Its best LEGITIMATE model is the novelty+gazetteer one.
+    ("fmri-jun04-run1", "FeatBagNovelty_NamesDense_xrun", 0.0837, "best legitimate: FeatBag + within-story novelty + name gazetteer (beats GPT-2 XL)"),
+    ("fmri-jun04-run1", "FeatBag3Head_EmoInt_ConcCat", 0.0792, "3-head FeatBag (emotion-intensity + concreteness)"),
     ("fmri-jun04-run1", "N3_OtherRefBonus8", 0.0774, "earlier FeatBag refinement (other-reference bonus)"),
     ("fmri-jun04-run1", "E24_ContentOnly", 0.0609, "ablated FeatBag (content words only)"),
 ]

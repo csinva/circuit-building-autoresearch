@@ -207,13 +207,16 @@ HTML = f'''<!doctype html>
     <b>identical pipeline</b> (10-gram features, 30-TR edge trim, <code>ndelays=4</code>, 8 training
     stories, bootstrapped ridge), so original-vs-new comparisons are apples-to-apples.
     See the original report (<code>report.html</code>) for the full evolution curves.
-    Only genuinely <b>hand-wired</b> models are tested here: the Jun-03 run 3 iterations that loaded an
-    <b>external pretrained encoder</b> (Qwen / DistilBERT / RoBERTa / GloVe) or that <b>trained on data</b>
-    are flagged in the headline report and were <b>excluded</b> from selection. All six runs are represented,
-    including the later <b>Jun-04 run 1</b> (Claude Opus 4.8, xhigh) — a confirmation run that, having been
-    given <b>all prior runs' results</b>, resumed run 4's <code>FeatBag</code> circuit and plateaued at the
-    same ~0.077; its models are largely <b>redundant</b> in method-family with run 4's FeatBag, and we test
-    them here to confirm they transfer the same way.
+    Only genuinely <b>hand-wired</b> models are tested here. Disallowed iterations flagged in the headline
+    report are <b>excluded</b> from selection: Jun-03 run 3's <b>external pretrained encoders</b>
+    (Qwen / DistilBERT / RoBERTa / GloVe) and trained model, and Jun-04 run 1's late <b>corpus-statistics</b>
+    push (an n-gram surprisal language model + LSA / PPMI co-occurrence word vectors built from the stimulus
+    text, which reached ~0.088 but breaks the "no corpus statistics" rule). All six runs are represented.
+    <b>Jun-04 run 1</b> (Claude Opus 4.8, xhigh) was given <b>all prior runs' results</b> and resumed run 4's
+    <code>FeatBag</code>; its best <i>legitimate</i> model adds a content-free <b>within-story novelty</b>
+    block (first-mention / repetition-suppression, computed per story at inference) plus a name gazetteer
+    (<code>FeatBagNovelty_NamesDense_xrun</code>, 0.084 — itself just past GPT-2 XL), which we test here as a
+    genuinely new mechanism alongside the FeatBag family.
   </p>
 
   <div class="note">

@@ -34,18 +34,35 @@ def img_b64(path):
 # ---------------------------------------------------------------------------
 # Flagging.  The premise is that the agent hand-writes the weights of a small
 # interpretable transformer — it may NOT use any model trained on data, INCLUDING
-# text pretraining.  Both kinds below are explicitly disallowed and are excluded
-# from each run's reported best / running-best curve:
-#   "train"      — explicitly trained/back-propped on the fMRI data.
+# text pretraining, and NO corpus statistics.  Three kinds are disallowed and are
+# excluded from each run's reported best / running-best curve:
+#   "train"      — fit/back-propped on the fMRI data, OR an oracle that leaks the
+#                  held-out responses back into the features.
 #   "pretrained" — loads an external pretrained neural encoder (Qwen/BERT/GloVe/…),
 #                  i.e. a model trained on data via text pretraining.
+#   "corpus"     — derives statistics from the (stimulus) text corpus: an n-gram
+#                  surprisal language model, or LSA/PPMI co-occurrence + SVD word
+#                  vectors. Explicitly disallowed ("no corpus statistics").
 # (The fixed GPT-2 XL baseline is also text-pretrained, but it is the reference
 #  point being compared against, not a hand-written entry, so it is not flagged.)
 # Detection is keyword-based, then validated against the actual descriptions.
 _PRE_RE = re.compile(
     r"qwen|distilbert|deberta|roberta|\bbert\b|glove|word2vec|fasttext|spacy|"
     r"en_core_web|sentence.?transf|llama|mistral|minilm|mpnet|sbert", re.I)
-_TRAIN_RE = re.compile(r"backprop|end.?to.?end.?train|epochs?\b", re.I)
+_TRAIN_RE = re.compile(
+    r"backprop|end.?to.?end.?train|epochs?\b|\boracle\b|response.?leakage", re.I)
+# Corpus-derived distributional / language-model statistics (computed from the
+# stimulus text, not hand-coded). The strong tokens below never appear in the
+# legitimate hand-built models, so no negation guard is needed.  NOTE: a bare
+# "surprisal" is NOT enough — several legitimate hand-coded circuits use the
+# word as a hypothesis label (character-delta tracking, fixed English letter-
+# frequency constants); only an actual count-LM built over the stimulus corpus
+# counts as a violation.
+_CORPUS_RE = re.compile(
+    r"\bLSA\b|\bPPMI\b|latent semantic|\bSVD\b|"
+    r"surprisal block|n-?gram surprisal|surprisal language model|"
+    r"count language model|language model over the stimulus|"
+    r"n-?gram language model|distributional.{0,12}semantic", re.I)
 # Guards against false positives: "untrained", "FASTTEXT-STYLE" hand-built bags,
 # "inspired by", explicitly hand-wired/hand-built circuits.
 _NEG_TRAIN_RE = re.compile(r"untrained|no training|not trained|never trained", re.I)
@@ -53,10 +70,12 @@ _NEG_PRE_RE = re.compile(r"style|inspired|hand-?built|hand-?wired|hand-?coded", 
 
 
 def classify(name, desc):
-    """Return None | 'train' | 'pretrained' for one iteration."""
+    """Return None | 'train' | 'pretrained' | 'corpus' for one iteration."""
     blob = f"{name} | {desc}"
     if _TRAIN_RE.search(blob) and not _NEG_TRAIN_RE.search(blob):
         return "train"
+    if _CORPUS_RE.search(blob):
+        return "corpus"
     if _PRE_RE.search(blob) and not _NEG_PRE_RE.search(blob):
         return "pretrained"
     return None
@@ -139,6 +158,7 @@ def load_run(folder):
         "n_iter": len(nb),
         "n_train_flag": sum(1 for r in flagged if r["flag"] == "train"),
         "n_pre_flag": sum(1 for r in flagged if r["flag"] == "pretrained"),
+        "n_corpus_flag": sum(1 for r in flagged if r["flag"] == "corpus"),
         # "best" is the best LEGITIMATE (hand-wired, untrained) iteration.
         "best": best_legit["corr"] if best_legit else None,
         "best_name": best_legit["name"] if best_legit else None,
@@ -162,10 +182,14 @@ WRITEUP = {
         "worked": "Tokenizing each word into interpretable feature tokens (function-word type, ~40 hand-curated "
                   "semantic categories, perceptual modality, concreteness, animacy, valence/arousal, "
                   "person-reference, morphology) and pooling them with multi-scale recency-weighted attention. "
-                  "The <code>LexFeat*</code> family steadily climbed to <b>0.079</b> (<code>DisfluencySuppress</code>), with "
+                  "The <code>LexFeat*</code> family steadily climbed to 0.079 (<code>DisfluencySuppress</code>), with "
                   "small fixes (pronouns, past-tense morphology, spatial prepositions, first-word anchoring, "
                   "frequency de-emphasis, graded repetition-suppression, other-/body-reference and agent-predicate "
-                  "boosts, name-pruning and disfluency-suppression) each nudging it up.",
+                  "boosts, name-pruning and disfluency-suppression) each nudging it up. A late push added "
+                  "phonetic rhotic-coda features (<code>PhonRhoticOnly</code> 0.0794) and then numeral/quantity "
+                  "tokens — cardinal-number splits, number-repetition boosts and measure-unit words "
+                  "(<code>CardinalSplit</code> → <code>MeasureUnit</code>) — finishing at <b>0.0806</b>, "
+                  "within 0.002 of the GPT-2 XL baseline.",
         "failed": "Pure bag-of-character and raw semantic-category circuits (<code>RecencyBoC</code> 0.032, "
                   "<code>SemCatBoC</code> 0.034) were far behind — character-level information alone carries "
                   "little fMRI-relevant signal. Adding hand-curated lexical/semantic structure was what mattered.",
@@ -173,8 +197,8 @@ WRITEUP = {
     "fmri-jun03-run2": {
         "headline": "GPT-5.5 brute-forced a large lexicon search — many iterations, modest ceiling.",
         "worked": "A 'semantic best-lexicon' approach that greedily adds/drops individual high-value content words "
-                  "(love, old, little, time, face, …) with a tail/context window. With 4,300+ iterations it reached "
-                  "<b>0.063</b> using only ~7k parameters.",
+                  "(love, old, little, time, face, …) with a tail/context window. With 5,700+ iterations it reached "
+                  "<b>0.063</b> (<code>semantic_bestlex_focus_dropthe_maybe_old</code>) using only ~7k parameters.",
         "failed": "Char-only and multi-decay structural variants (<code>char_only_rec90</code> 0.028, "
                   "<code>structure_multidecay</code> 0.030) underperformed. The search spent enormous effort on "
                   "tiny per-word lexicon tweaks with diminishing returns, never closing the gap to the baseline.",
@@ -198,37 +222,44 @@ WRITEUP = {
     },
     "fmri-jun03-run4": {
         "headline": "Claude Opus 4.7 converged fast (within ~10 iterations) on a compact feature-bag transformer, "
-                    "then spent 1,580+ more iterations expanding lexicons for tiny gains.",
+                    "then spent 2,100+ more iterations expanding lexicons until it edged just past GPT-2 XL.",
         "worked": "The <code>FeatBag</code> family — a single hand-wired attention layer pooling interpretable "
                   "feature tokens over the 10-gram at four position time-scales (λ = −2, 0, 4, 16: primacy + global "
                   "mean + two recency heads), with negation flipping valence — crossed <b>0.070</b> by iteration 10 "
-                  "and crept to <b>0.082</b> (<code>FeatBag_v1603_…addLifeHealth</code>, adding life/health lexicons) — "
-                  "now within <b>~0.001</b> of the GPT-2 XL baseline. Restoring extra semantic categories (motor, names, "
-                  "places, life/health) and adding heads helped most; the long tail of "
-                  "<code>FeatBag_v3xx–v16xx_*Bonus/Emo*</code> lexicon and λ expansions added only ~0.012 over 1,580+ iterations.",
+                  "and crept to <b>0.0829</b> (<code>FeatBag_v2142_v2141_rmTrip2</code>, pruning a redundant "
+                  "LIFE/HEALTH/KIN category triple) — finally <b>edging past the GPT-2 XL baseline</b> (0.0826) "
+                  "by a hair, the first fully hand-wired trimmed model to do so. Restoring extra semantic "
+                  "categories (motor, names, places, life/health, animals) and adding heads helped most; the long "
+                  "tail of <code>FeatBag_v3xx–v21xx_*</code> lexicon and λ expansions added only ~0.013 over 2,100+ iterations.",
         "failed": "Stripping the semantic features back (<code>FeatBag_v9_LambdaSweep</code> 0.041, "
                   "<code>FeatBag_v2_WordID</code> 0.055) or randomizing the MLP hurt. The win came from richer "
                   "hand-curated semantics, not from architectural search.",
     },
     "fmri-jun04-run1": {
-        "headline": "Claude Opus 4.8 (xhigh) resumed run 4's FeatBag circuit and probed reference / emotion / name "
-                    "features — a short run that nudged the FeatBag ceiling to ~0.080.",
-        "worked": "Starting from a reproduced <code>FeatBag</code> interpretable feature-bag transformer "
-                  "(<code>S1_FeatBag_Repro</code> at <b>0.075</b>), the strongest variant — a 3-head FeatBag with "
-                  "denser name lexicons and a wider emotion category (<code>FeatBag3Head_NamesDense_Emo44</code>) — lifted "
-                  "the run to <b>0.080</b>, just behind run 4's 0.082 FeatBag ceiling.",
-        "failed": "Stripping to content words only (<code>E24_ContentOnly</code> 0.061) hurt most; graded "
-                  "word-length + finer frequency buckets (<code>S2_LenFreqBuckets</code> 0.072) and morphological "
-                  "backoff for out-of-lexicon words (<code>S3_MorphBackoff</code> 0.072) did not help. In ~50 "
-                  "iterations the run modestly improved on the hand-wired FeatBag ceiling it started from.",
+        "headline": "Claude Opus 4.8 (xhigh) grafted run 4's FeatBag onto a within-story novelty block to beat "
+                    "GPT-2 XL legitimately — then went off-premise with corpus surprisal + LSA.",
+        "worked": "Resuming run 4's best <code>FeatBag</code> bag (4-head recency pooling, 2782-word lexicon) and "
+                  "concatenating a hand-counted <b>within-story novelty</b> block (first-mention, log-recency / "
+                  "repetition-suppression (N400), cumulative unique-word fraction, narrative position — all computed "
+                  "per story at inference, not from a corpus) plus a proper-noun name/place gazetteer lifts the run to "
+                  "<b>0.0837</b> (<code>FeatBagNovelty_NamesDense_xrun</code>), <b>cleanly above the GPT-2 XL baseline "
+                  "(0.0826)</b> — the strongest fully legitimate trimmed model in the whole report.",
+        "failed": "The run then <b>abandoned the premise</b> to chase higher numbers: it stacked an <b>n-gram "
+                  "surprisal language model</b> and an <b>LSA block</b> (PPMI co-occurrence + truncated SVD word "
+                  "vectors) built from the stimulus corpus, reaching <b>0.089</b> "
+                  "(<code>FeatBagNovSurpPhonLSA2tTopCwGn_xrun</code>). Both are <b>corpus statistics</b> — explicitly "
+                  "disallowed — so those 9 iterations are <b>flagged and excluded</b>. Stripping to content words only "
+                  "(<code>E24_ContentOnly</code> 0.061) had earlier hurt most.",
     },
     "fmri-may27-run1": {
-        "headline": "Claude Opus 4.7 (untrimmed) — the only run to beat GPT-2 XL, but on an easier (untrimmed) metric.",
+        "headline": "Claude Opus 4.7 (untrimmed) — the highest absolute score, but on an easier (untrimmed) metric, "
+                    "so not comparable to the trimmed runs.",
         "worked": "Feature-engineered linguistic circuits with no transformer at all: WordNet-derived semantic "
                   "categories + morphology + perceptual-modality lexicons (vision/audition/touch/taste/smell/motor), "
                   "pooled with multi-timescale exponential windows and discourse-position / within-story novelty "
-                  "signals. <code>WordNetMorphLingPerceptual</code> hit <b>0.115</b>, beating the (untrimmed) GPT-2 XL "
-                  "baseline of 0.079 by ~46% relative.",
+                  "signals. <code>WordNetMorphLingNovelty</code> hit <b>0.114</b>, beating the (untrimmed) GPT-2 XL "
+                  "baseline of 0.079 by ~44% relative — but see the trimming note below for why this number is not "
+                  "comparable to the ~0.06–0.08 of the trimmed runs.",
         "failed": "Plain hashed bag-of-words (<code>HashedBoW</code> 0.018–0.027) and subword-bigram bags were weak. "
                   "Structured, hand-curated linguistic features dominated raw n-gram hashing.",
     },
@@ -259,22 +290,29 @@ def run_card(run, idx):
 
     # Per-run flag note (only shown when the run has flagged iterations).
     flag_note = ""
-    nt, npre = run["n_train_flag"], run["n_pre_flag"]
-    if nt or npre:
+    nt, npre, ncorp = run["n_train_flag"], run["n_pre_flag"], run["n_corpus_flag"]
+    if nt or npre or ncorp:
         parts = []
         if nt:
             parts.append(
-                f'<b>{nt}</b> iteration{"s" if nt != 1 else ""} <b>trained on data</b> '
-                f'(back-prop / fitting weights on the fMRI signal) — <b>explicitly disallowed</b>')
+                f'<b>{nt}</b> iteration{"s" if nt != 1 else ""} <b>trained on / leaked the data</b> '
+                f'(back-prop or an oracle that projects the held-out fMRI responses back into the '
+                f'features) — <b>explicitly disallowed</b>')
         if npre:
             parts.append(
                 f'<b>{npre}</b> iteration{"s" if npre != 1 else ""} loaded an <b>external pretrained '
                 f'encoder</b> (Qwen / DistilBERT / RoBERTa / GloVe / …) — a model <b>trained on data via text '
                 f'pretraining</b>, also <b>explicitly disallowed</b>')
+        if ncorp:
+            parts.append(
+                f'<b>{ncorp}</b> iteration{"s" if ncorp != 1 else ""} used <b>corpus statistics</b> '
+                f'(an n-gram surprisal language model, or LSA / PPMI co-occurrence + SVD word vectors '
+                f'built from the stimulus text) — <b>explicitly disallowed</b> ("no corpus statistics")')
         cav = ""
         if run["best_any_flag"] is not None and run["best_any"] is not None:
-            kind = ("trained directly on the fMRI data" if run["best_any_flag"] == "train"
-                    else "a text-pretrained encoder")
+            kind = {"train": "training on / leaking the fMRI data",
+                    "pretrained": "a text-pretrained encoder",
+                    "corpus": "corpus statistics (surprisal LM + LSA word vectors)"}[run["best_any_flag"]]
             cav = (f' Its single highest score, <b>{run["best_any"]:.4f}</b> '
                    f'(<code>{html.escape(run["best_any_name"])}</code>), comes from {kind} '
                    f'and is <b>excluded</b> from the run\'s reported best '
@@ -296,10 +334,13 @@ def run_card(run, idx):
         cls = "above" if above else ""
         if m["flag"] == "train":
             cls = "flag-train"
-            tag = '<span class="ftag t">⚠ trained on data</span>'
+            tag = '<span class="ftag t">⚠ trained / response leakage</span>'
         elif m["flag"] == "pretrained":
             cls = "flag-pre"
             tag = '<span class="ftag p">⚠ pretrained encoder (text pretraining)</span>'
+        elif m["flag"] == "corpus":
+            cls = "flag-corpus"
+            tag = '<span class="ftag c">⚠ corpus statistics (surprisal / LSA)</span>'
         else:
             tag = ""
         params = ("%.2g" % m["params"]) if m["params"] is not None else "—"
@@ -342,7 +383,7 @@ def run_card(run, idx):
     <p><b class="no">What didn't:</b> {w['failed']}</p>
   </div>
   <details class="methods-wrap">
-    <summary>Show all {run['n_iter']} methods tried (sorted by test_corr; green = hand-wired at/above baseline; red = trained on the fMRI data; orange = text-pretrained encoder — both disallowed &amp; excluded)</summary>
+    <summary>Show all {run['n_iter']} methods tried (sorted by test_corr; green = hand-wired at/above baseline; red = trained / response-leakage; orange = text-pretrained encoder; purple = corpus statistics (surprisal / LSA) — all three disallowed &amp; excluded)</summary>
     {table}
   </details>
 </div>'''
@@ -524,7 +565,7 @@ TRIMMING = f'''
     <b>Trimming 30 TRs off each end removes those edges</b>, so the remaining metric reflects genuine
     word-by-word language encoding rather than the onset/offset transient.</p>
     <p>That is precisely why the <b>may-27 run is presented separately and not compared head-to-head</b>:
-    its 0.115 (and its 0.079 GPT-2 XL reference) are computed on the easier, untrimmed signal, whereas
+    its 0.114 (and its 0.079 GPT-2 XL reference) are computed on the easier, untrimmed signal, whereas
     every other run's ~0.06–0.08 is on the harder trimmed signal (GPT-2 XL = 0.083). The two number
     scales are not interchangeable.</p>
   </div>
@@ -616,11 +657,13 @@ HTML = f'''<!doctype html>
   .methods tr.above td {{ background:#f6fdf8; }}
   .methods tr.flag-train td {{ background:#fef2f2; }}
   .methods tr.flag-pre td {{ background:#fff7ed; }}
+  .methods tr.flag-corpus td {{ background:#fdf4ff; }}
   .ftag {{ display:inline-block; margin-left:6px; font-size:10px; font-weight:600;
     border-radius:5px; padding:1px 6px; vertical-align:middle; white-space:nowrap;
     font-family:-apple-system,Segoe UI,Roboto,sans-serif; }}
   .ftag.t {{ color:#b91c1c; background:#fee2e2; border:1px solid #fecaca; }}
   .ftag.p {{ color:#c2410c; background:#ffedd5; border:1px solid #fed7aa; }}
+  .ftag.c {{ color:#a21caf; background:#fae8ff; border:1px solid #f5d0fe; }}
   .flag-note {{ display:flex; gap:10px; align-items:flex-start;
     background:#fef2f2; border:1px solid #fecaca; border-radius:10px;
     padding:11px 14px; font-size:13px; color:#7f1d1d; margin:4px 0 6px; }}
@@ -680,13 +723,18 @@ HTML = f'''<!doctype html>
   </p>
   <div class="note" style="background:#fef2f2;border-color:#fecaca;color:#7f1d1d">
     <b>⚠ Rule &amp; flagging.</b> The premise is that the agent <b>hand-writes</b> the weights — it may
-    <b>not use any model trained on data, including text pretraining</b>. Iterations that back-prop / fit
-    weights on the fMRI signal are flagged <span class="ftag t">⚠ trained on data</span>; iterations that
-    load a large <b>external pretrained encoder</b> (Qwen, DistilBERT, RoBERTa, GloVe, …) are flagged
-    <span class="ftag p">⚠ pretrained encoder (text pretraining)</span>. <b>Both are explicitly disallowed</b>
-    and are <b>excluded from each run's reported best and from the running-best curves</b>. Only one run
-    (Jun-03 run 3) contains any. (The <b>GPT-2 XL baseline</b> is itself text-pretrained — that is fine, as it
-    is the fixed reference point being compared against, not a hand-written entry.)
+    <b>not use any model trained on data, any text pretraining, or any corpus statistics</b>. Three kinds
+    of iteration are flagged and <b>excluded from each run's reported best and running-best curve</b>:
+    those that <b>fit on / leak the fMRI responses</b> (back-prop, or an oracle that projects the held-out
+    responses back into the features) <span class="ftag t">⚠ trained / response leakage</span>; those that
+    load a large <b>external pretrained encoder</b> (Qwen, DistilBERT, RoBERTa, GloVe, …)
+    <span class="ftag p">⚠ pretrained encoder (text pretraining)</span>; and those that derive
+    <b>corpus statistics</b> from the stimulus text — an n-gram surprisal language model, or LSA / PPMI
+    co-occurrence + SVD word vectors <span class="ftag c">⚠ corpus statistics (surprisal / LSA)</span>.
+    <b>All three are explicitly disallowed.</b> Jun-03 run 3 (pretrained encoders + one trained model) and
+    Jun-04 run 1 (a late corpus-statistics surprisal+LSA push) each contain some. (The <b>GPT-2 XL
+    baseline</b> is itself text-pretrained — that is fine, as it is the fixed reference point being
+    compared against, not a hand-written entry.)
   </div>
 
   <h2>Summary — running-best across all runs</h2>
@@ -761,7 +809,7 @@ function wrapText(s, n) {{
   return out.join("<br>");
 }}
 
-const FLAG_LABEL = {{ "train":"⚠ trained on data (disallowed)", "pretrained":"⚠ pretrained encoder — text pretraining (disallowed)" }};
+const FLAG_LABEL = {{ "train":"⚠ trained on / leaked the fMRI data (disallowed)", "pretrained":"⚠ pretrained encoder — text pretraining (disallowed)", "corpus":"⚠ corpus statistics — surprisal LM / LSA (disallowed)" }};
 function pick(d, key, want) {{
   // indices where d.flag matches the predicate `want` (null / "train" / "pretrained")
   const xs=[], ys=[], tx=[];
@@ -780,16 +828,20 @@ function drawRun(folder) {{
   const leg = pick(d, "corr", "legit");
   const tr = pick(d, "corr", "train");
   const pr = pick(d, "corr", "pretrained");
+  const co = pick(d, "corr", "corpus");
   const traces = [
     {{ x:leg.x, y:leg.y, mode:"markers", name:"hand-wired iteration",
        marker:{{size:5, color:color}}, opacity:0.5, text:leg.text, hoverinfo:"text" }},
     {{ x:d.it, y:d.rmax, mode:"lines", name:"running best (hand-wired)",
        line:{{color:color, width:2.5, shape:"hv"}}, hoverinfo:"skip" }}
   ];
+  if (co.x.length) traces.push({{ x:co.x, y:co.y, mode:"markers", name:"⚠ corpus statistics",
+       marker:{{size:7, color:"#a21caf", symbol:"square", line:{{color:"#fff", width:1}}}},
+       text:co.text, hoverinfo:"text" }});
   if (pr.x.length) traces.push({{ x:pr.x, y:pr.y, mode:"markers", name:"⚠ pretrained encoder",
        marker:{{size:7, color:"#c2410c", symbol:"diamond", line:{{color:"#fff", width:1}}}},
        text:pr.text, hoverinfo:"text" }});
-  if (tr.x.length) traces.push({{ x:tr.x, y:tr.y, mode:"markers", name:"⚠ trained on data",
+  if (tr.x.length) traces.push({{ x:tr.x, y:tr.y, mode:"markers", name:"⚠ trained / leakage",
        marker:{{size:9, color:"#b91c1c", symbol:"x", line:{{color:"#fff", width:1}}}},
        text:tr.text, hoverinfo:"text" }});
   const layout = JSON.parse(JSON.stringify(BASE_LAYOUT));

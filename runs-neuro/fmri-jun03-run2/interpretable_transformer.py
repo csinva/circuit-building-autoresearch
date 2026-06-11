@@ -53,7 +53,7 @@ MAX_WORD_CHARS = 16
 MAX_WORDS = 11
 USE_COMMON_WORD_AXES = True
 COMMON_WORD_LIMIT = 6
-CUSTOM_COMMON_WORDS = ('the', 'and', 'to', 'of', 'said', 'was', 'had', 'not', 'so', 'think', 'went', 'told', 'drink')
+CUSTOM_COMMON_WORDS = ('the', 'and', 'to', 'of', 'said', 'was', 'had', 'not', 'so', 'think', 'went', 'nothing', 'only')
 SUMMARY_MODE = 'tail_only'
 RECENCY_DECAYS = (0.60, 0.80, 0.95)
 INCLUDE_TAIL = True
@@ -705,8 +705,8 @@ def write_weights(model: SimpleTransformer) -> None:
 
 # A unique shorthand name + 1-2 sentence description of what this attempt does.
 # Used as the row identifier in results/overall_results.csv.
-model_shorthand_name = 'semantic_bestlex_pair_told_drink_ctx11_tailall_v4307'
-model_description = 'Never-stop compact semantic/exact-word model with exact axes for told and drink (ctx11_tailall).'
+model_shorthand_name = 'semantic_bestlex_pair_nothing_only_ctx11_tailall_v5698'
+model_description = 'Never-stop compact semantic/exact-word model with exact axes for nothing and only (ctx11_tailall).'
 
 
 # ---------------------------------------------------------------------------
