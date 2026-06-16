@@ -29,3 +29,4 @@ paper-imodels-agentic
 **.venv*
 **.code-workspace
 .copilot
+**.npy

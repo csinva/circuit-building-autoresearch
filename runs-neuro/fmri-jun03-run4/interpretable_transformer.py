@@ -464,7 +464,7 @@ _FEAT2IDX = {n: i for i, n in enumerate(FEATURE_NAMES)}
 # detected as a soft-AND co-occurrence in the uniform-mean pooled context and
 # written to a new unused residual slot, so the ridge can read off feature
 # interactions the linear feature bag cannot capture.
-MLP_COMPOSITIONS: List[Tuple[str, str]] = [("SEM_LIFE_DEATH", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_NATURE"), ("SEM_TIME", "SEM_BODY"), ("SEM_LIFE_DEATH", "SEM_HEALTH"), ("SEM_LIFE_DEATH", "SEM_COMMUNICATION"), ("SEM_TIME", "SEM_MOTION"), ("SEM_QUANTITY", "SEM_TIME"), ("SEM_QUANTITY", "SEM_BODY"), ("SEM_WORK_MONEY", "SEM_LIFE_DEATH"), ("SEM_MENTAL", "SEM_EMOTION_POS"), ("SEM_MENTAL", "SEM_EMOTION_NEG")]  # v3602 also remove KIN_LIFE on v3582
+MLP_COMPOSITIONS: List[Tuple[str, str]] = [("SEM_LIFE_DEATH", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_NATURE"), ("SEM_TIME", "SEM_BODY"), ("SEM_LIFE_DEATH", "SEM_HEALTH"), ("SEM_LIFE_DEATH", "SEM_COMMUNICATION"), ("SEM_TIME", "SEM_MOTION"), ("SEM_QUANTITY", "SEM_TIME"), ("SEM_QUANTITY", "SEM_BODY"), ("SEM_WORK_MONEY", "SEM_LIFE_DEATH"), ("SEM_MENTAL", "SEM_EMOTION_POS"), ("SEM_KINSHIP", "SEM_LIFE_DEATH")]  # v3603 also remove MENTAL_EMO_NEG on v3582
 
 # v669 MLP composition tunables.
 MLP_POOL_HEAD = 0     # back to base
@@ -987,7 +987,7 @@ def write_weights(model: SimpleTransformer) -> None:
 # Identity + description
 # ---------------------------------------------------------------------------
 
-model_shorthand_name = "FeatBag_v3602_v3582_rmCOMP_KIN_LIFE"
+model_shorthand_name = "FeatBag_v3603_v3582_rmCOMP_MENTAL_EMONEG"
 model_description = "v2570 - (LIFE,TIME) - (LIFE,COMM)."
 
 

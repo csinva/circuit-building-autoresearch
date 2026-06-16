@@ -1,0 +1,2 @@
+name,test_corr,train_corr,frac,secs,cfg
+best_ntr32,0.0753,0.3218,0.1241,1029.8,"{""NUM_TRAIN"": 32}"
