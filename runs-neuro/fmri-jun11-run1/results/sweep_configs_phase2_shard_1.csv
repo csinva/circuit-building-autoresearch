@@ -1,0 +1,14 @@
+name,test_corr,train_corr,frac,secs,cfg
+ortho_d20_s2,0.0508,0.6379,0.0684,449.2,"{""ORTHO_DIM"": 20, ""ORTHO_SCALE"": 2.0}"
+ortho_d30_s4,0.0497,0.6434,0.0692,432.3,"{""ORTHO_DIM"": 30, ""ORTHO_SCALE"": 4.0}"
+ortho_d80_s1,0.0525,0.6471,0.0724,451.3,"{""ORTHO_DIM"": 80, ""ORTHO_SCALE"": 1.0}"
+ortho_d120_s2,0.0508,0.6645,0.069,445.1,"{""ORTHO_DIM"": 120, ""ORTHO_SCALE"": 2.0}"
+lsa2left_d60_w8,0.0513,0.6333,0.0704,430.3,"{""LSA2_DIRECTION"": ""left"", ""LSA2_DIM"": 60, ""LSA2_WINDOW"": 8}"
+lsa2right_d60_w8,0.0537,0.6414,0.0781,445.8,"{""LSA2_DIRECTION"": ""right"", ""LSA2_DIM"": 60, ""LSA2_WINDOW"": 8}"
+ortho80_best,0.0519,0.6519,0.0729,480.6,"{""ORTHO_DIM"": 80, ""ORTHO_SCALE"": 2.0}"
+ortho50_topic60,0.0507,0.6465,0.0676,447.9,"{""ORTHO_DIM"": 50, ""ORTHO_SCALE"": 2.0, ""TOPIC_DIM"": 60}"
+ortho_d60_s0.5,0.0523,0.6394,0.0698,435.0,"{""ORTHO_DIM"": 60, ""ORTHO_SCALE"": 0.5}"
+catscale_fine2.5,0.0519,0.6227,0.069,447.7,"{""CAT_SCALE"": 2.5}"
+cs2_identscale3,0.0522,0.6212,0.0705,429.0,"{""IDENT_SCALE"": 3.0}"
+cs2_all,0.0519,0.6082,0.0681,451.7,"{""LSA_DIM"": 175, ""TOPIC_DIM"": 60, ""IDENT_SCALE"": 3.0}"
+ref_cs2_p2,0.0519,0.6239,0.069,355.6,{}

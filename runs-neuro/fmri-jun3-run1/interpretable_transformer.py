@@ -84,6 +84,10 @@ ZETA_F3 = 1.0
 ZETA_YO = 1.0
 ZETA_PX = 1.0
 ZETA_DF2 = -3.0
+ZETA_ROUTE_OBJ = -1.0
+ZETA_QUANT_OBJ = -1.0
+ZETA_GOAL_OBJ = -1.0
+ZETA_UNIV_OBJ = -2.0
 _PXW = set("he she him her his they them their it its hers".split())
 _YOUW = set("you your yours yourself yourselves".split())
 _OTHERW = set("he she him her his they them their it its hers".split())
@@ -114,6 +118,10 @@ _MOTION_TRAJ = set(
     "approach approached approaching escape escaped escaping move moved moving walk walked walking "
     "run ran running drive drove driving ride rode riding fly flew flying climb climbed climbing "
     "fall fell falling toward towards away back out in up down across through along around over under".split()
+)
+_LANDMARK_NAV = set(
+    "road roads street streets highway path trail bridge corner center downtown station airport "
+    "school church store shop office park field forest mountain river beach city town".split()
 )
 
 USE_CHAR_CONTENT = False
@@ -425,6 +433,8 @@ def word_features(w: str) -> List[str]:
         feats.append("NARR_SHIFT")
     if w in _MOTION_TRAJ:
         feats.append("MOTION_TRAJ")
+    if w in _LANDMARK_NAV:
+        feats.append("LANDMARK_NAV")
     if w in _FOCUS:
         feats.append("FOCUS")  # focus/additive particles (also/even/only) mark info structure
     if w in _UNIV:
@@ -536,6 +546,7 @@ def _build_feature_names() -> List[str]:
     names.append("MEASURE_UNIT")
     names.append("NARR_SHIFT")
     names.append("MOTION_TRAJ")
+    names.append("LANDMARK_NAV")
     return names
 
 
@@ -672,6 +683,10 @@ class InterpretableEmbedder:
         cmpflag: List[int] = []
         ivflag: List[int] = []
         df2flag: List[int] = []
+        roflag: List[int] = []
+        qoflag: List[int] = []
+        goflag: List[int] = []
+        uoflag: List[int] = []
         # orthographic char tokens on the char-position timeline
         if USE_CHAR_CONTENT:
             for i, c in enumerate(text):
@@ -704,6 +719,10 @@ class InterpretableEmbedder:
         _prev_conc = None
         _prev_pers = None
         _prev_conn = 0
+        _prev_route = 0
+        _prev_quant = 0
+        _prev_goal = 0
+        _prev_univ = 0
         for k, (w, endpos) in enumerate(recent):
             dist = nrec - 1 - k  # 0 == last word
             reps = RECENCY_REPS[min(dist, len(RECENCY_REPS) - 1)]
@@ -816,6 +835,10 @@ class InterpretableEmbedder:
             _pxprev = any(pw in _PXW for pw in recent_words[max(0, k - 2):k])
             _px = 1 if (_pxcat and _pxprev) else 0
             _df2 = 1 if ("DISFLUENCY" in _ordered) else 0
+            _ro = 1 if (_cf == 1 and _prev_route > 0) else 0
+            _qo = 1 if (_cf == 1 and _prev_quant > 0) else 0
+            _go = 1 if (_cf == 1 and _prev_goal > 0) else 0
+            _uo = 1 if (_cf == 1 and _prev_univ > 0) else 0
             for _ in range(reps):
                 for fid in feat_ids:
                     ids.append(fid)
@@ -838,9 +861,17 @@ class InterpretableEmbedder:
                     yoflag.append(_yo)
                     pxflag.append(_px)
                     df2flag.append(_df2)
+                    roflag.append(_ro)
+                    qoflag.append(_qo)
+                    goflag.append(_go)
+                    uoflag.append(_uo)
                     ivflag.append(_iv)
+            _prev_route = 2 if ("MOTION_TRAJ" in _ordered or "LANDMARK_NAV" in _ordered) else max(0, _prev_route - 1)
+            _prev_quant = 2 if ("SEM_QUANTITY" in _ordered or "CARDINAL" in _ordered or "ORDINAL" in _ordered) else max(0, _prev_quant - 1)
+            _prev_goal = 2 if ("GOAL_PREP" in _ordered) else max(0, _prev_goal - 1)
+            _prev_univ = 2 if ("UNIV" in _ordered or "FUNC_WH" in _ordered or "DISCREL" in _ordered or "SEM_POSSESSION" in _ordered) else max(0, _prev_univ - 1)
         if not ids:
-            return [PAD_ID], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0]
+            return [PAD_ID], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0]
         if len(ids) > self.max_seq_len:
             ids = ids[-self.max_seq_len:]
             pos = pos[-self.max_seq_len:]
@@ -863,8 +894,12 @@ class InterpretableEmbedder:
             pxflag = pxflag[-self.max_seq_len:]
             ivflag = ivflag[-self.max_seq_len:]
             df2flag = df2flag[-self.max_seq_len:]
+            roflag = roflag[-self.max_seq_len:]
+            qoflag = qoflag[-self.max_seq_len:]
+            goflag = goflag[-self.max_seq_len:]
+            uoflag = uoflag[-self.max_seq_len:]
         pos = [min(pp, self.max_seq_len - 1) for pp in pos]
-        return ids, pos, cflag, fwflag, dflag, tflag, rflag, sflag, psflag, afflag, cicflag, nsflag, ivflag, cmpflag, hgflag, smflag, otflag, f3flag, yoflag, pxflag, df2flag
+        return ids, pos, cflag, fwflag, dflag, tflag, rflag, sflag, psflag, afflag, cicflag, nsflag, ivflag, cmpflag, hgflag, smflag, otflag, f3flag, yoflag, pxflag, df2flag, roflag, qoflag, goflag, uoflag
 
     @torch.no_grad()
     def __call__(self, texts: List[str], batch_size: int = 256) -> np.ndarray:
@@ -877,7 +912,7 @@ class InterpretableEmbedder:
             pos_ids = torch.zeros((len(enc), T), dtype=torch.long)
             pad_mask = torch.zeros((len(enc), T), dtype=torch.bool)
             kbias = torch.zeros((len(enc), T), dtype=torch.float)
-            for j, (e, pp, cf, fw, df, tf, rf, sf, psf, af, cic, ns, iv, cmpf, hgf, smf, otf, f3f, yof, pxf, df2f) in enumerate(enc):
+            for j, (e, pp, cf, fw, df, tf, rf, sf, psf, af, cic, ns, iv, cmpf, hgf, smf, otf, f3f, yof, pxf, df2f, rof, qof, gof, uof) in enumerate(enc):
                 ids[j, :len(e)] = torch.tensor(e, dtype=torch.long)
                 pos_ids[j, :len(pp)] = torch.tensor(pp, dtype=torch.long)
                 pad_mask[j, :len(e)] = True
@@ -902,7 +937,11 @@ class InterpretableEmbedder:
                                       + ZETA_F3 * torch.tensor(f3f, dtype=torch.float)
                                       + ZETA_YO * torch.tensor(yof, dtype=torch.float)
                                       + ZETA_PX * torch.tensor(pxf, dtype=torch.float)
-                                      + ZETA_DF2 * torch.tensor(df2f, dtype=torch.float))
+                                      + ZETA_DF2 * torch.tensor(df2f, dtype=torch.float)
+                                      + ZETA_ROUTE_OBJ * torch.tensor(rof, dtype=torch.float)
+                                      + ZETA_QUANT_OBJ * torch.tensor(qof, dtype=torch.float)
+                                      + ZETA_GOAL_OBJ * torch.tensor(gof, dtype=torch.float)
+                                      + ZETA_UNIV_OBJ * torch.tensor(uof, dtype=torch.float))
             ids = ids.to(self.device)
             pos_ids = pos_ids.to(self.device)
             pad_mask = pad_mask.to(self.device)
@@ -983,7 +1022,7 @@ def write_weights(model: SimpleTransformer) -> None:
     return
 
 
-model_shorthand_name = "MotionTraj"
+model_shorthand_name = "PossObjSuppress"
 model_description = (
     "Hand-wired interpretable transformer. Each word is tokenized into a small set of "
     "interpretable feature tokens: function-word type (pronoun/prep/conj/article/aux/"
@@ -1017,6 +1056,8 @@ model_description = (
     "meanwhile/later/then) that marks discourse-time shifts, plus a motion-trajectory/"
     "path axis for trajectory verbs and path particles (go/went/come/leave/walk/run/"
     "drive/up/out/back/through/across/etc.) that captures action/navigation structure, "
+    "landmark/navigation-place words (roads/streets/bridges/schools/churches/stores/"
+    "parks/fields/rivers/cities/etc.) that anchor route and scene representations, "
     "logical/discourse-"
     "relation connectives (causal/adversative/conditional: but, because, if, so - "
     "distinct from additive and/or coordination, marking discourse coherence "
@@ -1046,7 +1087,11 @@ model_description = (
     "as an integration/event-boundary cue; words under negation scope are boosted, while "
     "valence under an intensifier, content under a comparative/superlative marker, and "
     "hesitation disfluencies (uh/um) are suppressed; and a 1st-vs-3rd-person reference "
-    "shift is boosted as a perspective-integration cue. "
+    "shift is boosted as a perspective-integration cue. Immediate content continuations "
+    "after route/landmark cues, quantity/number/order cues, goal prepositions, universal "
+    "quantifiers, wh-operators, and discourse-relation connectives are suppressed because those construction cues already "
+    "mark the relevant discourse/argument structure and their following content words are "
+    "partly redundant in the pooled bag. "
     "A weighted single-layer residual (0.55*x + attn) carries the last word's most "
     "readout-salient feature (priority: animacy > valence > intensity > motor-action > "
     "mental-state > self-reference > abstractness) as an "

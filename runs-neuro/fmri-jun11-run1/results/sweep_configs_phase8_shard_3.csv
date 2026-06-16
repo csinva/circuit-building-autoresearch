@@ -1,0 +1,11 @@
+name,test_corr,train_corr,frac,secs,cfg
+left2_d80_w5,0.0546,0.6205,0.0772,302.5,"{""LSA2_DIRECTION"": ""left"", ""LSA2_DIM"": 80, ""LSA2_WINDOW"": 5}"
+left2_d100_w8,0.0523,0.6204,0.0722,337.8,"{""LSA2_DIRECTION"": ""left"", ""LSA2_DIM"": 100, ""LSA2_WINDOW"": 8}"
+right2_d60_w10,0.0545,0.6006,0.077,342.9,"{""LSA2_DIRECTION"": ""right"", ""LSA2_DIM"": 60, ""LSA2_WINDOW"": 10}"
+right2_d80_w10,0.0543,0.6002,0.0746,340.8,"{""LSA2_DIRECTION"": ""right"", ""LSA2_DIM"": 80, ""LSA2_WINDOW"": 10}"
+v3_left_d60,0.0544,0.6197,0.0779,351.0,"{""LSA3_DIM"": 60, ""LSA3_DIRECTION"": ""left"", ""LSA3_WINDOW"": 6}"
+mainbig_d220,0.0562,0.6263,0.079,360.0,"{""LSA_DIM"": 220}"
+morph_on,0.0557,0.6214,0.0782,353.0,"{""USE_MORPH"": true}"
+m_d155_w6,0.0565,0.6118,0.0819,346.7,"{""LSA_DIM"": 155, ""LSA_WINDOW"": 6}"
+m_d160_w7,0.0541,0.62,0.0781,347.2,"{""LSA_DIM"": 160, ""LSA_WINDOW"": 7}"
+combo_R_L2,0.0533,0.6229,0.0747,348.5,"{""LSA2_DIRECTION"": ""left"", ""LSA2_DIM"": 80, ""LSA2_WINDOW"": 8}"

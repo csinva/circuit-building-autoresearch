@@ -1,0 +1,11 @@
+SuperEmbedding_Meta-Llama-3-8B_ctx150,0.43627,0.11600,0.23647
+SuperEmbedding_gemma-2-9b_ctx150,0.43245,0.11851,0.24462
+SuperEmbedding_Qwen2.5-14B_ctx150,0.43872,0.11948,0.24647
+SuperEmbedding_Meta-Llama-3-8B_ctx150,0.43627,0.11600,0.23647
+SuperEmbedding_gemma-2-9b_ctx150,0.43245,0.11851,0.24462
+SuperEmbedding_Qwen2.5-14B_ctx150,0.43872,0.11948,0.24647
+SuperEmbedding_QwenGemma_ctx150,0.56286,0.11678,0.24520
+SuperEmbedding_QwenLlama_ctx150,0.56410,0.11500,0.23855
+SuperEmbedding_QwenGemma_ctx20,0.54850,0.11103,0.22547
+SuperEmbedding_TripleReval_ctx150,0.62872,0.11624,0.24152
+SuperEmbedding_TripleMorph_ctx150,0.62874,0.11631,0.24169

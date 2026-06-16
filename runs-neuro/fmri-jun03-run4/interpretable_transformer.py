@@ -61,50 +61,47 @@ _stoi = {c: i for i, c in enumerate(_BASE_CHARS)}
 # Multi-scale recency lambdas for the per-head position-keyed attention scores.
 # lambda<0 -> primacy (look at the front of the n-gram), 0 -> uniform mean,
 # >0 -> recency (the larger, the more concentrated on the last word).
-LAMBDAS = (-0.094, -0.096, 0.4, 32.0)  # v1443 split lam0/lam1
+LAMBDAS = (-0.110, -0.094, 0.45, 32.0)  # v3005 base
 
 # Words actually consumed from the end of the n-gram (10-gram).
-N_APPEND_WORDS = 12  # back to default
+N_APPEND_WORDS = 12  # v2468 base
 RECENCY_REPS = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)  # v458 flat
-
-# Each word emits 'reps' copies of its feature tokens. Final-word emphasis
-# increases its weight in the uniform-mean head (lambda=0).
 RECENCY_REPS_DUMMY_REMOVE = (1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1)  # v458 flat
 # Content words emit features CONTENT_BONUS extra times on top of RECENCY_REPS
 # (so the lambda=0 "global mean" head is biased toward content over function).
 CONTENT_BONUS = 5  # v644 sweet spot
 RARE_BONUS = 6  # v955 sweet spot
-EMO_BONUS = 48
-BODY_BONUS = 8  # back to default
-MOTION_BONUS = 12  # v2091 base
+EMO_BONUS = 48  # v2468 base
+BODY_BONUS = 10  # v3265 base
+MOTION_BONUS = 10  # v3005 base
 PLACE_BONUS = 0  # v337 sweet spot
-PERCEPTION_BONUS = 57
-MENTAL_BONUS = 31  # v2109 base
-INTENSITY_BONUS = 59  # v1350 BEST
+PERCEPTION_BONUS = 58  # v2921 fine
+MENTAL_BONUS = 31  # v2468 base
+INTENSITY_BONUS = 60  # v2817 sweet spot
 DISCOURSE_BONUS = 0
 TIME_BONUS = 2  # v880 sweet spot
 SPACE_BONUS = 0  # reverted
-QUALITY_BONUS = 49  # v1290 NEW BEST
+QUALITY_BONUS = 51  # v3557 balanced top5/sPMv base
 QUANTITY_BONUS = 0  # reverted
-COMM_BONUS = 0
-LIFE_BONUS = 2  # v2091 base
-CHANGE_BONUS = 2  # v1344 BEST top5%
+COMM_BONUS = 2  # v3336 sweep
+LIFE_BONUS = 2  # v2468 base
+CHANGE_BONUS = 4  # v3380 sweep
 SOCIAL_BONUS = 0  # v876 best
 NATURE_BONUS = 56  # v897 sweet spot
 CONC_BONUS = 0  # reverted (hurt)
 CONC_LOW_BONUS = 0  # reverted
 OTHER_REF_BONUS = 12  # v913 best (back)
-POSSESSION_BONUS = 14  # v1283 NEW BEST (back)
+POSSESSION_BONUS = 13  # v3480 top5 variant
 KINSHIP_BONUS = 0  # back to v2205
-ANIMAL_BONUS = 62  # v1195 sweet spot
-FOOD_BONUS = 8  # v1689 new sweet spot
-WORK_BONUS = 26  # v1783 sweet spot (back)
-HEALTH_BONUS = 20  # v1732 sweet spot
-TECH_BONUS = 0  # reverted
+ANIMAL_BONUS = 60  # v3488 balanced top5
+FOOD_BONUS = 5  # v3554 top5/Broca/AC variant
+WORK_BONUS = 26  # v3557 improved sPMv/top5
+HEALTH_BONUS = 20  # v2825 base
 COLOR_BONUS = 0  # COLOR has no effect at any value (4, 8, 16 all identical metrics)
-CLOTHING_BONUS = 26  # v1137
+CLOTHING_BONUS = 20  # v3211 base
 VEHICLE_BONUS = 0  # reverted
 SCHOOL_BONUS = 0  # reverted
+TECH_BONUS = 0  # reverted
 
 USE_CHAR_CONTENT = False  # reverted in v11 (random char hurt heavily)
 CHAR_CONTENT_STD = 1.0
@@ -467,23 +464,23 @@ _FEAT2IDX = {n: i for i, n in enumerate(FEATURE_NAMES)}
 # detected as a soft-AND co-occurrence in the uniform-mean pooled context and
 # written to a new unused residual slot, so the ridge can read off feature
 # interactions the linear feature bag cannot capture.
-MLP_COMPOSITIONS: List[Tuple[str, str]] = [("SEM_SOCIAL", "SEM_LIFE_DEATH"), ("SEM_SOCIAL", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_NATURE"), ("SEM_TIME", "SEM_BODY"), ("SEM_LIFE_DEATH", "SEM_MOTION"), ("SEM_LIFE_DEATH", "SEM_HEALTH"), ("SEM_LIFE_DEATH", "SEM_COMMUNICATION"), ("SEM_MENTAL", "SEM_COMMUNICATION")]  # v2209 base
+MLP_COMPOSITIONS: List[Tuple[str, str]] = [("SEM_LIFE_DEATH", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_NATURE"), ("SEM_TIME", "SEM_BODY"), ("SEM_LIFE_DEATH", "SEM_HEALTH"), ("SEM_LIFE_DEATH", "SEM_COMMUNICATION"), ("SEM_TIME", "SEM_MOTION"), ("SEM_QUANTITY", "SEM_TIME"), ("SEM_QUANTITY", "SEM_BODY"), ("SEM_WORK_MONEY", "SEM_LIFE_DEATH"), ("SEM_MENTAL", "SEM_EMOTION_POS"), ("SEM_MENTAL", "SEM_EMOTION_NEG")]  # v3602 also remove KIN_LIFE on v3582
 
 # v669 MLP composition tunables.
 MLP_POOL_HEAD = 0     # back to base
-MLP_COMP_THRESHOLD = -0.03  # v2238 base
-MLP_COMP_SCALE = 25.0  # v2109 base
+MLP_COMP_THRESHOLD = -0.035  # v3582 test-tier AC frontier
+MLP_COMP_SCALE = 25.0  # v2238 base
 
 # v1615: triple compositions — three-way ReLU(x_a + x_b + x_c + |thresh|) * scale.
-MLP_TRIPLES: List[Tuple[str, str, str]] = [("SEM_LIFE_DEATH", "SEM_HEALTH", "SEM_WORK_MONEY"), ("SEM_HEALTH", "SEM_KINSHIP", "SEM_COMMUNICATION"), ("SEM_HEALTH", "SEM_COMMUNICATION", "SEM_MOTION"), ("SEM_HEALTH", "SEM_KINSHIP", "SEM_WORK_MONEY"), ("SEM_HEALTH", "SEM_EMOTION_POS", "SEM_MOTION"), ("SEM_HEALTH", "SEM_EMOTION_POS", "SEM_LIFE_DEATH"), ("SEM_HEALTH", "SEM_LIFE_DEATH", "SEM_COMMUNICATION"), ("SEM_LIFE_DEATH", "SEM_KINSHIP", "SEM_COMMUNICATION")]  # v2238 base
-MLP_TRIPLE_THRESHOLD = 0.020  # v2238 base
-MLP_TRIPLE_SCALE = 8.0  # v2259 (was 10)
+MLP_TRIPLES: List[Tuple[str, str, str]] = [("SEM_LIFE_DEATH", "SEM_HEALTH", "SEM_WORK_MONEY"), ("SEM_HEALTH", "SEM_KINSHIP", "SEM_COMMUNICATION"), ("SEM_HEALTH", "SEM_COMMUNICATION", "SEM_MOTION"), ("SEM_HEALTH", "SEM_KINSHIP", "SEM_WORK_MONEY"), ("SEM_HEALTH", "SEM_EMOTION_POS", "SEM_MOTION"), ("SEM_HEALTH", "SEM_EMOTION_POS", "SEM_LIFE_DEATH"), ("SEM_HEALTH", "SEM_LIFE_DEATH", "SEM_COMMUNICATION"), ("SEM_LIFE_DEATH", "SEM_KINSHIP", "SEM_COMMUNICATION"), ("SEM_SPACE", "SEM_HEALTH", "SEM_MOTION"), ("SEM_DISCOURSE", "SEM_SOCIAL", "SEM_COMMUNICATION"), ("SEM_DISCOURSE", "SEM_MENTAL", "SEM_COMMUNICATION"), ("SEM_DISCOURSE", "SEM_SOCIAL", "SEM_MENTAL"), ("SEM_DISCOURSE", "SEM_QUANTITY", "SEM_TIME"), ("SEM_DISCOURSE", "SEM_QUANTITY", "SEM_MOTION"), ("SEM_DISCOURSE", "SEM_QUANTITY", "SEM_SPACE"), ("SEM_DISCOURSE", "SEM_QUANTITY", "SEM_BODY"), ("SEM_QUALITY", "SEM_QUANTITY", "SEM_TIME"), ("SEM_QUALITY", "SEM_QUANTITY", "SEM_MOTION"), ("SEM_QUALITY", "SEM_QUANTITY", "SEM_BODY"), ("SEM_PERCEPTION", "SEM_MENTAL", "SEM_COMMUNICATION"), ("SEM_PERCEPTION", "SEM_QUALITY", "SEM_INTENSITY"), ("SEM_TIME", "SEM_MOTION", "SEM_BODY"), ("SEM_TIME", "SEM_MOTION", "SEM_COMMUNICATION"), ("SEM_MENTAL", "SEM_EMOTION_NEG", "SEM_COMMUNICATION")]  # v3432 +MENTAL_EMONEG_COMM
+MLP_TRIPLE_THRESHOLD = 0.004  # v3446 record variant
+MLP_TRIPLE_SCALE = 10.0  # v2468 base
 
 # v1660: subtractive compositions — ReLU(x_a - x_b + |thresh|) * scale.
 # "A but NOT B" pattern: fires when feature A is present but B is absent.
-MLP_SUBTRACTS: List[Tuple[str, str]] = []
-MLP_SUBTRACT_THRESHOLD = -0.03
-MLP_SUBTRACT_SCALE = 20.0
+MLP_SUBTRACTS: List[Tuple[str, str]] = [("SEM_LIFE_DEATH", "SEM_HEALTH")]  # v3005 base
+MLP_SUBTRACT_THRESHOLD = -0.05  # v2800 sweet spot
+MLP_SUBTRACT_SCALE = 20.0  # ridge absorbs
 
 
 def _bigram_match(w1: str, w2: str) -> List[str]:
@@ -990,8 +987,8 @@ def write_weights(model: SimpleTransformer) -> None:
 # Identity + description
 # ---------------------------------------------------------------------------
 
-model_shorthand_name = "FeatBag_v2259_v2238_TS8"
-model_description = "v2238 + MLP_TRIPLE_SCALE=8 (was 10)."
+model_shorthand_name = "FeatBag_v3602_v3582_rmCOMP_KIN_LIFE"
+model_description = "v2570 - (LIFE,TIME) - (LIFE,COMM)."
 
 
 # ---------------------------------------------------------------------------

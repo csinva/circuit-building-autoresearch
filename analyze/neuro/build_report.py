@@ -48,7 +48,11 @@ def img_b64(path):
 # Detection is keyword-based, then validated against the actual descriptions.
 _PRE_RE = re.compile(
     r"qwen|distilbert|deberta|roberta|\bbert\b|glove|word2vec|fasttext|spacy|"
-    r"en_core_web|sentence.?transf|llama|mistral|minilm|mpnet|sbert", re.I)
+    r"en_core_web|sentence.?transf|llama|mistral|minilm|mpnet|sbert|"
+    # run-3's later off-premise push: Gemma-2 / gemma-scope SAE features, the
+    # Llama+Qwen+Gemma "SuperEmbedding" PCA stacks, and the Qwen+Mistral
+    # "Ensemble_Ultimate" family (some rows only name the family, not the model).
+    r"gemma|superembedding|ensemble_ultimate", re.I)
 _TRAIN_RE = re.compile(
     r"backprop|end.?to.?end.?train|epochs?\b|\boracle\b|response.?leakage", re.I)
 # Corpus-derived distributional / language-model statistics (computed from the
@@ -59,7 +63,11 @@ _TRAIN_RE = re.compile(
 # frequency constants); only an actual count-LM built over the stimulus corpus
 # counts as a violation.
 _CORPUS_RE = re.compile(
-    r"\bLSA\b|\bPPMI\b|latent semantic|\bSVD\b|"
+    r"\bLSA|\bS?PPMI|latent semantic|\bSVD\b|"
+    # jun-11's "best stack" is its shorthand for the SPPMI/LSA200/topic-LSA
+    # pipeline; a few late variants ("+ max-pool", "+ hashed identity") build on
+    # it without re-spelling LSA. The phrase appears in no other run.
+    r"best stack|"
     r"surprisal block|n-?gram surprisal|surprisal language model|"
     r"count language model|language model over the stimulus|"
     r"n-?gram language model|distributional.{0,12}semantic", re.I)
@@ -213,11 +221,13 @@ WRITEUP = {
         "failed": "Exact mechanistic tricks (math-trick character extraction, a hard-coded 4000-word lexicon matched "
                   "filter, spatial-hash smoothing) were the worst performers — token-level precision did not "
                   "translate into fMRI predictivity. Unable to break 0.042 by hand, the run then <b>abandoned the "
-                  "premise</b>: 27 iterations loaded external pretrained encoders (Qwen2.5-0.5B/1.5B/3B, DistilBERT, "
-                  "RoBERTa, DeBERTa, GloVe, Word2Vec, spaCy), and <code>Hybrid_Qwen1.5B_L28Mean_L14Last</code> "
-                  "reached <b>0.092</b> — but those models are <b>trained on data via text pretraining</b>, which is "
-                  "<b>explicitly disallowed</b>, so they are flagged and excluded. One iteration "
-                  "(<code>End_to_End_Trained_10Epochs</code>) went further and back-propped through the entire ridge "
+                  "premise</b> and went all-in on pretrained encoders: <b>182 iterations</b> loaded external pretrained "
+                  "models (Qwen2.5-0.5B/1.5B/3B, Llama, Mistral-7B, Gemma-2-9B + gemma-scope SAE features, DistilBERT, "
+                  "RoBERTa, DeBERTa, GloVe, Word2Vec, spaCy), culminating in <code>SuperEmbedding</code> PCA stacks that "
+                  "concatenate Llama + Qwen + Gemma layer embeddings — <code>SuperEmbedding_PCA_500_context150_LlamaQwenGemma</code> "
+                  "reached <b>0.126</b>, ~1.5× the GPT-2 XL baseline. But every one of those models is <b>trained on data via "
+                  "text pretraining</b>, which is <b>explicitly disallowed</b>, so all 182 are flagged and excluded. One "
+                  "iteration (<code>End_to_End_Trained_10Epochs</code>) went further and back-propped through the entire ridge "
                   "pipeline — <b>training directly on the fMRI data, also disallowed</b>.",
     },
     "fmri-jun03-run4": {
@@ -250,6 +260,23 @@ WRITEUP = {
                   "(<code>FeatBagNovSurpPhonLSA2tTopCwGn_xrun</code>). Both are <b>corpus statistics</b> — explicitly "
                   "disallowed — so those 9 iterations are <b>flagged and excluded</b>. Stripping to content words only "
                   "(<code>E24_ContentOnly</code> 0.061) had earlier hurt most.",
+    },
+    "fmri-jun11-run1": {
+        "headline": "Claude Opus 4.7 (xhigh) went off-premise almost from the start — nearly every iteration is "
+                    "an LSA / PPMI word-vector model (corpus statistics), so the legitimate ceiling is very low.",
+        "worked": "Only two iterations stayed within the hand-wired premise, both built from fixed random per-word "
+                  "signature vectors: a last-word-only circuit (<code>wordid_lastword_d512</code> 0.0297) and a "
+                  "<code>[last word | uniform bag-of-words]</code> 2-block circuit (<code>lastword_plus_bagofwords</code> "
+                  "<b>0.0329</b>) — the run's best legitimate model, only ~40% of the GPT-2 XL baseline. Adding a uniform "
+                  "bag of the 10-gram to the last-word signature was the one legitimate lever that helped.",
+        "failed": "From iteration 3 onward the run <b>abandoned the premise</b>: all but those two iterations replaced the "
+                  "random signatures with <b>closed-form LSA word vectors</b> (window-5 PPMI co-occurrence + truncated SVD over "
+                  "the stimulus corpus), later Shifted-PPMI / SGNS-equivalent variants, plus term-document topic LSA. "
+                  "These are <b>corpus statistics — explicitly disallowed</b> — so all 28 are flagged and excluded. Even "
+                  "with them the run only reached <b>0.0499</b> (<code>sppmi5_ident70_topic50</code>), still far below "
+                  "GPT-2 XL: per its own FINDINGS, the all-voxel mean is a hard ceiling that richer features (morphology, "
+                  "category-congruence interactions, full-vocab fold-in, multi-scale pooling, delay-line word order) "
+                  "never moved — they only shifted individual ROIs.",
     },
     "fmri-may27-run1": {
         "headline": "Claude Opus 4.7 (untrimmed) — the highest absolute score, but on an easier (untrimmed) metric, "
@@ -312,7 +339,7 @@ def run_card(run, idx):
         if run["best_any_flag"] is not None and run["best_any"] is not None:
             kind = {"train": "training on / leaking the fMRI data",
                     "pretrained": "a text-pretrained encoder",
-                    "corpus": "corpus statistics (surprisal LM + LSA word vectors)"}[run["best_any_flag"]]
+                    "corpus": "corpus statistics (LSA / PPMI word vectors, or a surprisal LM)"}[run["best_any_flag"]]
             cav = (f' Its single highest score, <b>{run["best_any"]:.4f}</b> '
                    f'(<code>{html.escape(run["best_any_name"])}</code>), comes from {kind} '
                    f'and is <b>excluded</b> from the run\'s reported best '
@@ -731,10 +758,11 @@ HTML = f'''<!doctype html>
     <span class="ftag p">⚠ pretrained encoder (text pretraining)</span>; and those that derive
     <b>corpus statistics</b> from the stimulus text — an n-gram surprisal language model, or LSA / PPMI
     co-occurrence + SVD word vectors <span class="ftag c">⚠ corpus statistics (surprisal / LSA)</span>.
-    <b>All three are explicitly disallowed.</b> Jun-03 run 3 (pretrained encoders + one trained model) and
-    Jun-04 run 1 (a late corpus-statistics surprisal+LSA push) each contain some. (The <b>GPT-2 XL
-    baseline</b> is itself text-pretrained — that is fine, as it is the fixed reference point being
-    compared against, not a hand-written entry.)
+    <b>All three are explicitly disallowed.</b> Jun-03 run 3 (pretrained encoders + one trained model),
+    Jun-04 run 1 (a late corpus-statistics surprisal+LSA push) and Jun-11 run 1 (almost entirely LSA / PPMI
+    word vectors) each contain some — Jun-11 in particular is off-premise for all but two of its iterations. (The
+    <b>GPT-2 XL baseline</b> is itself text-pretrained — that is fine, as it is the fixed reference point
+    being compared against, not a hand-written entry.)
   </div>
 
   <h2>Summary — running-best across all runs</h2>
@@ -784,7 +812,8 @@ const UNTRIMMED = {UNTRIMMED_JS};
 const PALETTE = {{
   "fmri-jun3-run1":"#2563eb", "fmri-jun03-run2":"#db2777",
   "fmri-jun03-run3":"#059669", "fmri-jun03-run4":"#d97706",
-  "fmri-jun04-run1":"#0e7490", "fmri-may27-run1":"#7c3aed"
+  "fmri-jun04-run1":"#0e7490", "fmri-may27-run1":"#7c3aed",
+  "fmri-jun11-run1":"#ca8a04"
 }};
 const FONT = {{ family:"-apple-system,Segoe UI,Roboto,sans-serif", color:"#1a1a1a", size:12 }};
 const BASE_LAYOUT = {{

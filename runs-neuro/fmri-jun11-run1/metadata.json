@@ -1,0 +1,15 @@
+{
+  "run": "fmri-jun11-run1",
+  "label": "Jun 11 · run 1",
+  "model": "Claude Opus 4.7",
+  "effort": "xhigh",
+  "trimmed_trs": 30,
+  "untrimmed": false,
+  "model_id": "claude-opus-4.7-xhigh",
+  "reasoning_effort": "xhigh",
+  "source_logs": [
+    "~/.copilot/logs/process-1781173064742-269435.log"
+  ],
+  "subject": "UTS03",
+  "notes": "Run created and driven by the claude-opus-4.7-xhigh session: it is the only copilot session that executed `uv run setup_run.py fmri-jun11-run1` (the run-creation command) and it references this run's interpretable_transformer.py ~89 times. The iteration-level LSA reasoning was not captured in any retained log, so model attribution rests on the creation command + file-path references rather than transcript content. run.log confirms 30-TR trimming (trimmed run). Note: all but two iterations use LSA / PPMI / SVD / Shifted-PPMI corpus statistics (disallowed) and are flagged; only the 2 random-signature word-id / bag-of-words iterations are legitimate. (Run was still live/appending iterations as of this writing.)"
+}

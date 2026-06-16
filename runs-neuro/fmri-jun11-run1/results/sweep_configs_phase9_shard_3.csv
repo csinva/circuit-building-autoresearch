@@ -1,0 +1,8 @@
+name,test_corr,train_corr,frac,secs,cfg
+bigleft2_d100_w5,0.0537,0.626,0.0759,320.0,"{""LSA2_DIRECTION"": ""left"", ""LSA2_DIM"": 100, ""LSA2_WINDOW"": 5}"
+bigleft2_d120_w6,0.0509,0.6323,0.0707,349.3,"{""LSA2_DIRECTION"": ""left"", ""LSA2_DIM"": 120, ""LSA2_WINDOW"": 6}"
+bigleft2_d150_w8,0.051,0.6408,0.0715,346.3,"{""LSA2_DIRECTION"": ""left"", ""LSA2_DIM"": 150, ""LSA2_WINDOW"": 8}"
+left3big_d100_w8,0.054,0.6186,0.0737,354.1,"{""LSA3_DIM"": 100, ""LSA3_DIRECTION"": ""left"", ""LSA3_WINDOW"": 8}"
+multiR_2w3_d80,0.0541,0.6249,0.0806,355.1,"{""LSA2_DIRECTION"": ""right"", ""LSA2_WINDOW"": 3, ""LSA2_DIM"": 80, ""LSA3_DIM"": 60, ""LSA3_DIRECTION"": ""right"", ""LSA3_WINDOW"": 12}"
+R_sym2_left3_ortho,0.0536,0.6355,0.075,355.4,"{""LSA3_DIM"": 80, ""LSA3_DIRECTION"": ""left"", ""LSA3_WINDOW"": 6, ""ORTHO_DIM"": 50, ""ORTHO_SCALE"": 1.0}"
+sppmi14,0.0513,0.6404,0.0748,345.3,"{""SPPMI_SHIFT"": 14.0}"

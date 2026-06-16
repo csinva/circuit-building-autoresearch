@@ -1,0 +1,7 @@
+name,test_corr,train_corr,frac,secs,cfg
+r_d90_w6,0.0534,0.6333,0.0763,334.2,"{""LSA2_DIM"": 90, ""LSA2_WINDOW"": 6}"
+r_d120_w6,0.0535,0.6315,0.076,348.1,"{""LSA2_DIM"": 120, ""LSA2_WINDOW"": 6}"
+r_d200_w6,0.0537,0.6464,0.0766,360.8,"{""LSA2_DIM"": 200, ""LSA2_WINDOW"": 6}"
+mainR_lsa2both,0.0549,0.629,0.0781,364.0,"{""LSA_DIRECTION"": ""right"", ""LSA2_DIRECTION"": ""both""}"
+lean_notopic_rd120,0.051,0.6183,0.0678,359.7,"{""LSA2_DIM"": 120, ""LSA2_WINDOW"": 5, ""TOPIC_DIM"": 0}"
+r_d120_sppmi8,0.0525,0.6361,0.0741,361.2,"{""LSA2_DIM"": 120, ""LSA2_WINDOW"": 5, ""SPPMI_SHIFT"": 8.0}"

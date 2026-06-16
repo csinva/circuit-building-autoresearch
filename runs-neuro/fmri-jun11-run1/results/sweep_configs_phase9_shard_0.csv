@@ -1,0 +1,9 @@
+name,test_corr,train_corr,frac,secs,cfg
+bigleft2_d80_w5,0.0546,0.6205,0.0772,328.3,"{""LSA2_DIRECTION"": ""left"", ""LSA2_DIM"": 80, ""LSA2_WINDOW"": 5}"
+bigleft2_d100_w6,0.0517,0.6246,0.0725,357.4,"{""LSA2_DIRECTION"": ""left"", ""LSA2_DIM"": 100, ""LSA2_WINDOW"": 6}"
+bigleft2_d120_w8,0.0518,0.628,0.072,363.1,"{""LSA2_DIRECTION"": ""left"", ""LSA2_DIM"": 120, ""LSA2_WINDOW"": 8}"
+left3big_d80_w6,0.0536,0.6219,0.0761,359.0,"{""LSA3_DIM"": 80, ""LSA3_DIRECTION"": ""left"", ""LSA3_WINDOW"": 6}"
+left3big_d120_w6,0.0521,0.6312,0.0722,363.4,"{""LSA3_DIM"": 120, ""LSA3_DIRECTION"": ""left"", ""LSA3_WINDOW"": 6}"
+multiR_full,0.0541,0.6249,0.0806,355.9,"{""LSA2_DIRECTION"": ""right"", ""LSA2_WINDOW"": 3, ""LSA2_DIM"": 80, ""LSA3_DIM"": 60, ""LSA3_DIRECTION"": ""right"", ""LSA3_WINDOW"": 12, ""LSA_DIM"": 160}"
+R_left2_100_ortho,0.052,0.6383,0.0722,349.6,"{""LSA2_DIRECTION"": ""left"", ""LSA2_DIM"": 100, ""LSA2_WINDOW"": 6, ""ORTHO_DIM"": 50, ""ORTHO_SCALE"": 1.0}"
+sppmi20,0.0478,0.6527,0.0697,294.4,"{""SPPMI_SHIFT"": 20.0}"
