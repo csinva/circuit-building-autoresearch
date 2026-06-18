@@ -65,7 +65,7 @@ CAT_OFFSET = 2
 
 _stoi = {c: i for i, c in enumerate(_BASE_CHARS)}
 
-LAMBDAS = (-0.04, 0.0, 4.0, 16.0)
+LAMBDAS = (-0.04, 0.0, 4.0, 12.0)
 N_APPEND_WORDS = 12
 # recency emphasis: number of times a word's feature tokens are repeated, by
 # distance from the end (index 0 == last word).
@@ -869,7 +869,7 @@ class InterpretableEmbedder:
             _prev_route = 2 if ("MOTION_TRAJ" in _ordered or "LANDMARK_NAV" in _ordered) else max(0, _prev_route - 1)
             _prev_quant = 2 if ("SEM_QUANTITY" in _ordered or "CARDINAL" in _ordered or "ORDINAL" in _ordered) else max(0, _prev_quant - 1)
             _prev_goal = 2 if ("GOAL_PREP" in _ordered) else max(0, _prev_goal - 1)
-            _prev_univ = 2 if ("UNIV" in _ordered or "FUNC_WH" in _ordered or "DISCREL" in _ordered or "SEM_POSSESSION" in _ordered) else max(0, _prev_univ - 1)
+            _prev_univ = 2 if ("UNIV" in _ordered or "FUNC_WH" in _ordered or "DISCREL" in _ordered or "SEM_MENTAL" in _ordered) else max(0, _prev_univ - 1)
         if not ids:
             return [PAD_ID], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0], [0]
         if len(ids) > self.max_seq_len:
@@ -1022,7 +1022,7 @@ def write_weights(model: SimpleTransformer) -> None:
     return
 
 
-model_shorthand_name = "PossObjSuppress"
+model_shorthand_name = "MentalFastLam12"
 model_description = (
     "Hand-wired interpretable transformer. Each word is tokenized into a small set of "
     "interpretable feature tokens: function-word type (pronoun/prep/conj/article/aux/"
@@ -1089,7 +1089,7 @@ model_description = (
     "hesitation disfluencies (uh/um) are suppressed; and a 1st-vs-3rd-person reference "
     "shift is boosted as a perspective-integration cue. Immediate content continuations "
     "after route/landmark cues, quantity/number/order cues, goal prepositions, universal "
-    "quantifiers, wh-operators, and discourse-relation connectives are suppressed because those construction cues already "
+    "quantifiers, wh-operators, discourse-relation connectives, and mental-state predicates are suppressed because those construction cues already "
     "mark the relevant discourse/argument structure and their following content words are "
     "partly redundant in the pooled bag. "
     "A weighted single-layer residual (0.55*x + attn) carries the last word's most "

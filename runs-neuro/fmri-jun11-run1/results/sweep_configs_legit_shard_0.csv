@@ -1,0 +1,4 @@
+name,test_corr,train_corr,frac,secs,cfg
+legit_ntr8,0.0302,0.6653,0.0308,662.5,"{""LSA_DIM"": 0, ""TOPIC_DIM"": 0, ""LSA2_DIM"": 0, ""LSA3_DIM"": 0, ""IDENT_TOPK"": 0, ""HASH_DIM"": 0, ""RAW_COOC_N"": 0, ""USE_MORPH"": true, ""ORTHO_DIM"": 600, ""ORTHO_SCALE"": 1.0, ""CAT_SCALE"": 1.5, ""NUM_TRAIN"": 8}"
+ortho200_ntr64,0.0632,0.2191,0.0988,1566.4,"{""LSA_DIM"": 0, ""TOPIC_DIM"": 0, ""LSA2_DIM"": 0, ""LSA3_DIM"": 0, ""IDENT_TOPK"": 0, ""HASH_DIM"": 0, ""RAW_COOC_N"": 0, ""USE_MORPH"": true, ""ORTHO_DIM"": 200, ""ORTHO_SCALE"": 1.0, ""CAT_SCALE"": 1.5, ""NUM_TRAIN"": 64}"
+orthosc0.5_ntr64,0.0628,0.28,0.0986,3070.0,"{""LSA_DIM"": 0, ""TOPIC_DIM"": 0, ""LSA2_DIM"": 0, ""LSA3_DIM"": 0, ""IDENT_TOPK"": 0, ""HASH_DIM"": 0, ""RAW_COOC_N"": 0, ""USE_MORPH"": true, ""ORTHO_DIM"": 600, ""ORTHO_SCALE"": 0.5, ""CAT_SCALE"": 1.5, ""NUM_TRAIN"": 64}"

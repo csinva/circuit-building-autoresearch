@@ -61,7 +61,7 @@ _stoi = {c: i for i, c in enumerate(_BASE_CHARS)}
 # Multi-scale recency lambdas for the per-head position-keyed attention scores.
 # lambda<0 -> primacy (look at the front of the n-gram), 0 -> uniform mean,
 # >0 -> recency (the larger, the more concentrated on the last word).
-LAMBDAS = (-0.110, -0.094, 0.45, 32.0)  # v3005 base
+LAMBDAS = (-0.114, -0.092, 0.45, 32.0)  # v3680 stable primacy Pareto base
 
 # Words actually consumed from the end of the n-gram (10-gram).
 N_APPEND_WORDS = 12  # v2468 base
@@ -85,7 +85,7 @@ QUALITY_BONUS = 51  # v3557 balanced top5/sPMv base
 QUANTITY_BONUS = 0  # reverted
 COMM_BONUS = 2  # v3336 sweep
 LIFE_BONUS = 2  # v2468 base
-CHANGE_BONUS = 4  # v3380 sweep
+CHANGE_BONUS = 5  # v3695 change upper probe on v3685
 SOCIAL_BONUS = 0  # v876 best
 NATURE_BONUS = 56  # v897 sweet spot
 CONC_BONUS = 0  # reverted (hurt)
@@ -464,17 +464,18 @@ _FEAT2IDX = {n: i for i, n in enumerate(FEATURE_NAMES)}
 # detected as a soft-AND co-occurrence in the uniform-mean pooled context and
 # written to a new unused residual slot, so the ridge can read off feature
 # interactions the linear feature bag cannot capture.
-MLP_COMPOSITIONS: List[Tuple[str, str]] = [("SEM_LIFE_DEATH", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_NATURE"), ("SEM_TIME", "SEM_BODY"), ("SEM_LIFE_DEATH", "SEM_HEALTH"), ("SEM_LIFE_DEATH", "SEM_COMMUNICATION"), ("SEM_TIME", "SEM_MOTION"), ("SEM_QUANTITY", "SEM_TIME"), ("SEM_QUANTITY", "SEM_BODY"), ("SEM_WORK_MONEY", "SEM_LIFE_DEATH"), ("SEM_MENTAL", "SEM_EMOTION_POS"), ("SEM_KINSHIP", "SEM_LIFE_DEATH")]  # v3603 also remove MENTAL_EMO_NEG on v3582
+MLP_COMPOSITIONS: List[Tuple[str, str]] = [("SEM_LIFE_DEATH", "SEM_TIME"), ("SEM_LIFE_DEATH", "SEM_NATURE"), ("SEM_TIME", "SEM_BODY"), ("SEM_LIFE_DEATH", "SEM_HEALTH"), ("SEM_LIFE_DEATH", "SEM_COMMUNICATION"), ("SEM_TIME", "SEM_MOTION"), ("SEM_QUANTITY", "SEM_TIME"), ("SEM_QUANTITY", "SEM_BODY"), ("SEM_WORK_MONEY", "SEM_LIFE_DEATH"), ("SEM_MENTAL", "SEM_EMOTION_POS"), ("SEM_KINSHIP", "SEM_LIFE_DEATH"), ("SEM_MENTAL", "SEM_EMOTION_NEG")]  # v3541 remove LIFE_BODY, PER_MENTAL, ANIMAL_MOTION
 
 # v669 MLP composition tunables.
-MLP_POOL_HEAD = 0     # back to base
-MLP_COMP_THRESHOLD = -0.035  # v3582 test-tier AC frontier
-MLP_COMP_SCALE = 25.0  # v2238 base
+MLP_POOL_HEAD = 0  # back to base
+MLP_COMP_THRESHOLD = -0.03512  # v3948 restore MCT=-0.03512
+MLP_COMP_SCALE = 200000000000.0  # v3974 test MCS=200B
+MLP_TRIPLE_SCALE = 200000000000.0  # v3974 test combined MCS=200B + MTS=200B
 
 # v1615: triple compositions — three-way ReLU(x_a + x_b + x_c + |thresh|) * scale.
 MLP_TRIPLES: List[Tuple[str, str, str]] = [("SEM_LIFE_DEATH", "SEM_HEALTH", "SEM_WORK_MONEY"), ("SEM_HEALTH", "SEM_KINSHIP", "SEM_COMMUNICATION"), ("SEM_HEALTH", "SEM_COMMUNICATION", "SEM_MOTION"), ("SEM_HEALTH", "SEM_KINSHIP", "SEM_WORK_MONEY"), ("SEM_HEALTH", "SEM_EMOTION_POS", "SEM_MOTION"), ("SEM_HEALTH", "SEM_EMOTION_POS", "SEM_LIFE_DEATH"), ("SEM_HEALTH", "SEM_LIFE_DEATH", "SEM_COMMUNICATION"), ("SEM_LIFE_DEATH", "SEM_KINSHIP", "SEM_COMMUNICATION"), ("SEM_SPACE", "SEM_HEALTH", "SEM_MOTION"), ("SEM_DISCOURSE", "SEM_SOCIAL", "SEM_COMMUNICATION"), ("SEM_DISCOURSE", "SEM_MENTAL", "SEM_COMMUNICATION"), ("SEM_DISCOURSE", "SEM_SOCIAL", "SEM_MENTAL"), ("SEM_DISCOURSE", "SEM_QUANTITY", "SEM_TIME"), ("SEM_DISCOURSE", "SEM_QUANTITY", "SEM_MOTION"), ("SEM_DISCOURSE", "SEM_QUANTITY", "SEM_SPACE"), ("SEM_DISCOURSE", "SEM_QUANTITY", "SEM_BODY"), ("SEM_QUALITY", "SEM_QUANTITY", "SEM_TIME"), ("SEM_QUALITY", "SEM_QUANTITY", "SEM_MOTION"), ("SEM_QUALITY", "SEM_QUANTITY", "SEM_BODY"), ("SEM_PERCEPTION", "SEM_MENTAL", "SEM_COMMUNICATION"), ("SEM_PERCEPTION", "SEM_QUALITY", "SEM_INTENSITY"), ("SEM_TIME", "SEM_MOTION", "SEM_BODY"), ("SEM_TIME", "SEM_MOTION", "SEM_COMMUNICATION"), ("SEM_MENTAL", "SEM_EMOTION_NEG", "SEM_COMMUNICATION")]  # v3432 +MENTAL_EMONEG_COMM
 MLP_TRIPLE_THRESHOLD = 0.004  # v3446 record variant
-MLP_TRIPLE_SCALE = 10.0  # v2468 base
+MLP_TRIPLE_SCALE = 10.0  # v3848 restore MTS=10.0
 
 # v1660: subtractive compositions — ReLU(x_a - x_b + |thresh|) * scale.
 # "A but NOT B" pattern: fires when feature A is present but B is absent.
@@ -987,7 +988,7 @@ def write_weights(model: SimpleTransformer) -> None:
 # Identity + description
 # ---------------------------------------------------------------------------
 
-model_shorthand_name = "FeatBag_v3603_v3582_rmCOMP_MENTAL_EMONEG"
+model_shorthand_name="FeatBag_v3974_v3973_MCS200B_MTS200B"
 model_description = "v2570 - (LIFE,TIME) - (LIFE,COMM)."
 
 

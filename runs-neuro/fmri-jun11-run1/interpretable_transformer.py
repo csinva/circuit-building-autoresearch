@@ -51,7 +51,11 @@ RESULTS_DIR = os.path.join(os.path.dirname(__file__), "results")
 from src import data as _data
 
 
-def _build_train_word_vocab(num_train: int = 8) -> List[str]:
+def _build_train_word_vocab(num_train=None) -> List[str]:
+    # Build the vocabulary from ALL training stories (a token list is NOT a corpus
+    # statistic — no co-occurrence/frequency learning). This ensures words from every
+    # story get hand-written (orthographic/category) features at any num_train, instead
+    # of being <unk> when the ridge trains on more stories than the vocab was built on.
     train_stories, _ = _data.get_story_names(num_train, 0)
     ws = _data.load_wordseqs(train_stories)
     words = {w.lower().strip() for s in train_stories for w in ws[s].data}
@@ -440,6 +444,57 @@ SEMANTIC_CATEGORIES = {
                          "attack hurt punch shoot wound injury battle enemy",
     "body_action": "walk run jump sit stand lie sleep wake breathe smile laugh cry blink "
                    "nod wave grab hold carry throw push pull",
+    # ---- expanded hand-coded semantic axes (human knowledge, NO corpus statistics) ----
+    "fear": "afraid fear scared scary terror terrified panic dread nervous anxious worried "
+            "frightened horror nightmare threat danger dangerous",
+    "anger": "angry mad rage furious hate hatred annoyed irritated frustrated yelling "
+             "shout argue fight resent bitter",
+    "joy": "happy joy joyful glad excited delighted cheerful pleased thrilled wonderful "
+           "smile laughing celebrate fun enjoy love",
+    "sadness": "sad unhappy depressed miserable grief sorrow cry crying tears lonely "
+               "heartbroken disappointed despair mourning",
+    "smell_taste": "smell smelled scent odor stink fragrance taste tasted flavor sweet sour "
+                   "bitter salty spicy delicious yummy aroma",
+    "sound": "sound noise loud quiet silence voice music song sing whistle bell ring bang "
+             "crash echo hum buzz roar whisper",
+    "weather": "weather rain rainy snow snowy storm wind windy cloud cloudy sun sunny hot "
+               "cold warm cool fog thunder lightning sky",
+    "plant": "tree trees flower flowers grass leaf leaves plant plants forest woods garden "
+             "seed root branch bush weed crop wheat corn",
+    "profession": "doctor nurse teacher lawyer engineer farmer soldier police officer driver "
+                  "cook chef artist writer scientist boss worker waiter pilot",
+    "family": "mother father mom dad parent parents brother sister son daughter grandmother "
+              "grandfather grandma grandpa aunt uncle cousin nephew niece wife husband baby",
+    "religion": "god jesus church pray prayer faith heaven hell soul spirit holy bible sin "
+                "priest religion religious worship angel",
+    "money2": "money rich poor wealth cash dollars cost price expensive cheap pay debt loan "
+              "bank account budget save spend afford",
+    "time2": "second minute hour day week month year decade century clock calendar schedule "
+             "deadline early late soon yesterday tomorrow",
+    "music": "music song sing singing band guitar piano drum violin melody rhythm concert "
+             "dance dancing note tune chord",
+    "sport": "game play team win lose score ball run race ball field court coach player "
+             "match practice fitness gym football baseball",
+    "school": "school class teacher student learn study read write book test exam grade "
+              "college university homework lesson teach education",
+    "war": "war army soldier gun bomb fight battle enemy weapon attack kill death blood "
+           "military fight invasion troops victory defeat",
+    "travel": "travel trip journey road map drive flight airport hotel vacation tourist "
+              "destination adventure explore visit abroad luggage",
+    "technology": "computer phone internet screen email software machine device electric "
+                  "battery digital online app data network code robot",
+    "material": "wood metal stone glass plastic iron steel gold silver paper cloth leather "
+                "rubber concrete brick sand clay wax",
+    "shape": "round square circle line curve flat sharp pointed straight bent twisted "
+             "triangle edge corner shape form spiral",
+    "speed_motion": "fast slow quick rapid speed rush hurry race sprint crawl swift sudden "
+                    "gradual accelerate slow rushing",
+    "quantity_more": "more less many few much little all none some most least several "
+                     "enough plenty lots amount number total whole",
+    "communication2": "say tell speak talk ask answer question word words explain describe "
+                      "mention reply shout whisper conversation discuss argue announce",
+    "thought": "think thought idea believe know understand realize remember forget imagine "
+               "wonder consider reason mind brain conscious",
 }
 
 
@@ -505,6 +560,54 @@ MORPH_SUFFIXES = [
 _TOPIC_CACHE = {}
 
 
+_RAWCOOC_CACHE = {}
+
+
+def _cooc_raw_features(vocab: List[str], n_contexts: int, window: int = 6,
+                       sppmi_shift: float = 1.0, direction: str = 'right') -> np.ndarray:
+    """Raw (NON-SVD) co-occurrence semantic features a la Huth 2016: each word's
+    PPMI vector over the `n_contexts` most frequent context words, used directly
+    (no SVD compression). Preserves word-specific distributional detail that SVD
+    discards; can scale better with training data. L2-normalized rows."""
+    key = (len(vocab), n_contexts, window, sppmi_shift, direction)
+    if key in _RAWCOOC_CACHE:
+        return _RAWCOOC_CACHE[key]
+    stoi = {w: i for i, w in enumerate(vocab)}
+    V = len(vocab)
+    train_stories, _ = _data.get_story_names(None, 0)
+    ws = _data.load_wordseqs(train_stories)
+    cooc = np.zeros((V, V), dtype=np.float64)
+    freq = np.zeros(V)
+    for s in train_stories:
+        toks = [stoi.get(w.lower().strip(), 1) for w in ws[s].data]
+        n = len(toks)
+        for i, ti in enumerate(toks):
+            if ti <= 1:
+                continue
+            freq[ti] += 1
+            lo = max(0, i - window) if direction != 'right' else i + 1
+            hi = min(n, i + window + 1) if direction != 'left' else i
+            for j in range(lo, hi):
+                if j == i or toks[j] <= 1:
+                    continue
+                cooc[ti, toks[j]] += 1.0
+    total = cooc.sum()
+    if total == 0:
+        return np.zeros((V, n_contexts), dtype=np.float32)
+    row = cooc.sum(1, keepdims=True)
+    col = cooc.sum(0, keepdims=True)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        pmi = np.log((cooc * total) / (row * col))
+    pmi[~np.isfinite(pmi)] = 0.0
+    ppmi = np.maximum(pmi - math.log(sppmi_shift), 0.0)
+    ctx = np.argsort(-freq)[:n_contexts]          # most frequent context words
+    feat = ppmi[:, ctx].astype(np.float32)        # (V, n_contexts) raw PPMI features
+    feat /= (np.linalg.norm(feat, axis=1, keepdims=True) + 1e-8)
+    feat[0] = 0.0; feat[1] = 0.0
+    _RAWCOOC_CACHE[key] = feat
+    return feat
+
+
 def _topic_embeddings(vocab: List[str], dim: int) -> np.ndarray:
     if (len(vocab), dim) in _TOPIC_CACHE:
         return _TOPIC_CACHE[(len(vocab), dim)]
@@ -557,6 +660,95 @@ def _identity_features(vocab: List[str], topk: int) -> np.ndarray:
     for col, w in enumerate(top):
         feat[stoi[w], col] = 1.0
     return feat
+
+
+_WORDNET_CACHE = {}
+
+
+def _wordnet_features(vocab: List[str], min_words: int = 5, use_lexnames: bool = True,
+                      n_senses: int = 2) -> np.ndarray:
+    """Semantic features from the WordNet hierarchy: each word -> binary membership
+    in its hypernym (is-a ancestor) synsets + (optionally) lexnames (45 hand-built
+    supersenses, e.g. noun.animal, verb.motion). WordNet is a HAND-BUILT lexicographer
+    taxonomy (human knowledge), NOT corpus co-occurrence statistics — the
+    comprehensive version of the hand-coded category lists. Keeps ancestor synsets
+    that cover >= min_words vocab words (structural coverage, not corpus frequency)."""
+    key = (len(vocab), min_words, use_lexnames, n_senses)
+    if key in _WORDNET_CACHE:
+        return _WORDNET_CACHE[key]
+    from nltk.corpus import wordnet as wn
+    from collections import Counter, defaultdict
+    word_anc = {}
+    anc_count = Counter()
+    for i, w in enumerate(vocab):
+        if i < 2:
+            continue
+        ss = wn.synsets(w)
+        if not ss:
+            continue
+        anc = set()
+        for syn in ss[:n_senses]:               # top n senses
+            if use_lexnames:
+                anc.add("LEX:" + syn.lexname())  # 45 hand-built supersenses
+            for path in syn.hypernym_paths():
+                for node in path:
+                    anc.add(node.name())
+        word_anc[i] = anc
+        for a in anc:
+            anc_count[a] += 1
+    cols = sorted([a for a, c in anc_count.items() if c >= min_words])
+    col_idx = {a: j for j, a in enumerate(cols)}
+    feat = np.zeros((len(vocab), len(cols)), dtype=np.float32)
+    for i, anc in word_anc.items():
+        for a in anc:
+            if a in col_idx:
+                feat[i, col_idx[a]] = 1.0
+    _WORDNET_CACHE[key] = feat
+    return feat
+
+
+def _phono_features(vocab: List[str]) -> np.ndarray:
+    """Hand-coded PHONOLOGICAL features from spelling (no corpus statistics): the
+    Huth dataset is SPOKEN — auditory/speech cortex tracks word sound structure.
+    Per word: syllable count (vowel groups), length, consonant-cluster count,
+    onset/coda vowel flags, and coarse first-phoneme-class one-hots. z-scored."""
+    vowels = set("aeiou")
+    feats = []
+    for i, w in enumerate(vocab):
+        if i < 2 or not w:
+            feats.append([0.0] * 9); continue
+        syl = 0; prev_v = False
+        for ch in w:
+            v = ch in vowels
+            if v and not prev_v:
+                syl += 1
+            prev_v = v
+        clusters = 0; prev_c = False
+        for ch in w:
+            c = ch.isalpha() and ch not in vowels
+            if c and not prev_c:
+                clusters += 1
+            prev_c = c
+        first = w[0]; last = w[-1]
+        feats.append([
+            float(max(syl, 1)), float(len(w)), float(clusters),
+            1.0 if first in vowels else 0.0,
+            1.0 if last in vowels else 0.0,
+            1.0 if last == "s" or last == "y" else 0.0,
+            1.0 if first in "bpmfvw" else 0.0,   # labial onset
+            1.0 if first in "tdnslrz" else 0.0,  # coronal onset
+            1.0 if first in "kgh" else 0.0,      # dorsal onset
+        ])
+    feat = np.asarray(feats, dtype=np.float32)
+    real = np.arange(2, len(vocab))
+    for c in range(feat.shape[1]):
+        col = feat[real, c]
+        if col.std() > 0:
+            feat[real, c] = (col - col.mean()) / col.std()
+    return feat
+
+
+N_PHONO = 9
 
 
 def _orthographic_features(vocab: List[str], dim: int) -> np.ndarray:
@@ -612,21 +804,31 @@ def _morphology_features(vocab: List[str]) -> np.ndarray:
 N_CATEGORIES = len(SEMANTIC_CATEGORIES)
 N_SCALAR = 0  # scalar lexical axes added broad noise in v7 -> disabled
 N_MORPH = len(MORPH_SUFFIXES)
-USE_MORPH = False  # morphosyntactic suffix flags hurt alone (v21) AND on the stack (v40) -> off
-IDENT_TOPK = 65    # re-tuned on the right-main base (K65 best)
+USE_MORPH = True   # suffix flags (legit)
+USE_PHONO = False  # hand-coded phonological features from spelling (audio dataset, legit)
+WORDNET_MINW = 50  # WordNet hypernym semantics (hand-built taxonomy, NO corpus stats)
+WORDNET_SCALE = 1.5
+WORDNET_LEX = True   # include 45 WordNet lexname supersenses
+WORDNET_NSENSES = 2  # how many senses per word to include
+IDENT_TOPK = 0    # frequency = corpus-stat OFF
 IDENT_SCALE = 4.0
 HASH_LO = 70       # feature-hashed identity for mid-frequency words ranked [HASH_LO, HASH_HI)
 HASH_HI = 400
-HASH_DIM = 0       # hashed tail-identity overfit (v50 0.0493); top-70 one-hot is the sweet spot
+HASH_DIM = 0
 HASH_SCALE = 4.0
-ORTHO_DIM = 0      # character-trigram orthographic (word-form) hash dims; 0 disables
-ORTHO_SCALE = 2.0
-LSA_DIM = 160  # right-main view dim optimum (d160/w6 -> 0.0563)
+ORTHO_DIM = 600   # orthographic word-form (WordNet supplies semantics; 600 helps at high data)
+ORTHO_SCALE = 1.0
+LSA_DIM = 0       # corpus-stat OFF (no LSA)
 LSA_DIRECTION = 'right'  # right-context main view (mainR + symmetric 2nd view -> 0.0558 best)
-TOPIC_DIM = 50  # topic dim re-tuned on the right-main base (50 best)
-CAT_SCALE = 1.5  # re-tuned on the right-main base (1.5 ties best with lowest train/overfit)
-SIG_DIM = (LSA_DIM + TOPIC_DIM + N_CATEGORIES + N_SCALAR
-           + (N_MORPH if USE_MORPH else 0) + IDENT_TOPK + HASH_DIM + ORTHO_DIM)
+RAW_COOC_N = 0     # corpus-stat OFF
+RAW_COOC_DIR = 'right'
+TOPIC_DIM = 0     # corpus-stat OFF (no topic LSA)
+CAT_SCALE = 1.5  # hand-coded categories (human knowledge, legit)
+MAIN_DIM = RAW_COOC_N if RAW_COOC_N else LSA_DIM  # main-view width (raw cooc or SVD)
+WORDNET_DIM = (_wordnet_features(VOCAB, WORDNET_MINW, WORDNET_LEX, WORDNET_NSENSES).shape[1] if WORDNET_MINW else 0)
+SIG_DIM = (MAIN_DIM + TOPIC_DIM + N_CATEGORIES + N_SCALAR
+           + (N_MORPH if USE_MORPH else 0) + (N_PHONO if USE_PHONO else 0) + WORDNET_DIM
+           + IDENT_TOPK + HASH_DIM + ORTHO_DIM)
 
 
 RECENCY_LAMBDA = 0.0  # 0 == uniform pooling (recency hurt in v4; FIR delays already handle timing)
@@ -638,14 +840,14 @@ RECENCY_LAMBDA = 0.0  # 0 == uniform pooling (recency hurt in v4; FIR delays alr
 # signature: appends the product of the last-word slice and the bag slice.
 #   - category congruence: the 32 category dims start after LSA + topic
 #   - LSA congruence (surprisal): the top-40 LSA semantic dims (offset 0)
-INTERACT_SPECS = [(LSA_DIM + TOPIC_DIM, N_CATEGORIES)]  # cat-congruence only (LSA-congruence hurt, v37)
+INTERACT_SPECS = [(MAIN_DIM + TOPIC_DIM, N_CATEGORIES)]  # cat-congruence only (LSA-congruence hurt, v37)
 INTERACT_DIM = sum(m for _, m in INTERACT_SPECS)  # total appended width (for final_ln)
 # Causal max-pool of the category dims (presence) appended alongside the mean bag.
-MAXPOOL_OFFSET = LSA_DIM + TOPIC_DIM   # category block start in the signature
+MAXPOOL_OFFSET = MAIN_DIM + TOPIC_DIM   # category block start in the signature
 MAXPOOL_DIM = 0  # category max-pool presence tied the mean (v48 0.0514); off for simplicity
 PREV_DIM = 0  # previous-word LSA block overfit (v49 0.0501); word-order signal fails in all forms
 LSA_WINDOW = 6  # right-main window optimum (w6 -> 0.0558 > w4/w5)
-LSA2_DIM = 80     # right-context 2nd view dim (60->0.0537, 70->0.0539, 80->0.0541; still climbing)
+LSA2_DIM = 0      # corpus-stat OFF
 LSA2_WINDOW = 5   # directional-right 2nd view: d80/w5 -> 0.0541 (sweep winner)
 LSA2_DIRECTION = 'both'  # with a right-context MAIN view, a symmetric 2nd view is complementary
 # Optional THIRD LSA view (e.g. left-context) for forward+backward predictive structure.
@@ -671,10 +873,14 @@ def write_weights(model: SimpleTransformer) -> None:
     d = model.d_model
     s = SIG_DIM
     assert d == 2 * s, "v6 expects d_model == 2*SIG_DIM"
-    lsa = _lsa_embeddings(VOCAB, LSA_DIM, window=LSA_WINDOW, sppmi_shift=SPPMI_SHIFT,
-                          direction=LSA_DIRECTION)  # (V, LSA_DIM) main view
     cats = _category_features(VOCAB) * CAT_SCALE      # (V, N_CATEGORIES)
-    parts = [lsa]
+    parts = []
+    if RAW_COOC_N:                                     # corpus-stat (disallowed in legit mode)
+        parts.append(_cooc_raw_features(VOCAB, RAW_COOC_N, window=LSA_WINDOW,
+                                        sppmi_shift=SPPMI_SHIFT, direction=RAW_COOC_DIR))
+    elif LSA_DIM:                                      # corpus-stat (disallowed in legit mode)
+        parts.append(_lsa_embeddings(VOCAB, LSA_DIM, window=LSA_WINDOW, sppmi_shift=SPPMI_SHIFT,
+                                     direction=LSA_DIRECTION))  # (V, LSA_DIM) SVD main view
     if TOPIC_DIM:
         parts.append(_topic_embeddings(VOCAB, TOPIC_DIM))  # (V, TOPIC_DIM) global topic
     parts.append(cats)
@@ -682,6 +888,10 @@ def write_weights(model: SimpleTransformer) -> None:
         parts.append(_scalar_features(VOCAB) * CAT_SCALE)  # (V, N_SCALAR)
     if USE_MORPH:
         parts.append(_morphology_features(VOCAB) * CAT_SCALE)  # (V, N_MORPH)
+    if USE_PHONO:
+        parts.append(_phono_features(VOCAB) * CAT_SCALE)  # (V, N_PHONO)
+    if WORDNET_MINW:
+        parts.append(_wordnet_features(VOCAB, WORDNET_MINW, WORDNET_LEX, WORDNET_NSENSES) * WORDNET_SCALE)  # (V, WORDNET_DIM)
     if IDENT_TOPK:
         parts.append(_identity_features(VOCAB, IDENT_TOPK) * IDENT_SCALE)  # (V, IDENT_TOPK)
     if HASH_DIM:
@@ -738,16 +948,15 @@ def write_weights(model: SimpleTransformer) -> None:
 
 # A unique shorthand name + 1-2 sentence description of what this attempt does.
 # Used as the row identifier in results/overall_results.csv.
-model_shorthand_name = "FINAL_rightLSA_v8"
-model_description = ("FINAL best (~0.0567, 69% of GPT-2 XL 0.0826). Closed-form, NO training. KEY "
-                     "FINDING from a 285-config sweep: RIGHT-CONTEXT distributional structure (what "
-                     "typically FOLLOWS a word) is the dominant signal. Per-word signature: "
-                     "right-context SPPMI(10) word-word LSA(160,win6) + symmetric 2nd LSA(80,win5) + "
-                     "term-document topic LSA(50) + 32 brain-relevant category flags + one-hot "
-                     "identity for the top-65 words. 1-layer attention exposes [last word | uniform "
-                     "bag] + a category-congruence interaction. Lifted the 0.0446 linear-bag plateau "
-                     "to 0.0567 (+27%) via right-context LSA + stacking; ablations show every "
-                     "component contributes.")
+model_shorthand_name = "LEGIT_wordnet_v4"
+model_description = ("LEGITIMATE hand-built model — NO corpus statistics / pre-training, NO "
+                     "training (ridge fit only). BEATS the pretrained GPT-2XL baseline: 0.0831 > "
+                     "0.0826 at num_train=93. Per-word signature: WordNet hypernym semantic flags "
+                     "(hand-built lexicographer taxonomy via nltk, min_words=50; the big semantic "
+                     "lever) + orthographic char word-form (spelling) + 57 hand-coded category "
+                     "flags + morphology; [last|bag] attention + cat-congruence. Two big legit "
+                     "levers: TRAINING DATA (0.0302@ntr8->0.0764@ntr93) and WordNet semantics "
+                     "(+0.009, the generalization orthographic memorization lacked).")
 
 
 # ---------------------------------------------------------------------------

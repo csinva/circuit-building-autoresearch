@@ -20,18 +20,24 @@ BASE = {k: getattr(it, k) for k in [
     "LSA3_DIM", "LSA3_WINDOW", "LSA3_DIRECTION",
     "TOPIC_DIM", "CAT_SCALE", "IDENT_TOPK", "IDENT_SCALE", "HASH_DIM",
     "HASH_LO", "HASH_HI", "HASH_SCALE", "MAXPOOL_DIM", "PREV_DIM", "USE_MORPH",
-    "ORTHO_DIM", "ORTHO_SCALE", "RECENCY_LAMBDA",
+    "ORTHO_DIM", "ORTHO_SCALE", "RECENCY_LAMBDA", "RAW_COOC_N", "RAW_COOC_DIR", "USE_PHONO",
+    "WORDNET_MINW", "WORDNET_SCALE", "WORDNET_LEX", "WORDNET_NSENSES",
 ]}
 
 
 def recompute_derived():
     it.N_CATEGORIES = len(it.SEMANTIC_CATEGORIES)
-    it.SIG_DIM = (it.LSA_DIM + it.TOPIC_DIM + it.N_CATEGORIES + it.N_SCALAR
-                  + (it.N_MORPH if it.USE_MORPH else 0) + it.IDENT_TOPK + it.HASH_DIM
-                  + it.ORTHO_DIM + it.LSA2_DIM + it.LSA3_DIM)
-    it.INTERACT_SPECS = [(it.LSA_DIM + it.TOPIC_DIM, it.N_CATEGORIES)]
+    it.MAIN_DIM = it.RAW_COOC_N if getattr(it, "RAW_COOC_N", 0) else it.LSA_DIM
+    it.WORDNET_DIM = (it._wordnet_features(it.VOCAB, it.WORDNET_MINW, it.WORDNET_LEX,
+                                           it.WORDNET_NSENSES).shape[1]
+                      if it.WORDNET_MINW else 0)
+    it.SIG_DIM = (it.MAIN_DIM + it.TOPIC_DIM + it.N_CATEGORIES + it.N_SCALAR
+                  + (it.N_MORPH if it.USE_MORPH else 0) + (it.N_PHONO if it.USE_PHONO else 0)
+                  + it.WORDNET_DIM + it.IDENT_TOPK + it.HASH_DIM + it.ORTHO_DIM
+                  + it.LSA2_DIM + it.LSA3_DIM)
+    it.INTERACT_SPECS = [(it.MAIN_DIM + it.TOPIC_DIM, it.N_CATEGORIES)]
     it.INTERACT_DIM = sum(m for _, m in it.INTERACT_SPECS)
-    it.MAXPOOL_OFFSET = it.LSA_DIM + it.TOPIC_DIM
+    it.MAXPOOL_OFFSET = it.MAIN_DIM + it.TOPIC_DIM
 
 
 def run_one(cfg):
@@ -44,7 +50,11 @@ def run_one(cfg):
     t0 = time.time()
     embedder = it.build_embedder(device="cuda", d_model=2 * it.SIG_DIM)
     ntr = cfg.get("NUM_TRAIN", 8)
-    ecfg = it.EncodingConfig(subject="UTS03", num_train=ntr, num_test=3)
+    # nboots: bootstrap-CV folds for alpha selection (dominant cost). Default 5
+    # (official). Configs may set nboots=2 for ~2x-faster TUNING; confirm the
+    # winner at nboots=5. chunklen/nchunks left at eval defaults.
+    nboots = cfg.get("NBOOTS", 5)
+    ecfg = it.EncodingConfig(subject="UTS03", num_train=ntr, num_test=3, nboots=nboots)
     r = it.run_encoding(embedder, ecfg, verbose=False)
     return {
         "name": cfg["name"],

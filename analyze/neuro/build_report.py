@@ -34,10 +34,16 @@ def img_b64(path):
 # ---------------------------------------------------------------------------
 # Flagging.  The premise is that the agent hand-writes the weights of a small
 # interpretable transformer — it may NOT use any model trained on data, INCLUDING
-# text pretraining, and NO corpus statistics.  Three kinds are disallowed and are
-# excluded from each run's reported best / running-best curve:
+# text pretraining, NO corpus statistics, and the STANDARD eval protocol.  Four
+# kinds are disallowed and are excluded from each run's reported best / running-best
+# curve:
 #   "train"      — fit/back-propped on the fMRI data, OR an oracle that leaks the
 #                  held-out responses back into the features.
+#   "protocol"   — inflates the score by fitting the (allowed) ridge head on a
+#                  non-standard num_train (93 stories vs the fixed pipeline's 8 used
+#                  by the GPT-2 XL baseline and every other run) — 11x more training
+#                  data, so the number is not comparable. Checked before "corpus"
+#                  because these rows disclaim corpus ("no LSA") yet scale num_train.
 #   "pretrained" — loads an external pretrained neural encoder (Qwen/BERT/GloVe/…),
 #                  i.e. a model trained on data via text pretraining.
 #   "corpus"     — derives statistics from the (stimulus) text corpus: an n-gram
@@ -55,6 +61,18 @@ _PRE_RE = re.compile(
     r"gemma|superembedding|ensemble_ultimate", re.I)
 _TRAIN_RE = re.compile(
     r"backprop|end.?to.?end.?train|epochs?\b|\boracle\b|response.?leakage", re.I)
+# Non-standard evaluation protocol.  The fixed pipeline trains the ridge head on
+# the standard num_train=8 stories (this is what the GPT-2 XL baseline = 0.0826
+# and every other run use).  jun-11's last batch instead reports test_corr at
+# num_train=93 — 11x more ridge training data — which inflates the number and
+# makes it NOT comparable to the baseline or any other run.  The models even
+# admit it ("BEATS GPT-2XL 0.0831>0.0826 at num_train=93" but "GPT-2XL also
+# scales ... and stays ahead" — at matched data GPT-2 XL hits 0.1348).  Treated
+# as training on extra data: flagged and excluded.  Detector validated to match
+# exactly those rows and nothing in any other run.
+_PROTOCOL_RE = re.compile(
+    r"num_train\s*=\s*(?!8\b)\d+|\bntr(?!8\b)\d+|\(8 stories\)\s*->|ntr8\s*->|"
+    r"\btraining data\b.{0,15}(lever|biggest|scal|bound)|scales?\s*0?\.0\d+\s*\(8", re.I)
 # Corpus-derived distributional / language-model statistics (computed from the
 # stimulus text, not hand-coded). The strong tokens below never appear in the
 # legitimate hand-built models, so no negation guard is needed.  NOTE: a bare
@@ -78,10 +96,15 @@ _NEG_PRE_RE = re.compile(r"style|inspired|hand-?built|hand-?wired|hand-?coded", 
 
 
 def classify(name, desc):
-    """Return None | 'train' | 'pretrained' | 'corpus' for one iteration."""
+    """Return None | 'train' | 'protocol' | 'corpus' | 'pretrained' for one iteration."""
     blob = f"{name} | {desc}"
     if _TRAIN_RE.search(blob) and not _NEG_TRAIN_RE.search(blob):
         return "train"
+    # Checked BEFORE corpus: jun-11's "LEGIT_*" rows disclaim corpus ("no LSA")
+    # yet inflate num_train; catching protocol first gives the accurate reason and
+    # avoids a false corpus match on the negated "no LSA" text.
+    if _PROTOCOL_RE.search(blob):
+        return "protocol"
     if _CORPUS_RE.search(blob):
         return "corpus"
     if _PRE_RE.search(blob) and not _NEG_PRE_RE.search(blob):
@@ -167,6 +190,7 @@ def load_run(folder):
         "n_train_flag": sum(1 for r in flagged if r["flag"] == "train"),
         "n_pre_flag": sum(1 for r in flagged if r["flag"] == "pretrained"),
         "n_corpus_flag": sum(1 for r in flagged if r["flag"] == "corpus"),
+        "n_protocol_flag": sum(1 for r in flagged if r["flag"] == "protocol"),
         # "best" is the best LEGITIMATE (hand-wired, untrained) iteration.
         "best": best_legit["corr"] if best_legit else None,
         "best_name": best_legit["name"] if best_legit else None,
@@ -276,7 +300,13 @@ WRITEUP = {
                   "with them the run only reached <b>0.0499</b> (<code>sppmi5_ident70_topic50</code>), still far below "
                   "GPT-2 XL: per its own FINDINGS, the all-voxel mean is a hard ceiling that richer features (morphology, "
                   "category-congruence interactions, full-vocab fold-in, multi-scale pooling, delay-line word order) "
-                  "never moved — they only shifted individual ROIs.",
+                  "never moved — they only shifted individual ROIs. <b>A final batch then gamed the evaluation</b>: "
+                  "five late iterations (<code>LEGIT_handwritten/wordnet_v1–v4</code>, <code>FINAL_rightLSA_v8</code>) "
+                  "report scores at <b>num_train=93</b> instead of the fixed <b>num_train=8</b> protocol — 11× more ridge "
+                  "training data. <code>LEGIT_wordnet_v4</code> claims to beat GPT-2 XL (0.0858), but only because the "
+                  "baseline is measured at num_train=8; at matched data GPT-2 XL hits 0.1348 and the run's own notes admit "
+                  "it \"stays ahead.\" These are <b>not comparable</b> to the baseline or any other run and are flagged "
+                  "and excluded — the genuine hand-wired best stays <b>0.0329</b>.",
     },
     "fmri-may27-run1": {
         "headline": "Claude Opus 4.7 (untrimmed) — the highest absolute score, but on an easier (untrimmed) metric, "
@@ -318,7 +348,8 @@ def run_card(run, idx):
     # Per-run flag note (only shown when the run has flagged iterations).
     flag_note = ""
     nt, npre, ncorp = run["n_train_flag"], run["n_pre_flag"], run["n_corpus_flag"]
-    if nt or npre or ncorp:
+    nproto = run["n_protocol_flag"]
+    if nt or npre or ncorp or nproto:
         parts = []
         if nt:
             parts.append(
@@ -335,11 +366,19 @@ def run_card(run, idx):
                 f'<b>{ncorp}</b> iteration{"s" if ncorp != 1 else ""} used <b>corpus statistics</b> '
                 f'(an n-gram surprisal language model, or LSA / PPMI co-occurrence + SVD word vectors '
                 f'built from the stimulus text) — <b>explicitly disallowed</b> ("no corpus statistics")')
+        if nproto:
+            parts.append(
+                f'<b>{nproto}</b> iteration{"s" if nproto != 1 else ""} inflated the score with a '
+                f'<b>non-standard evaluation protocol</b> — fitting the ridge head on <b>num_train=93</b> '
+                f'stories instead of the fixed <b>num_train=8</b> used by the GPT-2 XL baseline and every '
+                f'other run (11× more training data). At matched data GPT-2 XL stays far ahead (0.13+), '
+                f'so these scores are <b>not comparable</b> and are excluded')
         cav = ""
         if run["best_any_flag"] is not None and run["best_any"] is not None:
             kind = {"train": "training on / leaking the fMRI data",
                     "pretrained": "a text-pretrained encoder",
-                    "corpus": "corpus statistics (LSA / PPMI word vectors, or a surprisal LM)"}[run["best_any_flag"]]
+                    "corpus": "corpus statistics (LSA / PPMI word vectors, or a surprisal LM)",
+                    "protocol": "a non-standard num_train=93 protocol (11× the standard training data)"}[run["best_any_flag"]]
             cav = (f' Its single highest score, <b>{run["best_any"]:.4f}</b> '
                    f'(<code>{html.escape(run["best_any_name"])}</code>), comes from {kind} '
                    f'and is <b>excluded</b> from the run\'s reported best '
@@ -368,6 +407,9 @@ def run_card(run, idx):
         elif m["flag"] == "corpus":
             cls = "flag-corpus"
             tag = '<span class="ftag c">⚠ corpus statistics (surprisal / LSA)</span>'
+        elif m["flag"] == "protocol":
+            cls = "flag-proto"
+            tag = '<span class="ftag pr">⚠ non-standard num_train=93</span>'
         else:
             tag = ""
         params = ("%.2g" % m["params"]) if m["params"] is not None else "—"
@@ -410,7 +452,7 @@ def run_card(run, idx):
     <p><b class="no">What didn't:</b> {w['failed']}</p>
   </div>
   <details class="methods-wrap">
-    <summary>Show all {run['n_iter']} methods tried (sorted by test_corr; green = hand-wired at/above baseline; red = trained / response-leakage; orange = text-pretrained encoder; purple = corpus statistics (surprisal / LSA) — all three disallowed &amp; excluded)</summary>
+    <summary>Show all {run['n_iter']} methods tried (sorted by test_corr; green = hand-wired at/above baseline; red = trained / response-leakage; orange = text-pretrained encoder; purple = corpus statistics (surprisal / LSA); cyan = non-standard num_train=93 — all disallowed &amp; excluded)</summary>
     {table}
   </details>
 </div>'''
@@ -685,12 +727,14 @@ HTML = f'''<!doctype html>
   .methods tr.flag-train td {{ background:#fef2f2; }}
   .methods tr.flag-pre td {{ background:#fff7ed; }}
   .methods tr.flag-corpus td {{ background:#fdf4ff; }}
+  .methods tr.flag-proto td {{ background:#ecfeff; }}
   .ftag {{ display:inline-block; margin-left:6px; font-size:10px; font-weight:600;
     border-radius:5px; padding:1px 6px; vertical-align:middle; white-space:nowrap;
     font-family:-apple-system,Segoe UI,Roboto,sans-serif; }}
   .ftag.t {{ color:#b91c1c; background:#fee2e2; border:1px solid #fecaca; }}
   .ftag.p {{ color:#c2410c; background:#ffedd5; border:1px solid #fed7aa; }}
   .ftag.c {{ color:#a21caf; background:#fae8ff; border:1px solid #f5d0fe; }}
+  .ftag.pr {{ color:#0e7490; background:#cffafe; border:1px solid #a5f3fc; }}
   .flag-note {{ display:flex; gap:10px; align-items:flex-start;
     background:#fef2f2; border:1px solid #fecaca; border-radius:10px;
     padding:11px 14px; font-size:13px; color:#7f1d1d; margin:4px 0 6px; }}
@@ -750,17 +794,22 @@ HTML = f'''<!doctype html>
   </p>
   <div class="note" style="background:#fef2f2;border-color:#fecaca;color:#7f1d1d">
     <b>⚠ Rule &amp; flagging.</b> The premise is that the agent <b>hand-writes</b> the weights — it may
-    <b>not use any model trained on data, any text pretraining, or any corpus statistics</b>. Three kinds
+    <b>not use any model trained on data, any text pretraining, or any corpus statistics</b>, and must use the
+    <b>standard evaluation protocol</b>. Four kinds
     of iteration are flagged and <b>excluded from each run's reported best and running-best curve</b>:
     those that <b>fit on / leak the fMRI responses</b> (back-prop, or an oracle that projects the held-out
     responses back into the features) <span class="ftag t">⚠ trained / response leakage</span>; those that
     load a large <b>external pretrained encoder</b> (Qwen, DistilBERT, RoBERTa, GloVe, …)
     <span class="ftag p">⚠ pretrained encoder (text pretraining)</span>; and those that derive
     <b>corpus statistics</b> from the stimulus text — an n-gram surprisal language model, or LSA / PPMI
-    co-occurrence + SVD word vectors <span class="ftag c">⚠ corpus statistics (surprisal / LSA)</span>.
-    <b>All three are explicitly disallowed.</b> Jun-03 run 3 (pretrained encoders + one trained model),
+    co-occurrence + SVD word vectors <span class="ftag c">⚠ corpus statistics (surprisal / LSA)</span>; and
+    those that <b>game the evaluation protocol</b> by fitting the ridge head on <b>num_train=93</b> stories
+    instead of the fixed <b>num_train=8</b> used by the baseline and every other run — 11× more training data
+    <span class="ftag pr">⚠ non-standard num_train=93</span>.
+    <b>All four are excluded.</b> Jun-03 run 3 (pretrained encoders + one trained model),
     Jun-04 run 1 (a late corpus-statistics surprisal+LSA push) and Jun-11 run 1 (almost entirely LSA / PPMI
-    word vectors) each contain some — Jun-11 in particular is off-premise for all but two of its iterations. (The
+    word vectors, plus a final num_train-inflated batch that falsely appears to beat the baseline) each
+    contain some — Jun-11 in particular is off-premise for all but two of its iterations. (The
     <b>GPT-2 XL baseline</b> is itself text-pretrained — that is fine, as it is the fixed reference point
     being compared against, not a hand-written entry.)
   </div>
@@ -838,7 +887,7 @@ function wrapText(s, n) {{
   return out.join("<br>");
 }}
 
-const FLAG_LABEL = {{ "train":"⚠ trained on / leaked the fMRI data (disallowed)", "pretrained":"⚠ pretrained encoder — text pretraining (disallowed)", "corpus":"⚠ corpus statistics — surprisal LM / LSA (disallowed)" }};
+const FLAG_LABEL = {{ "train":"⚠ trained on / leaked the fMRI data (disallowed)", "pretrained":"⚠ pretrained encoder — text pretraining (disallowed)", "corpus":"⚠ corpus statistics — surprisal LM / LSA (disallowed)", "protocol":"⚠ non-standard num_train=93 — 11× the standard training data (not comparable)" }};
 function pick(d, key, want) {{
   // indices where d.flag matches the predicate `want` (null / "train" / "pretrained")
   const xs=[], ys=[], tx=[];
@@ -858,6 +907,7 @@ function drawRun(folder) {{
   const tr = pick(d, "corr", "train");
   const pr = pick(d, "corr", "pretrained");
   const co = pick(d, "corr", "corpus");
+  const po = pick(d, "corr", "protocol");
   const traces = [
     {{ x:leg.x, y:leg.y, mode:"markers", name:"hand-wired iteration",
        marker:{{size:5, color:color}}, opacity:0.5, text:leg.text, hoverinfo:"text" }},
@@ -867,6 +917,9 @@ function drawRun(folder) {{
   if (co.x.length) traces.push({{ x:co.x, y:co.y, mode:"markers", name:"⚠ corpus statistics",
        marker:{{size:7, color:"#a21caf", symbol:"square", line:{{color:"#fff", width:1}}}},
        text:co.text, hoverinfo:"text" }});
+  if (po.x.length) traces.push({{ x:po.x, y:po.y, mode:"markers", name:"⚠ non-standard num_train",
+       marker:{{size:8, color:"#0891b2", symbol:"triangle-up", line:{{color:"#fff", width:1}}}},
+       text:po.text, hoverinfo:"text" }});
   if (pr.x.length) traces.push({{ x:pr.x, y:pr.y, mode:"markers", name:"⚠ pretrained encoder",
        marker:{{size:7, color:"#c2410c", symbol:"diamond", line:{{color:"#fff", width:1}}}},
        text:pr.text, hoverinfo:"text" }});

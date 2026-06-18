@@ -1,0 +1,2 @@
+name,test_corr,train_corr,frac,secs,cfg
+legit_ntr93,0.0711,0.2378,0.1149,3101.7,"{""LSA_DIM"": 0, ""TOPIC_DIM"": 0, ""LSA2_DIM"": 0, ""LSA3_DIM"": 0, ""IDENT_TOPK"": 0, ""HASH_DIM"": 0, ""RAW_COOC_N"": 0, ""USE_MORPH"": true, ""ORTHO_DIM"": 600, ""ORTHO_SCALE"": 1.0, ""CAT_SCALE"": 1.5, ""NUM_TRAIN"": 93}"

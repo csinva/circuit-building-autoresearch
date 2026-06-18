@@ -1,0 +1,3 @@
+name,test_corr,train_corr,frac,secs,cfg
+big93,0.0865,0.2174,0.147,1738.1,"{""LSA_DIM"": 220, ""LSA2_DIM"": 140, ""LSA2_WINDOW"": 5, ""TOPIC_DIM"": 120, ""NUM_TRAIN"": 93}"
+mod93,0.0892,0.2149,0.1519,1507.3,"{""LSA_DIM"": 180, ""LSA2_DIM"": 100, ""LSA2_WINDOW"": 5, ""TOPIC_DIM"": 90, ""IDENT_TOPK"": 100, ""NUM_TRAIN"": 93}"

@@ -1,2 +1,4 @@
 name,test_corr,train_corr,frac,secs,cfg
 best_ntr8,0.0567,0.6141,0.0817,550.9,"{""NUM_TRAIN"": 8}"
+best_ntr48,0.0814,0.2529,0.1343,1498.1,"{""NUM_TRAIN"": 48}"
+lsadim600_ntr32,0.067,0.4042,0.1065,2626.1,"{""NUM_TRAIN"": 32, ""LSA_DIM"": 600}"

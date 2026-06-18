@@ -1,0 +1,3 @@
+name,test_corr,train_corr,frac,secs,cfg
+sink93,0.0853,0.2304,0.146,2558.9,"{""LSA_DIM"": 200, ""LSA2_DIM"": 120, ""LSA2_WINDOW"": 5, ""LSA3_DIM"": 80, ""LSA3_DIRECTION"": ""left"", ""TOPIC_DIM"": 120, ""IDENT_TOPK"": 150, ""ORTHO_DIM"": 80, ""ORTHO_SCALE"": 1.0, ""NUM_TRAIN"": 93}"
+ctrl93,0.0899,0.1974,0.1525,1690.9,"{""NUM_TRAIN"": 93}"

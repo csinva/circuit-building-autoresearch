@@ -1,0 +1,2 @@
+name,test_corr,train_corr,frac,secs,cfg
+x57_ntr8,0.0313,0.6192,0.0278,502.5,"{""LSA_DIM"": 0, ""TOPIC_DIM"": 0, ""LSA2_DIM"": 0, ""LSA3_DIM"": 0, ""IDENT_TOPK"": 0, ""HASH_DIM"": 0, ""RAW_COOC_N"": 0, ""USE_MORPH"": true, ""ORTHO_DIM"": 200, ""ORTHO_SCALE"": 1.0, ""CAT_SCALE"": 1.5, ""NUM_TRAIN"": 8}"

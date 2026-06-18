@@ -1,0 +1,3 @@
+name,test_corr,train_corr,frac,secs,cfg
+multidir93,0.0869,0.2079,0.1466,2024.0,"{""LSA_DIM"": 160, ""LSA2_DIRECTION"": ""left"", ""LSA2_DIM"": 100, ""LSA2_WINDOW"": 6, ""LSA3_DIM"": 100, ""LSA3_DIRECTION"": ""both"", ""LSA3_WINDOW"": 5, ""NUM_TRAIN"": 93}"
+rawmain93,0.0825,0.2678,0.1425,3417.5,"{""RAW_COOC_N"": 985, ""NUM_TRAIN"": 93}"

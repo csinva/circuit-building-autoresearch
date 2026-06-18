@@ -1,0 +1,2 @@
+name,test_corr,train_corr,frac,secs,cfg
+mymax_ntr93_dim300,0.0871,0.2176,0.1476,2337.4,"{""NUM_TRAIN"": 93, ""LSA_DIM"": 300}"

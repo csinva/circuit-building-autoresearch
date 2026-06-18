@@ -1,0 +1,3 @@
+name,test_corr,train_corr,frac,secs,cfg
+identK120,0.0823,0.2451,0.1371,1408.4,"{""IDENT_TOPK"": 120, ""NUM_TRAIN"": 64}"
+identK500,0.0771,0.2754,0.1299,2381.0,"{""IDENT_TOPK"": 500, ""NUM_TRAIN"": 64}"

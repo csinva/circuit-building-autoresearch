@@ -1,0 +1,2 @@
+name,test_corr,train_corr,frac,secs,cfg
+raw700_ntr64,0.0759,0.3021,0.1287,3557.2,"{""RAW_COOC_N"": 700, ""NUM_TRAIN"": 64}"
