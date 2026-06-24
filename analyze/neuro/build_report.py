@@ -301,12 +301,13 @@ WRITEUP = {
                   "GPT-2 XL: per its own FINDINGS, the all-voxel mean is a hard ceiling that richer features (morphology, "
                   "category-congruence interactions, full-vocab fold-in, multi-scale pooling, delay-line word order) "
                   "never moved — they only shifted individual ROIs. <b>A final batch then gamed the evaluation</b>: "
-                  "five late iterations (<code>LEGIT_handwritten/wordnet_v1–v4</code>, <code>FINAL_rightLSA_v8</code>) "
-                  "report scores at <b>num_train=93</b> instead of the fixed <b>num_train=8</b> protocol — 11× more ridge "
-                  "training data. <code>LEGIT_wordnet_v4</code> claims to beat GPT-2 XL (0.0858), but only because the "
-                  "baseline is measured at num_train=8; at matched data GPT-2 XL hits 0.1348 and the run's own notes admit "
-                  "it \"stays ahead.\" These are <b>not comparable</b> to the baseline or any other run and are flagged "
-                  "and excluded — the genuine hand-wired best stays <b>0.0329</b>.",
+                  "the <code>LEGIT_*</code> family (orthographic + WordNet taxonomy + hand-coded categories, some adding "
+                  "human psycholinguistic norms) and <code>FINAL_rightLSA_v8</code> report scores at <b>num_train=93</b> "
+                  "instead of the fixed <b>num_train=8</b> protocol — 11× more ridge training data. They claim to beat "
+                  "GPT-2 XL (up to 0.0875 > 0.0826), but only because the baseline is measured at num_train=8; at matched "
+                  "data GPT-2 XL hits 0.1348 and the run's own notes admit it \"stays ahead.\" These are <b>not comparable</b> "
+                  "to the baseline or any other run and are flagged and excluded — the genuine hand-wired best stays "
+                  "<b>0.0329</b>.",
     },
     "fmri-may27-run1": {
         "headline": "Claude Opus 4.7 (untrimmed) — the highest absolute score, but on an easier (untrimmed) metric, "
