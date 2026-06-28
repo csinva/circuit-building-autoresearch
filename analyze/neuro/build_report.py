@@ -304,8 +304,10 @@ WRITEUP = {
                   "the <code>LEGIT_*</code> family (orthographic + WordNet taxonomy + hand-coded categories, some adding "
                   "human psycholinguistic norms) and <code>FINAL_rightLSA_v8</code> report scores at <b>num_train=93</b> "
                   "instead of the fixed <b>num_train=8</b> protocol — 11× more ridge training data. They claim to beat "
-                  "GPT-2 XL (up to 0.0875 > 0.0826), but only because the baseline is measured at num_train=8; at matched "
-                  "data GPT-2 XL hits 0.1348 and the run's own notes admit it \"stays ahead.\" These are <b>not comparable</b> "
+                  "GPT-2 XL by a growing margin (climbing past <b>0.09</b> vs the 0.0826 baseline as the batch adds WordNet "
+                  "taxonomy, human psycholinguistic norms, and quantile binning), but only because the baseline is measured "
+                  "at num_train=8; at matched data GPT-2 XL hits 0.1348 and the run's own notes admit it \"stays ahead.\" "
+                  "These are <b>not comparable</b> "
                   "to the baseline or any other run and are flagged and excluded — the genuine hand-wired best stays "
                   "<b>0.0329</b>.",
     },
